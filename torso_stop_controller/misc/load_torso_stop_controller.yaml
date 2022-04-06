@@ -1,0 +1,3 @@
+roslaunch: "torso_stop_controller load_torso_controller.launch"
+dependencies: []
+finishes: True

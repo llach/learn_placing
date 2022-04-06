@@ -1,0 +1,11 @@
+<library path="lib/libtorso_stop_controller">
+
+    <class name="torso_stop_controller/TorsoStopController"
+           type="torso_stop_controller::TorsoStopController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            A JointTrajectoryController extension that halts downwards movements on table contact.
+        </description>
+    </class>
+
+</library>

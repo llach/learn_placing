@@ -1,0 +1,13 @@
+torso_stop_controller:
+  type: torso_stop_controller/TorsoStopController
+  
+  joints:
+    - torso_lift_joint
+
+  constraints:
+    goal_time: 0.6
+    stopped_velocity_tolerance: 5.0
+    torso_lift_joint:
+      goal: 0.02
+  
+  contact_topic: /table_contact/in_contact

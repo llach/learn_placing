@@ -1,0 +1,32 @@
+diff --git a/joint_trajectory_controller/include/joint_trajectory_controller/joint_trajectory_controller.h b/joint_trajectory_controller/include/joint_trajectory_controller/joint_trajectory_controller.h
+index 4326f3b..5776d91 100644
+--- a/joint_trajectory_controller/include/joint_trajectory_controller/joint_trajectory_controller.h
++++ b/joint_trajectory_controller/include/joint_trajectory_controller/joint_trajectory_controller.h
+@@ -146,7 +146,7 @@ public:
+   void update(const ros::Time& time, const ros::Duration& period);
+   /*\}*/
+ 
+-private:
++protected:
+ 
+   bool realtime_busy_;
+ 
+@@ -224,12 +224,12 @@ private:
+   ros::Timer         goal_handle_timer_;
+   ros::Time          last_state_publish_time_;
+ 
+-  bool updateTrajectoryCommand(const JointTrajectoryConstPtr& msg, RealtimeGoalHandlePtr gh);
+-  void trajectoryCommandCB(const JointTrajectoryConstPtr& msg);
+-  void goalCB(GoalHandle gh);
+-  void cancelCB(GoalHandle gh);
+-  void preemptActiveGoal();
+-  bool queryStateService(control_msgs::QueryTrajectoryState::Request&  req,
++  virtual bool updateTrajectoryCommand(const JointTrajectoryConstPtr& msg, RealtimeGoalHandlePtr gh);
++  virtual void trajectoryCommandCB(const JointTrajectoryConstPtr& msg);
++  virtual void goalCB(GoalHandle gh);
++  virtual void cancelCB(GoalHandle gh);
++  virtual void preemptActiveGoal();
++  virtual bool queryStateService(control_msgs::QueryTrajectoryState::Request&  req,
+                          control_msgs::QueryTrajectoryState::Response& resp);
+ 
+   /**
