@@ -39,9 +39,11 @@
 #define TORSO_STOP_CONTROLLER_TORSO_STOP_CONTROLLER_H
 
 #include <mutex>
+#include <atomic>
+
+#include <std_msgs/Bool.h>
 
 #include <joint_trajectory_controller/joint_trajectory_controller.h>
-#include <joint_trajectory_controller/joint_trajectory_segment.h>
 #include <trajectory_interface/quintic_spline_segment.h>
 
 
@@ -52,20 +54,17 @@ class TorsoStopController
         hardware_interface::PositionJointInterface>
 {
 private:
-    // void goalCB(GoalHandle gh) override;
-    // void cancelCB(GoalHandle gh) override;
     virtual void update(const ros::Time& time, const ros::Duration& period) override;
+    virtual void goalCB(GoalHandle gh) override;
 
 protected:
     bool init(hardware_interface::PositionJointInterface* hw, ros::NodeHandle& root_nh,
               ros::NodeHandle& controller_nh) override;
 
-    ros::Subscriber in_contact_sub_;
-
-    std::mutex grav_mtx_;
-    float cosGrav_ = 0.0;
+    ros::Subscriber  in_contact_sub_;
+    std::atomic_bool in_contact_;
 };
 
-}
+} // namespace
 
 #endif  // TORSO_STOP_CONTROLLER_TORSO_STOP_CONTROLLER_IMPL_H

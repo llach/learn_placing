@@ -12,7 +12,9 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
+  <depend>std_msgs</depend>
   <depend>controller_interface</depend>
+  <depend>joint_trajectory_controller</depend>
 
   <export>
     <controller_interface plugin="${prefix}/torso_stop_controller_plugins.xml"/>

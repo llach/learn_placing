@@ -14,6 +14,7 @@ find_package(Eigen3 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
         roscpp
+        std_msgs
         controller_interface
         joint_trajectory_controller
         )
