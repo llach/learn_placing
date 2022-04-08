@@ -202,6 +202,29 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
     current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
     rt_active_goal_.reset();
     successful_joint_traj_.reset();
+  } else if (current_active_goal && current_active_goal->preallocated_result_) {
+    if (in_contact_) {
+      ROS_INFO_NAMED(name_, "Contact-based success");
+
+      for (unsigned int i = 0; i < joints_.size(); ++i) {
+        ROS_INFO_NAMED(name_, "Setting torso position to %f", current_state_.position[i]);
+
+        state_joint_error_.position[i] = 0.0;
+        state_joint_error_.velocity[i] = 0.0;
+        state_joint_error_.acceleration[i] = 0.0;
+
+        state_error_.position[i] = 0.0;
+        state_error_.velocity[i] = 0.0;
+        state_error_.acceleration[i] = 0.0;
+      }
+
+      current_active_goal->preallocated_result_->error_code = control_msgs::FollowJointTrajectoryResult::SUCCESSFUL;
+      current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
+      rt_active_goal_.reset();
+      successful_joint_traj_.reset();
+
+      setHoldPosition(time_data.uptime);
+    }
   }
 
   // Hardware interface adapter: Generate and send commands
