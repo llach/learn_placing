@@ -3,17 +3,25 @@ import numpy as np
 
 from collections import deque
 from std_msgs.msg import Bool, Time
+from std_srvs.srv import Empty
 from geometry_msgs.msg import WrenchStamped
 
+"""
+Topics & Parameters
+"""
 FT_TOPIC = "/wrist_ft"
 BASE_TOPIC = "/table_contact"
 CON_TOPIC = f"{BASE_TOPIC}/in_contact"
 CON_TS_TOPIC = f"{BASE_TOPIC}/contact_timestamp"
+CALIBRATE_SERVER_TOPIC = f"{BASE_TOPIC}/calibrate"
 
 N_CALIBRATION_SAMPLES = 150
 M_SAMPLES = 5
-STD_TRESH = 8
+STD_TRESH = 5
 
+"""
+global variables
+"""
 calibration_samples = []
 calibrated = False
 
@@ -24,6 +32,8 @@ con_pub = None
 con_ts_pub = None
 
 delta_ws = deque(maxlen=M_SAMPLES)
+
+r = None
 
 def wrench_to_vec(w: WrenchStamped):
     return [
@@ -71,12 +81,26 @@ def ft_cb(m):
         con_pub.publish(False)
         con_ts_pub.publish(rospy.Time(0))
 
+def reset_calibration(*args, **kwargs):
+    global r
+    global means
+    global calibrated
+    global calibration_samples
+
+    print(f"current means: {means}")
+    calibration_samples = []
+    calibrated = False
+    while not calibrated:
+        r.sleep()
+    print(f"new means: {means}")
 
 rospy.init_node("ft_contact_detection")
+r = rospy.Rate(50)
 
 ft_sub = rospy.Subscriber(FT_TOPIC, WrenchStamped, ft_cb, queue_size=1)
 con_pub = rospy.Publisher(CON_TOPIC, Bool, queue_size=1)
 con_ts_pub = rospy.Publisher(CON_TS_TOPIC, Time, queue_size=1)
+calibrate_srv = rospy.Service(CALIBRATE_SERVER_TOPIC, Empty, reset_calibration)
 
 while not rospy.is_shutdown():
-    pass
+    r.sleep()

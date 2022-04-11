@@ -31,3 +31,7 @@ You can also verify that the startup scripts work by looking at the param server
 **After each robot start**
 
 Execute `cd misc && ./enable_torso_controller.sh`. This is only necessary if the script itself doesn't switch controllers itself.
+
+## TODO
+
+* make sure we collect $N$ samples after contact is detected
