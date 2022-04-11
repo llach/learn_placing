@@ -34,4 +34,4 @@ Execute `cd misc && ./enable_torso_controller.sh`. This is only necessary if the
 
 ## TODO
 
-* make sure we collect $N$ samples after contact is detected
+* make sure we collect $N$ samples after contact is detected (or is there sufficient contact detection lag to take the last $N$ samples before contact was reported?)

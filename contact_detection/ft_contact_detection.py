@@ -71,7 +71,7 @@ def ft_cb(m):
             delta_w = np.median(delta_ws, axis=0) # we take the median over N_SAMPLES samples to avoid false-positives due to outliers
             for i, (v, std) in enumerate(zip(delta_w, stds)):
                 if v>STD_TRESH*std:
-                    print(f"element {i} detected contact ({v} > {STD_TRESH*std})")
+                    print(f"element {i:.4f} detected contact ({v:.4f} > {STD_TRESH*std})")
                     in_contact = True
 
     if in_contact:

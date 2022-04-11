@@ -73,4 +73,5 @@ traj = generate_trajectory(first=torso_pos, last=q_goal)
 g = FollowJointTrajectoryGoal()
 g.trajectory = traj
 
-c.send_goal_and_wait(g)
+res = c.send_goal_and_wait(g)
+print(res)

@@ -63,6 +63,7 @@ protected:
 
     ros::Subscriber  in_contact_sub_;
     std::atomic_bool in_contact_;
+    bool moving_down_;
 };
 
 } // namespace

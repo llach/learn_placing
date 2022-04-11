@@ -63,6 +63,8 @@ bool TorsoStopController::init(hardware_interface::PositionJointInterface* hw,
     in_contact_sub_ = root_nh.subscribe<std_msgs::Bool>("/table_contact/in_contact", 1, 
             [this](const std_msgs::BoolConstPtr& msg){this->in_contact_=msg->data;});
 
+    moving_down_ = false;
+
     ROS_INFO_NAMED(name_, "TorsoStopController init done!");
     return ret;
 }
@@ -202,7 +204,7 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
     current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
     rt_active_goal_.reset();
     successful_joint_traj_.reset();
-  } else if (current_active_goal && current_active_goal->preallocated_result_) {
+  } else if (current_active_goal && current_active_goal->preallocated_result_ && moving_down_) {
     if (in_contact_) {
       ROS_INFO_NAMED(name_, "Contact-based success");
 
@@ -252,6 +254,12 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
   
 void TorsoStopController::goalCB(GoalHandle gh) {
   ROS_INFO_NAMED(name_, "Received new action goal");
+  moving_down_ = gh.getGoal()->trajectory.points.back().positions[0] <  joints_[0].getPosition();
+  if (moving_down_) {
+    ROS_INFO_NAMED(name_, "Moving down, stopping on contact");
+  } else {
+    ROS_INFO_NAMED(name_, "Moving up to %f", gh.getGoal()->trajectory.points.back().positions[0]);
+  }
   in_contact_ = false;
   JointTrajectoryController::goalCB(gh);
 }
