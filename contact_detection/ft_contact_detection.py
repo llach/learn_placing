@@ -11,7 +11,7 @@ CON_TOPIC = f"{BASE_TOPIC}/in_contact"
 CON_TS_TOPIC = f"{BASE_TOPIC}/contact_timestamp"
 
 N_CALIBRATION_SAMPLES = 150
-N_SAMPLES = 5
+M_SAMPLES = 5
 STD_TRESH = 8
 
 calibration_samples = []
@@ -23,7 +23,7 @@ stds = None
 con_pub = None
 con_ts_pub = None
 
-delta_ws = deque(maxlen=N_SAMPLES)
+delta_ws = deque(maxlen=M_SAMPLES)
 
 def wrench_to_vec(w: WrenchStamped):
     return [
@@ -57,7 +57,7 @@ def ft_cb(m):
             print("calibration done!")
     else:
         delta_ws.append(np.abs(wrench_to_vec(m.wrench)-means))
-        if len(delta_ws)>=N_SAMPLES:
+        if len(delta_ws)>=M_SAMPLES:
             delta_w = np.median(delta_ws, axis=0) # we take the median over N_SAMPLES samples to avoid false-positives due to outliers
             for i, (v, std) in enumerate(zip(delta_w, stds)):
                 if v>STD_TRESH*std:
