@@ -34,5 +34,5 @@ An object is given to TIAGo, i.e. it's being held between TIAGo's fingers and th
 
 **Observations**
 
-* 28 trials take ~3:24min
+* 28 trials take $\approx$ 3:24min ($\rightarrow$ 7,3$\frac{\text{sec}}{\text{trial}}$)
 * problem: gripper motors overheat, the grip loosens and the object slips too much when in contact
