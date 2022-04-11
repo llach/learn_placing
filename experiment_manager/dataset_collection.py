@@ -1,77 +1,55 @@
 import sys
 import rospy
-import actionlib
-import numpy as np
 
-from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectoryPoint, JointTrajectory
-from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal 
+from common import TorsoStopController
+from common.cm_interface import load_controller, stop_controller, start_controller, is_running
 
-from cm_interface import load_controller, stop_controller, start_controller
+"""
+Parameters
+"""
+N_tries = 100
+M = 10
 
-TORSO_JOINT_NAME = 'torso_lift_joint'
-TORSO_IDX = 11
+"""
+Preparation
+"""
 
-torso_pos = None
+if len(sys.argv) >= 2:
+    start_pos = float(sys.argv[1])
 
-def generate_trajectory(first, last, total_time=5, num_points=5):
+rospy.init_node("placing_data_collection")
 
-    jt = JointTrajectory()
-    jt.header.frame_id = 'base_footprint'
-    jt.joint_names = ['torso_lift_joint']
+rospy.loginfo("checking torso_stop_controller ...")
+if not is_running("torso_stop_controller"):
+    # this fails if torso_stop_controller is already running, but that's ok
+    load_controller("torso_stop_controller")
+    stop_controller("torso_controller")
+    start_controller("torso_stop_controller")
 
-    pts = []
-    for t, j in zip(np.linspace(0, total_time, num_points), np.linspace(first, last, num_points)):
-        jp = JointTrajectoryPoint()
-        jp.positions = [j]
+    if not is_running("torso_stop_controller"):
+        rospy.logfatal("couldn't start torso_stop_controller")
+        exit(-1)
+rospy.loginfo("torso_stop_controller running!")
 
-        if t == 0.0: t += 0.1
-        tm = rospy.Time(t)
-        jp.time_from_start.secs = tm.secs
-        jp.time_from_start.nsecs = tm.nsecs
+rospy.loginfo("setting up TorsoStopController interface ...")
+torso = TorsoStopController()
+if not torso.setup():
+    rospy.logfatal("couldn't setup torso stop controller!")
+    exit(-1)
 
-        pts.append(jp)
-
-    jt.points = pts
-    return jt
-
-def joint_states_cb(m):
-    global torso_pos
-    global TORSO_IDX
-
-    torso_pos = np.round(m.position[TORSO_IDX], 4)
-
-if len(sys.argv)<2:
-    print("goal missing. using 0.15")
-    q_goal = 0.15
+if start_pos is not None:
+    rospy.loginfo("Moving to start position")
+    torso.move_to(start_pos)
 else:
-    q_goal = float(sys.argv[1])
-print(f"moving torso to {q_goal}")
+    start_pos = torso.torso_pos
 
-rospy.init_node("torso_movement")
+"""
+Experiment Loop
+"""
+for i in range(N_tries):
 
-js_sub = rospy.Subscriber("/joint_states", JointState, joint_states_cb, queue_size=1)
-c = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+    # step 1: move down 10cm or until contact
+    torso.move_rel(-0.1, duration=10)
 
-# this fails if torso_stop_controller is already running, but that's ok
-load_controller("torso_stop_controller")
-stop_controller("torso_controller")
-start_controller("torso_stop_controller")
-
-print("waiting for action server ...")
-if c.wait_for_server(timeout=rospy.Duration(3)):
-    print("found it!")
-else:
-    print("ac server not found ...")
-
-while torso_pos == None:
-    pass
-
-print(f"moving torso from {torso_pos} to {q_goal}")
-
-traj = generate_trajectory(first=torso_pos, last=q_goal)
-g = FollowJointTrajectoryGoal()
-g.trajectory = traj
-
-res = c.send_goal_and_wait(g)
-print(res)
+    # step 2: move up again
+    torso.move_to(start_pos)

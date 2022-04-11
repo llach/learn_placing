@@ -17,4 +17,4 @@ Subscribes to `/wrist_ft` topic (published at ~50Hz) and publishes on `/table_co
 
 * $N$ - number of sensor samples (150)
 * $M$ - size of the set of in-contact boolean values (5)
-* $\gamma$ - $\gamma \sigma_i$ is the threshold for contact detection (8)
+* $\gamma$ - $\gamma \sigma_i$ is the threshold for contact detection (5)

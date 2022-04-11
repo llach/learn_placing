@@ -56,16 +56,20 @@ def reload_libraries(force_kill, restore = False):
     return result
 
 
-def list_controllers():
+def _list_controllers():
     rospy.wait_for_service('controller_manager/list_controllers')
     s = rospy.ServiceProxy('controller_manager/list_controllers', ListControllers)
     resp = s.call(ListControllersRequest())
-    if len(resp.controller) == 0:
+    return resp.controller
+
+def list_controllers():
+    controller = _list_controllers()
+    if len(controller) == 0:
         print("No controllers are loaded in mechanism control")
     else:
-        for c in resp.controller:
-            print('%s - %s ( %s )'%(c.name, c.hardware_interface, c.state))
-        return resp.controller
+        for c in controller:
+            print('%s - %s ( %s )'%(c.name, c.claimed_resources, c.state))
+        return controller
 
 
 def load_controller(name):
@@ -125,3 +129,10 @@ def start_stop_controllers(names, st):
         else:
             print("Error when stopping ", names)
         return False
+
+def is_running(name):
+    controllers = _list_controllers()
+    for c in controllers:
+        if c.name == name:
+            return c.state == 'running'
+    return False
