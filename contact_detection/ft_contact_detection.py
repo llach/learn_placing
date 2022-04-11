@@ -3,7 +3,7 @@ import numpy as np
 
 from collections import deque
 from std_msgs.msg import Bool, Time
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, EmptyResponse
 from geometry_msgs.msg import WrenchStamped
 
 """
@@ -93,6 +93,8 @@ def reset_calibration(*args, **kwargs):
     while not calibrated:
         r.sleep()
     print(f"new means: {means}")
+
+    return EmptyResponse()
 
 rospy.init_node("ft_contact_detection")
 r = rospy.Rate(50)

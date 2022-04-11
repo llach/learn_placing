@@ -97,7 +97,7 @@ if __name__ == "__main__":
     rospy.init_node("torso_movement")
     torso = TorsoStopController()
     if not torso.setup():
-        rospy.fatal("could not initialize torso controller")
+        rospy.logfatal("could not initialize torso controller")
         exit(-1)
 
     if args.goal is not None:

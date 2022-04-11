@@ -22,10 +22,17 @@ An object is given to TIAGo, i.e. it's being held between TIAGo's fingers and th
 1. Switch controllers (abort on failure)
 2. If `loop_count % M == 0`: calibrate FT contact detection
 3. Move torso down until contact
-4. Move torso up to (starting position || pre-defined position)
-5. If `loop_count < N`, go to `2.`
+4. wait for $t_{\text{wait}}$ seconds
+5. Move torso up to (starting position || pre-defined position)
+6. If `loop_count < N`, go to `2.`
 
 **Parameters**
 
 * $N$ - number of total trials (100)
 * $M$ - re-calibrate FT sensor after $M$ trials (10)
+* $t_{\text{wait}}$ - seconds to wait after table contact (0.3)
+
+**Observations**
+
+* 28 trials take ~3:24min
+* problem: gripper motors overheat, the grip loosens and the object slips too much when in contact
