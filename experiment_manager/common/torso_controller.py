@@ -30,7 +30,7 @@ class TorsoStopController:
 
         start = rospy.Time.now()
         while self.torso_pos == None:
-            if rospy.Time.now() - start > timeout:
+            if rospy.Time.now() - start > rospy.Duration(timeout):
                 rospy.logerr("didn't get torso position")
                 return self.initialized
 
