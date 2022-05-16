@@ -12,7 +12,7 @@ include_directories(
 )
 
 install(PROGRAMS
-  scripts/april.py
+  scripts/state_estimation.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
