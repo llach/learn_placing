@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>wrist_motion</name>
+  <version>0.0.1</version>
+  
+  <description>Wrist reorientation motions</description>
+  <maintainer email="luca.lach@pal-robotics.com">Luca Lach</maintainer>
+
+  <license>BSD</license>
+  <author>Luca Lach</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(state_estimation)
+project(wrist_motion)
 
 find_package(catkin REQUIRED COMPONENTS
 )
-# catkin_python_setup()
+catkin_python_setup()
 
 catkin_package(CATKIN_DEPENDS)
 
@@ -12,7 +12,7 @@ include_directories(
 )
 
 install(PROGRAMS
-  scripts/state_estimation.py
+  scripts/reorient_loop.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
