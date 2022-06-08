@@ -5,10 +5,11 @@ import moveit_commander
 
 from tf import transformations as tf
 from wrist_motion.tiago_controller import TIAGoController
-from wrist_motion.marker import frame, box
+from wrist_motion.marker import frame, box, orientationArrow
 
 from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Vector3
 from moveit_msgs.srv import GetStateValidity, GetStateValidityRequest
 from moveit_msgs.msg import DisplayTrajectory, RobotState, RobotTrajectory
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -56,6 +57,7 @@ class Reorient:
 
         self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         self.tol = np.array([0.2, 0.2, 0.1])
+        self.eef_axis = np.array([0,0,1])
 
     def jointstate_sb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
@@ -78,15 +80,39 @@ class Reorient:
         res = self.valid_srv.call(req)
         return res.valid
 
+    def orientation_only_T(self, T):
+        _T = np.identity(4)
+        _T[0:3, 0:3] = T[0:3, 0:3]
+
+        return _T
+
     def pub_markers(self):
         start_T, _ = self.c.robot.fk(self.c.target_link, dict(zip(self.JOINTS, self.start_state)))
 
         start_frame = frame(start_T, ns="start_frame")
         goal_frame = frame(self.c.T, ns="goal_frame", alpha=0.8)
 
+        tolerance_box = box(start_T, Vector3(*self.tol))
+        tolerance_box.header.frame_id = "base_footprint"
+        tolerance_box.id = 6
+
+        # orientation for arrows is along the +X axis, so Toff rotates the X axis to align with the Z axis (eef axis)
+        start_arrow = orientationArrow(self.orientation_only_T(start_T@self.Toff), color=ColorRGBA(0, 0, 1, 1))
+        start_arrow.id = 7
+
+        goal_arrow = orientationArrow(self.orientation_only_T(self.To), color=ColorRGBA(0, 0, 0, 0.8))
+        goal_arrow.id = 8
+
+        end_arrow = orientationArrow(self.orientation_only_T(self.c.T@self.Toff), color=ColorRGBA(1, 1, 1, 0.6))
+        end_arrow.id = 9
+
         ma = MarkerArray(markers=[
             *start_frame, 
-            *goal_frame
+            *goal_frame,
+            tolerance_box,
+            start_arrow,
+            goal_arrow,
+            end_arrow
         ])
 
         self.marker_pub.publish(ma)
@@ -98,8 +124,8 @@ class Reorient:
         while self.should_get_js: time.sleep(0.1) # jointstate subscriber thread will set flag to false when done
 
         print("generating trajectory")
-        To = sample_random_orientation_southern_hemisphere()
-        goal_state = self.c.reorientation_trajectory(To, self.start_state, tol=.5*self.tol)
+        self.To = sample_random_orientation_southern_hemisphere()
+        goal_state = self.c.reorientation_trajectory(self.To, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
 
         traj_points = np.linspace(self.start_state, goal_state, 10)
         traj_times = np.linspace(0, 3, 10)

@@ -228,8 +228,8 @@ class TIAGoController(object):
         self, 
         To,
         initial_state,
-        eef_axis=numpy.array([0,0,1]),
-        tol = 0.5 * numpy.array([0.2, 0.3, 0.1]),  # tolerance box
+        tol,  # tolerance box
+        eef_axis,
         max_steps=25, 
         eps=0.00005):
 
@@ -243,7 +243,7 @@ class TIAGoController(object):
             ub, lb = (ep+tol), (ep-tol)
             tasks.append((Jp, ub, lb))
 
-            oTask = self.cone_task(eef_axis, To[0:3, 0], 0.999)
+            oTask = self.cone_task(eef_axis, To[0:3, 0], 0.95)
             tasks.append(oTask)
 
             q_delta = self.solve_qp(tasks)
