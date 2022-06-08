@@ -5,7 +5,7 @@ import rospy
 import argparse
 
 from sensor_msgs.msg import JointState
-from wrist_motion.reorient import Reorient
+from wrist_motion import Reorient
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--sim", default=False, action="store_true")
