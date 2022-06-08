@@ -52,12 +52,12 @@ class Reorient:
         self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
 
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
-        self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0])
-        self.n_color = ColorRGBA(0, 0, 0.6, 1)
-
         self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
+        
         self.tol = np.array([0.2, 0.2, 0.1])
         self.eef_axis = np.array([0,0,1])
+
+        self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
 
     def jointstate_sb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
@@ -83,7 +83,11 @@ class Reorient:
     def orientation_only_T(self, T):
         _T = np.identity(4)
         _T[0:3, 0:3] = T[0:3, 0:3]
+        return _T
 
+    def position_only_T(self, T):
+        _T = np.identity(4)
+        _T[0:3, 3] = T[0:3, 3]
         return _T
 
     def pub_markers(self):
@@ -92,7 +96,7 @@ class Reorient:
         start_frame = frame(start_T, ns="start_frame")
         goal_frame = frame(self.c.T, ns="goal_frame", alpha=0.8)
 
-        tolerance_box = box(start_T, Vector3(*self.tol))
+        tolerance_box = box(self.position_only_T(start_T), Vector3(*self.tol))
         tolerance_box.header.frame_id = "base_footprint"
         tolerance_box.id = 6
 
