@@ -243,10 +243,11 @@ class TIAGoController(object):
             ub, lb = (ep+tol), (ep-tol)
             tasks.append((Jp, ub, lb))
 
-            oTask = self.cone_task(eef_axis, To[0:3, 0], 0.95)
+            oTask = self.cone_task(eef_axis, To[0:3, 0], 0.99)
             tasks.append(oTask)
 
             q_delta = self.solve_qp(tasks)
+
             if prev_qdelta is not None:
                 qd = numpy.array(q_delta[1:])
                 qdd = numpy.abs(qd-prev_qdelta)
