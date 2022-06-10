@@ -43,13 +43,9 @@ class Reorient:
     PLANNING_GROUP = 'arm_torso'
 
     def __init__(self) -> None:
-        self.should_get_js = True
+        self.Tinit = None
         self.start_state = None
-
-        self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
-        self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
-        self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
-        self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
+        self.should_get_js = True
 
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
         self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
@@ -59,6 +55,11 @@ class Reorient:
 
         self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
 
+        self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
+        self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
+        self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
+        self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
+
     def jointstate_sb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
 
@@ -67,6 +68,7 @@ class Reorient:
             if n in self.JOINTS:
                 idx = self.JOINTS.index(n)
                 self.start_state[idx] = p
+        if self.Tinit is None: self.Tinit = self.c.fk_for_joint_position(self.start_state)[0]
         self.should_get_js = False
 
     def raw2rs(self, names, pos):
@@ -129,7 +131,7 @@ class Reorient:
 
         print("generating trajectory")
         self.To = sample_random_orientation_southern_hemisphere()
-        goal_state = self.c.reorientation_trajectory(self.To, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
+        goal_state = self.c.reorientation_trajectory(self.To, self.Tinit, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
 
         traj_points = np.linspace(self.start_state, goal_state, 10)
         traj_times = np.linspace(0, 3, 10)

@@ -107,6 +107,10 @@ class TIAGoController(object):
         self.joint_msg.position = state
         self.T, self.J = self.robot.fk(self.target_link, dict(zip(self.joint_msg.name, self.joint_msg.position)))
 
+    def fk_for_joint_position(self, pos):
+        assert len(pos)==len(self.joint_msg.position), "number of joints / state mismatch"
+        return self.robot.fk(self.target_link, dict(zip(self.joint_msg.name, pos)))
+
     def solve(self, tasks):
         """Hierarchically solve tasks of the form J dq = e"""
         def invert_clip(s):
@@ -227,6 +231,7 @@ class TIAGoController(object):
     def reorientation_trajectory(
         self, 
         To,
+        Tinit,
         initial_state,
         tol,  # tolerance box
         eef_axis,
@@ -239,7 +244,7 @@ class TIAGoController(object):
         prev_qdelta = None
         for _ in range(max_steps):
             tasks = []
-            Jp, ep = self.position_task(self.T, self.T)
+            Jp, ep = self.position_task(Tinit, self.T)
             ub, lb = (ep+tol), (ep-tol)
             tasks.append((Jp, ub, lb))
 
