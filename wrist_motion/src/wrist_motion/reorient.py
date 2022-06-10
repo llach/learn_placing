@@ -98,7 +98,7 @@ class Reorient:
         start_frame = frame(start_T, ns="start_frame")
         goal_frame = frame(self.c.T, ns="goal_frame", alpha=0.8)
 
-        tolerance_box = box(self.position_only_T(start_T), Vector3(*self.tol))
+        tolerance_box = box(self.position_only_T(self.Tinit), Vector3(*self.tol))
         tolerance_box.header.frame_id = "base_footprint"
         tolerance_box.id = 6
 
