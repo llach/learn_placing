@@ -1,0 +1,66 @@
+<launch>
+  <arg name="rviz"  default="false"/>
+
+  <arg name="deviceL" default="/dev/myrmexL"/>
+  <arg name="deviceR" default="/dev/myrmexR"/>
+  
+  <arg name="registration_folder" default="$(find agni_serial_protocol)/registration"/>
+  <arg name="device_file" default="$(arg registration_folder)/device_types.yaml"/>
+  <arg name="sensor_file" default="$(arg registration_folder)/registred_devices.yaml"/>
+
+  <arg name="debug" default="false" />
+
+  <arg name="debug_option" default="" unless="$(arg debug)"/>
+  <arg name="debug_option" value="-v" if="$(arg debug)" /> 
+
+  <node pkg="agni_serial_protocol" name="myrmex_readout_right" type="agni_serial_protocol_node" respawn="false" output="screen"
+    args="-s $(arg deviceR) $(arg debug_option) --ignore_timeout --sensor_file $(arg sensor_file) --device_file $(arg device_file)">
+    <remap from="tactile_module_16x16_v2" to="tactile_right"/>
+  </node>
+  <node pkg="agni_serial_protocol" name="myrmex_readout_1" type="agni_serial_protocol_node" respawn="false" output="screen"
+    args="-s $(arg deviceL) $(arg debug_option) --ignore_timeout --sensor_file $(arg sensor_file) --device_file $(arg device_file)">
+    <remap from="tactile_module_16x16_v2" to="tactile_left"/>
+  </node>
+
+  <!-- generate myrmex description  -->
+  <group ns="tactile_left">
+    <param name="robot_description" command="xacro '$(find myrmex_description)/robots/myrmex_single.urdf.xacro' board_row_nb:=1 board_col_nb:=1"/>
+
+    <!-- publish transforms of myrmex links -->
+    <node name="myrmex_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+      <param name="publish_frequency" type="double" value="10.0"/>
+      <param name="tf_prefix" value="tactile_left" />
+    </node>
+
+    <!-- publish joint values, -->
+    <node name="joint_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+      <param name="use_gui" value="false"/>
+      <param name="tf_prefix" value="tactile_left" />
+    </node>
+
+    <node name="offset_pub" pkg="tf" type="static_transform_publisher" args="0 0.05 0 0 0 0 world /tactile_left/world 10" />
+  </group>
+
+  <group ns="tactile_right">
+    <param name="robot_description" command="xacro '$(find myrmex_description)/robots/myrmex_single.urdf.xacro' board_row_nb:=1 board_col_nb:=1"/>
+
+    <!-- publish transforms of myrmex links -->
+    <node name="myrmex_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+      <param name="publish_frequency" type="double" value="10.0"/>
+      <param name="tf_prefix" value="tactile_right" />
+    </node>
+
+    <!-- publish joint values, -->
+    <node name="joint_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+      <param name="use_gui" value="false"/>
+      <param name="tf_prefix" value="tactile_right" />
+    </node>
+
+    <node name="offset_pub" pkg="tf" type="static_transform_publisher" args="0 -0.05 0 0 0 0 world /tactile_right/world 10" />
+  </group>
+
+  <!-- Run Rviz -->
+  <group if="$(arg rviz)">
+    <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/myrmex.rviz" />
+  </group>
+</launch>

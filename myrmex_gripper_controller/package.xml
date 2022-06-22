@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>myrmex_gripper_controller</name>
+  <version>0.0.1</version>
+  
+  <description>Myrmex controller reaches and holds a force using a two-finger gripper</description>
+  <maintainer email="luca.lach@pal-robotics.com">Luca Lach</maintainer>
+
+  <license>BSD</license>
+  <author>Luca Lach</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>tactile_msgs</depend>
+  <depend>controller_interface</depend>
+  <depend>joint_trajectory_controller</depend>
+
+  <export>
+    <controller_interface plugin="${prefix}/myrmex_gripper_controller_plugins.xml"/>
+  </export>
+</package>

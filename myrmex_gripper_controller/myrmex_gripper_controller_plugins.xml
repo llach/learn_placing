@@ -1,0 +1,11 @@
+<library path="lib/libmyrmex_gripper_controller_lib">
+
+    <class name="myrmex_gripper_controller/MyrmexGripperController"
+           type="myrmex_gripper_controller::MyrmexGripperController"
+           base_class_type="controller_interface::ControllerBase">
+        <description>
+            A JointTrajectoryController extension that halts downwards movements on table contact.
+        </description>
+    </class>
+
+</library>

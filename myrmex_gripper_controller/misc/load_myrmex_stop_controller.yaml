@@ -1,0 +1,3 @@
+roslaunch: "myrmex_gripper_controller load_myrmex_controller.launch"
+dependencies: []
+finishes: True

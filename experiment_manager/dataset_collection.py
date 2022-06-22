@@ -95,7 +95,7 @@ for i in range(N_tries):
 
     rospy.loginfo("")
 
-rospy.loginfo("finished loop. moving troso back to starting position")
+rospy.loginfo("finished loop. moving torso back to starting position")
 torso.move_to(start_pos, duration=1.1*dur.to_sec())
 
 rospy.loginfo("done, bye.")

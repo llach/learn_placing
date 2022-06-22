@@ -136,3 +136,15 @@ def is_running(name):
         if c.name == name:
             return c.state == 'running'
     return False
+
+def safe_switch(stop, start):
+    if not is_running(start):
+        # this fails if torso_stop_controller is already running, but that's ok
+        load_controller(start)
+        stop_controller(stop)
+        start_controller(start)
+
+        if not is_running(start):
+            rospy.logfatal(f"couldn't start {start}")
+            exit(-1)
+    rospy.loginfo(f"{start} running!")
