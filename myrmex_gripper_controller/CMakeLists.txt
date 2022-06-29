@@ -16,12 +16,30 @@ find_package(catkin REQUIRED COMPONENTS
         roscpp
         std_msgs
         tactile_msgs
+        message_generation
+        dynamic_reconfigure
         controller_interface
         joint_trajectory_controller
         )
 
+
+add_message_files(
+    FILES
+    MyrmexControllerDebug.msg
+)
+
+generate_messages(
+    DEPENDENCIES
+    std_msgs
+)
+
+    
+generate_dynamic_reconfigure_options(
+        cfg/MyrmexControllerDR.cfg
+)
+
 catkin_package(
-        CATKIN_DEPENDS
+        CATKIN_DEPENDS message_runtime
         INCLUDE_DIRS include
         LIBRARIES ${PROJECT_NAME}_lib
 )
@@ -35,7 +53,7 @@ add_library(${PROJECT_NAME}_lib
         src/myrmex_gripper_controller/myrmex_processor.cpp
         src/myrmex_gripper_controller/myrmex_gripper_controller.cpp
         )
-
+add_dependencies(${PROJECT_NAME}_lib ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}_lib
         ${catkin_LIBRARIES}
         ${EIGEN3_LIBRARIES}

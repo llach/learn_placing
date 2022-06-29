@@ -14,7 +14,7 @@ rname, lname = 'gripper_right_finger_joint', 'gripper_left_finger_joint'
 N_SECS = 1.2
 N_POINTS = 5
 JT_MIN = 0.0
-JT_MAX = 0.45
+JT_MAX = 0.045
 JOINT_NAMES = [rname, lname]
 
 def js_cb(msg):
@@ -39,7 +39,8 @@ def send_trajectory(to):
     for rp, lp, t in zip(rpoints, lpoints, times):
         jt.points.append(JointTrajectoryPoint(positions=[rp, lp], time_from_start=rospy.Time(t)))
 
-    cpub.send_goal_and_wait(FollowJointTrajectoryGoal(trajectory=jt))
+    res = cpub.send_goal_and_wait(FollowJointTrajectoryGoal(trajectory=jt))
+    print(f"result {res}")
 
 def open_gripper(): send_trajectory(JT_MAX)
 def close_gripper(): send_trajectory(JT_MIN)

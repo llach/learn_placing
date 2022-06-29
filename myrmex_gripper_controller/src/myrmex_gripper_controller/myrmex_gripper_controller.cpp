@@ -35,6 +35,7 @@
 /* Author: Luca Lach
 */
 
+#include <myrmex_gripper_controller/MyrmexControllerDebug.h>
 #include <myrmex_gripper_controller/myrmex_gripper_controller.h>
 
 namespace myrmex_gripper_controller {
@@ -52,7 +53,7 @@ bool MyrmexGripperController::init(hardware_interface::PositionJointInterface* h
     // print verbose errors
     this->verbose_ = true;
 
-    ROS_INFO_NAMED(name_, "Reloading action server ...");
+    ROS_INFO_NAMED(name_, "reloading action server ...");
     action_server_.reset(new ActionServer(controller_nh_, "follow_joint_trajectory",
                                             std::bind(&MyrmexGripperController::goalCB,   this, std::placeholders::_1),
                                             std::bind(&MyrmexGripperController::cancelCB, this, std::placeholders::_1),
@@ -71,17 +72,27 @@ bool MyrmexGripperController::init(hardware_interface::PositionJointInterface* h
       mm_procs_.push_back(std::make_unique<MyrmexProcessor>(suf, B_, normalize_));
     }
 
+    ROS_INFO_NAMED(name_, "registering dynamic reconfigure callback ... ");
+    server_ = std::make_unique<dynamic_reconfigure::Server<myrmex_gripper_controller::MyrmexControllerDRConfig>>(controller_nh);
+    f_ = std::bind(&MyrmexGripperController::drCallback, this, std::placeholders::_1, std::placeholders::_2);
+    server_->setCallback(f_);
+
+    debugPub_ = root_nh.advertise<myrmex_gripper_controller::MyrmexControllerDebug>("/myrmex_controller_debug", 1);
+
     ROS_INFO_NAMED(name_, "MyrmexGripperController init done! Started %ld processors.", mm_procs_.size());
     return ret;
 }
 
 bool MyrmexGripperController::checkControllerTransition(){
-  for (auto& ss : sensor_states_)
-    if (ss < GOT_CONTACT) return false;
-  return true;
+    for (auto& ss : sensor_states_)
+        if (ss < GOT_CONTACT) return false;
+    return true;
 }
 
-void MyrmexGripperController::updateJointStates(){
+void MyrmexGripperController::updateSensorStates(){
+    // NOTE we assume, that we don't loose contact once we acquired it -> there's no transition back from an in-contact state to no contact
+    // usually, this doesn't happen in practice and if it does, some high-level component needs to analyse the situation and trigger replanning etc.
+    // before trying to grasp again.
   for (int i = 0; i<forces_.size(); i++){
     SENSOR_STATE prevState = sensor_states_[i];
 
@@ -123,8 +134,9 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
   for (int i = 0; i<forces_.size(); i++){
     forces_[i] = mm_procs_[i]->getTotalForce();
   }
+  f_sum_ = forces_[0]+forces_[1];
 
-  updateJointStates();
+  updateSensorStates();
 
   // update controller state
   if (state_ == CONTROLLER_STATE::TRANSITION) {
@@ -148,7 +160,7 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
 
   // Update current state and state error
   // TODO only when not doing FC!
-  if (rt_active_goal_)
+  if (rt_active_goal_ && state_ != FORCE_CTRL)
   {
     for (unsigned int i = 0; i < joints_.size(); ++i)
     {
@@ -167,6 +179,7 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
 
       // don't move joint if it's in contact
       if (sensor_states_[i] > NO_CONTACT) desired_joint_state_.position[0] = current_state_.position[i];
+      des_q_[i] = desired_joint_state_.position[0]; // debug should always show the desired value
 
       desired_state_.position[i] = desired_joint_state_.position[0];
       desired_state_.velocity[i] = desired_joint_state_.velocity[0];
@@ -255,9 +268,52 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
     }
   }
 
-  if (state_ == FORCE_CTRL)
+  if (rt_active_goal_ && state_ == FORCE_CTRL)
   {
+    double dt = period.toSec();
 
+    deltaF_ = ((f_target_ - f_sum_) / k_);
+
+    error_int_ += deltaF_ * dt;
+    if (error_int_ > max_error_)
+      error_int_ = max_error_;
+    if (error_int_ < -max_error_)
+      error_int_ = -max_error_;
+
+   if(last_f_sum_ >= f_sum_threshold_ && f_sum_ < f_sum_threshold_){
+     ROS_INFO_NAMED(name_, "reset ADD error integral");
+     error_int_ = 0.0;
+   }
+
+    deltaQ_ = Kp_ * deltaF_ + Ki_ * error_int_;
+
+    for (unsigned int i = 0; i < joints_.size(); ++i) {
+
+      // There's no acceleration data available in a joint handle
+      current_state_.position[i] = joints_[i].getPosition();
+      current_state_.velocity[i] = joints_[i].getVelocity();
+      
+      u_[i] = -deltaQ_/2;
+      des_q_[i] = current_state_.position[i] + u_[i];
+
+      desired_joint_state_.position[0] = des_q_[i];
+      desired_joint_state_.velocity[0] = (u_[i] - last_u_[i]) / (dt);
+
+      desired_state_.position[i] = desired_joint_state_.position[0];
+      desired_state_.velocity[i] = desired_joint_state_.velocity[0];
+      desired_state_.acceleration[i] = desired_joint_state_.acceleration[0];
+
+
+      state_joint_error_.position[0] =
+              angles::shortest_angular_distance(current_state_.position[i], desired_joint_state_.position[0]);
+      state_joint_error_.velocity[0] = desired_joint_state_.velocity[0] - current_state_.velocity[i];
+      state_joint_error_.acceleration[0] = 0.0;
+
+      state_error_.position[i] =
+              angles::shortest_angular_distance(current_state_.position[i], desired_joint_state_.position[0]);
+      state_error_.velocity[i] = desired_joint_state_.velocity[0] - current_state_.velocity[i];
+      state_error_.acceleration[i] = 0.0;
+    }
   }
 
   //If there is an active goal and all segments finished successfully then set goal as succeeded
@@ -288,12 +344,16 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
     rt_active_goal_->setFeedback( rt_active_goal_->preallocated_feedback_ );
   }
 
+  // update state storage
   for (int i = 0; i<forces_.size(); i++){
+    last_u_[i] = u_[i];
     last_forces_[i] = forces_[i];
   }
+  last_f_sum_ = f_sum_;
 
   // Publish state
   publishState(time_data.uptime);
+  publishDebugInfo();
   realtime_busy_ = false;
 }
   
@@ -312,6 +372,41 @@ void MyrmexGripperController::goalCB(GoalHandle gh) {
 
   JointTrajectoryController::goalCB(gh);
 }
+
+void MyrmexGripperController::drCallback(myrmex_gripper_controller::MyrmexControllerDRConfig &config, uint32_t level)
+{
+    ROS_INFO_NAMED(name_, "got reconfigure request!");
+
+    k_ = config.k;
+    Ki_ = config.Ki;
+    Kp_ = config.Kp;
+    f_target_ = config.f_target;
+    goalMaintain_ = config.goal_maintain;
+    force_thresholds_[0] = config.force_threshold; // TODO set for both
+}
+
+void MyrmexGripperController::publishDebugInfo()
+{
+    MyrmexControllerDebug mcd;
+    mcd.header.stamp = ros::Time::now();
+
+    mcd.k = k_;
+    mcd.Ki = Ki_;
+    mcd.Kp = Kp_;
+    mcd.f_sum = f_sum_;
+    mcd.delta_q = deltaQ_;
+    mcd.delta_f = deltaF_;
+    mcd.f_target = f_target_;
+    mcd.max_error = max_error_;
+    mcd.error_integral = error_int_;
+
+    mcd.f = forces_;
+    mcd.des_q = des_q_;
+    mcd.f_thresholds = force_thresholds_;
+
+    debugPub_.publish(mcd);
+}
+
 } // namespace myrmex_gripper_controller
 
 // Pluginlib

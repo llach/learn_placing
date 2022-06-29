@@ -24,8 +24,8 @@ private:
     std::string suffix_;
 
     // internal members
-    unsigned int totalForce_;
     std::mutex totalLock_;
+    unsigned int totalForce_ = 0;
 
     // ros members
     ros::NodeHandle nh_;

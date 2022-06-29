@@ -42,8 +42,11 @@
 #include <limits>
 #include <atomic>
 
-#include <std_msgs/Bool.h>
 #include <myrmex_gripper_controller/myrmex_processor.h>
+#include <myrmex_gripper_controller/MyrmexControllerDRConfig.h>
+
+#include <std_msgs/Bool.h>
+#include <dynamic_reconfigure/server.h>
 #include <trajectory_interface/quintic_spline_segment.h>
 #include <joint_trajectory_controller/joint_trajectory_controller.h>
 
@@ -59,11 +62,10 @@ enum SENSOR_STATE {NO_CONTACT, GOT_CONTACT, IN_CONTACT, GOAL, VIOLATED};
 const std::map<SENSOR_STATE, std::string> STATE_STRING = {
         {NO_CONTACT, "no contact"},
         {GOT_CONTACT, "got contact"},
-        {IN_CONTACT, "still in contact"},
+        {IN_CONTACT, "in contact"},
         {GOAL, "reached goal"},
         {VIOLATED, "violated goal constraints"}
 };
-
 
 typedef std::unique_ptr<MyrmexProcessor> MyrmexProcPtr;
 
@@ -83,15 +85,42 @@ private:
     CONTROLLER_STATE state_ = TRAJECTORY_EXEC;
     std::vector<SENSOR_STATE> sensor_states_ = {NO_CONTACT, NO_CONTACT};
 
+    bool goalMaintain_ = true;
+
+    double Ki_ = 0;
+    double Kp_ = 0;
+    double deltaQ_ = 0;
+    double deltaF_ = 0;
+    double error_int_ = 0;
+    double max_error_ = 0;
+
+    unsigned int k_ = 0;
+    unsigned int f_sum_ = 0;
+    unsigned int f_target_ = 0;
+    unsigned int last_f_sum_ = 0;
+    
     std::vector<unsigned int> forces_ = {0, 0};
     std::vector<unsigned int> last_forces_ = {0, 0};
     std::vector<unsigned int> force_thresholds_ = {1555, std::numeric_limits<unsigned int>::min()};
 
-    void updateJointStates();
+    std::vector<double> u_ = {0, 0};
+    std::vector<double> des_q_ = {0, 0};
+    std::vector<double> last_u_ = {0, 0};
+
+    unsigned int f_sum_threshold_ = force_thresholds_[0]+force_thresholds_[1];
+
+    ros::Publisher debugPub_;
+    std::unique_ptr<dynamic_reconfigure::Server<myrmex_gripper_controller::MyrmexControllerDRConfig>> server_;
+    dynamic_reconfigure::Server<myrmex_gripper_controller::MyrmexControllerDRConfig>::CallbackType f_;
+
+    void publishDebugInfo();
+    void updateSensorStates();
     bool checkControllerTransition();
 
     virtual void update(const ros::Time& time, const ros::Duration& period) override;
     virtual void goalCB(GoalHandle gh) override;
+
+    void drCallback(myrmex_gripper_controller::MyrmexControllerDRConfig &config, uint32_t level);
 
 protected:
     bool init(hardware_interface::PositionJointInterface* hw, ros::NodeHandle& root_nh,
