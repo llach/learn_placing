@@ -16,6 +16,7 @@ uint32 f_sum
 uint32 f_target
 
 uint32[] f
+uint32[] bias
 uint32[] f_thresholds
 
 float64 Ki

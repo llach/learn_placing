@@ -10,6 +10,7 @@ MyrmexProcessor::MyrmexProcessor(std::string suffix, int B, bool normalize, ros:
     : suffix_(suffix), B_(B), normalize_(normalize), nh_(nh)
 {
     sub_ = nh_.subscribe("/tactile_"+suffix, 0, &MyrmexProcessor::tactileCallback, this);
+    name_ = "myrmex_"+suffix+"_processor";
 };
 
 void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr& msg)
@@ -36,8 +37,40 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
     // for debugging
     // cout << myma(0,0) <<  " | " << myma(myma.rows()-1, myma.cols()-1) << endl;
 
-    lock_guard<mutex> l(totalLock_);
-    totalForce_ = myma.sum();
+    {
+        lock_guard<mutex> l(totalLock_);
+        unsigned int msum = myma.sum();
+
+        // avoid underflow of unsigned int
+        totalForce_ = msum < bias_ ? 0 : msum - bias_;
+    }
+
+    // calibration procedure. can be started by calling the `startCalibration()` member function 
+    if (calibrate_)
+    {
+        if (nSamples_ == calibrationSamples_.size()-1) // collection done
+        {
+            lock_guard<mutex> l(totalLock_);
+
+            // calculate bias
+            bias_ = 0; 
+            for (int s : calibrationSamples_) bias_ += s;
+            bias_ = std::max(static_cast<unsigned int>(bias_/calibrationSamples_.size()), static_cast<unsigned int>(0));
+
+            calibrate_ = false;
+            is_calibrated = true;
+
+            ROS_INFO_NAMED(name_, "calibration done");
+        } 
+        else 
+        {
+            calibrationSamples_[nSamples_] = totalForce_;
+        }
+        nSamples_++;
+    } 
 }
 
+void MyrmexProcessor::startCalibration(){nSamples_ = 0; bias_ = 0; calibrate_ = true; is_calibrated = false;}
+
+unsigned int MyrmexProcessor::getBias(){lock_guard<mutex> l(totalLock_); return bias_;}
 unsigned int MyrmexProcessor::getTotalForce(){lock_guard<mutex> l(totalLock_); return totalForce_;}

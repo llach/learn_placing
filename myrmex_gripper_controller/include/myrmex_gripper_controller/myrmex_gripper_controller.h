@@ -46,6 +46,7 @@
 #include <myrmex_gripper_controller/MyrmexControllerDRConfig.h>
 
 #include <std_msgs/Bool.h>
+#include <std_srvs/Empty.h>
 #include <dynamic_reconfigure/server.h>
 #include <trajectory_interface/quintic_spline_segment.h>
 #include <joint_trajectory_controller/joint_trajectory_controller.h>
@@ -101,7 +102,7 @@ private:
     
     std::vector<unsigned int> forces_ = {0, 0};
     std::vector<unsigned int> last_forces_ = {0, 0};
-    std::vector<unsigned int> force_thresholds_ = {1555, std::numeric_limits<unsigned int>::min()};
+    std::vector<unsigned int> force_thresholds_ = {200, 200};
 
     std::vector<double> u_ = {0, 0};
     std::vector<double> q_T_ = {0, 0};      // joint positions at first contact 
@@ -111,6 +112,8 @@ private:
     unsigned int f_sum_threshold_ = force_thresholds_[0]+force_thresholds_[1];
 
     ros::Publisher debugPub_;
+    ros::ServiceServer killService_;
+    ros::ServiceServer calibrationService_;
     std::unique_ptr<dynamic_reconfigure::Server<myrmex_gripper_controller::MyrmexControllerDRConfig>> server_;
     dynamic_reconfigure::Server<myrmex_gripper_controller::MyrmexControllerDRConfig>::CallbackType f_;
 
@@ -121,6 +124,8 @@ private:
     virtual void update(const ros::Time& time, const ros::Duration& period) override;
     virtual void goalCB(GoalHandle gh) override;
 
+    bool kill(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+    bool calibrate(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
     void drCallback(myrmex_gripper_controller::MyrmexControllerDRConfig &config, uint32_t level);
 
 protected:

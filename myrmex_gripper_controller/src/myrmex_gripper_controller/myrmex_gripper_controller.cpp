@@ -78,6 +78,8 @@ bool MyrmexGripperController::init(hardware_interface::PositionJointInterface* h
     server_->setCallback(f_);
 
     debugPub_ = root_nh.advertise<myrmex_gripper_controller::MyrmexControllerDebug>("/myrmex_controller_debug", 1);
+    killService_ = controller_nh.advertiseService("kill", &MyrmexGripperController::kill, this);
+    calibrationService_ = controller_nh.advertiseService("calibrate", &MyrmexGripperController::calibrate, this);
 
     ROS_INFO_NAMED(name_, "MyrmexGripperController init done! Started %ld processors.", mm_procs_.size());
     return ret;
@@ -112,7 +114,9 @@ void MyrmexGripperController::updateSensorStates(){
 
     if (sensor_states_[i] != prevState){
         if (prevState == NO_CONTACT) q_T_[i] = joints_[i].getPosition(); // we store the joint position at time of first contact
-        ROS_DEBUG_STREAM_NAMED(name_, "myrmex_" << suffixes_[i] << " changed state from " << STATE_STRING.at(prevState) << " to " << STATE_STRING.at(sensor_states_[i])); //
+        ROS_DEBUG_STREAM_NAMED(name_, "myrmex_" << suffixes_[i] << " changed state from " 
+        << STATE_STRING.at(prevState) << " to " << STATE_STRING.at(sensor_states_[i])
+        << " with force " << forces_[i] << " and threshold " << force_thresholds_[i]); //
     }
   }
 }
@@ -160,7 +164,6 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
   // next control cycle, leaving the current cycle without a valid trajectory.
 
   // Update current state and state error
-  // TODO only when not doing FC!
   if (rt_active_goal_ && state_ != FORCE_CTRL)
   {
     for (unsigned int i = 0; i < joints_.size(); ++i)
@@ -358,7 +361,8 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
   realtime_busy_ = false;
 }
   
-void MyrmexGripperController::goalCB(GoalHandle gh) {
+void MyrmexGripperController::goalCB(GoalHandle gh) 
+{
   ROS_INFO_NAMED(name_, "Received new action goal");
   closing_ = gh.getGoal()->trajectory.points.back().positions[0] < joints_[0].getPosition();
   if (closing_) {
@@ -375,6 +379,36 @@ void MyrmexGripperController::goalCB(GoalHandle gh) {
   JointTrajectoryController::goalCB(gh);
 }
 
+bool MyrmexGripperController::kill(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+    RealtimeGoalHandlePtr current_active_goal(rt_active_goal_);
+
+    if (current_active_goal) {
+        ROS_INFO_NAMED(name_, "Killing current goal ...");
+        cancelCB(current_active_goal->gh_);
+    } else {
+        ROS_INFO_NAMED(name_, "No goal to kill!");
+    }
+
+    return true;
+}
+
+bool MyrmexGripperController::calibrate(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+    RealtimeGoalHandlePtr current_active_goal(rt_active_goal_);
+    if (current_active_goal) {
+        ROS_INFO_NAMED(name_, "Cannot calibrate sensors during goal execution");
+        return false;
+    }
+
+    ROS_INFO_NAMED(name_, "starting sensor calibration process ...");
+    mm_procs_[0]->startCalibration();
+    mm_procs_[1]->startCalibration();
+
+    while (!(mm_procs_[0]->is_calibrated && mm_procs_[1]->is_calibrated)) ros::Rate(5).sleep();
+    return true;
+}
+
 void MyrmexGripperController::drCallback(myrmex_gripper_controller::MyrmexControllerDRConfig &config, uint32_t level)
 {
     ROS_INFO_NAMED(name_, "got reconfigure request!");
@@ -384,7 +418,7 @@ void MyrmexGripperController::drCallback(myrmex_gripper_controller::MyrmexContro
     Kp_ = config.Kp;
     f_target_ = config.f_target;
     goalMaintain_ = config.goal_maintain;
-    force_thresholds_[0] = config.force_threshold; // TODO set for both
+    force_thresholds_ = {config.force_threshold, config.force_threshold};
 }
 
 void MyrmexGripperController::publishDebugInfo()
@@ -406,6 +440,8 @@ void MyrmexGripperController::publishDebugInfo()
     mcd.q_T = q_T_;
     mcd.des_q = des_q_;
     mcd.f_thresholds = force_thresholds_;
+
+    mcd.bias = {mm_procs_[0]->getBias(), mm_procs_[1]->getBias()};
 
     debugPub_.publish(mcd);
 }

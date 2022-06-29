@@ -2,6 +2,7 @@ import rospy
 import actionlib
 import numpy as np
 
+from std_srvs.srv import Empty
 from sensor_msgs.msg import JointState
 from experiment_manager.common.cm_interface import safe_switch
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -47,6 +48,7 @@ def close_gripper(): send_trajectory(JT_MIN)
 
 rospy.init_node("oc")
 rospy.Subscriber("/joint_states", JointState, js_cb)
+kill_service = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
 
 USE_MM = True
 _pre = ""
