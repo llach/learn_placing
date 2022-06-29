@@ -104,6 +104,7 @@ private:
     std::vector<unsigned int> force_thresholds_ = {1555, std::numeric_limits<unsigned int>::min()};
 
     std::vector<double> u_ = {0, 0};
+    std::vector<double> q_T_ = {0, 0};      // joint positions at first contact 
     std::vector<double> des_q_ = {0, 0};
     std::vector<double> last_u_ = {0, 0};
 

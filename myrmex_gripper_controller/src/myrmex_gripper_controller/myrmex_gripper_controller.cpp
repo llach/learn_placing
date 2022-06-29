@@ -111,7 +111,8 @@ void MyrmexGripperController::updateSensorStates(){
     }
 
     if (sensor_states_[i] != prevState){
-      ROS_DEBUG_STREAM_NAMED(name_, "myrmex_" << suffixes_[i] << " changed state from " << STATE_STRING.at(prevState) << " to " << STATE_STRING.at(sensor_states_[i])); //
+        if (prevState == NO_CONTACT) q_T_[i] = joints_[i].getPosition(); // we store the joint position at time of first contact
+        ROS_DEBUG_STREAM_NAMED(name_, "myrmex_" << suffixes_[i] << " changed state from " << STATE_STRING.at(prevState) << " to " << STATE_STRING.at(sensor_states_[i])); //
     }
   }
 }
@@ -177,8 +178,8 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
         return;
       }
 
-      // don't move joint if it's in contact
-      if (sensor_states_[i] > NO_CONTACT) desired_joint_state_.position[0] = current_state_.position[i];
+      // don't move joint if it's in contact when closing the gripper 
+      if (sensor_states_[i] > NO_CONTACT && closing_) desired_joint_state_.position[0] = q_T_[i];
       des_q_[i] = desired_joint_state_.position[0]; // debug should always show the desired value
 
       desired_state_.position[i] = desired_joint_state_.position[0];
@@ -366,9 +367,10 @@ void MyrmexGripperController::goalCB(GoalHandle gh) {
     ROS_INFO_NAMED(name_, "opening to %f", gh.getGoal()->trajectory.points.back().positions[0]);
   }
   
+  // reset internal parameters
+  q_T_ = {0, 0};
   state_ = TRAJECTORY_EXEC;
-  for (auto& ss : sensor_states_)
-    ss = NO_CONTACT;
+  sensor_states_ = {NO_CONTACT, NO_CONTACT};
 
   JointTrajectoryController::goalCB(gh);
 }
@@ -401,6 +403,7 @@ void MyrmexGripperController::publishDebugInfo()
     mcd.error_integral = error_int_;
 
     mcd.f = forces_;
+    mcd.q_T = q_T_;
     mcd.des_q = des_q_;
     mcd.f_thresholds = force_thresholds_;
 
