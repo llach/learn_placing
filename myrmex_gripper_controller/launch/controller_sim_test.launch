@@ -91,7 +91,9 @@
   </group> <!-- sim group -->
 
   <group if="$(arg myrmex)">
-    <include file="$(find myrmex_gripper_controller)/launch/load_myrmex_controller.launch" />
+    <include file="$(find myrmex_gripper_controller)/launch/load_myrmex_controller.launch">
+        <arg name="start_controller" value="true" />
+    </include>
     <include file="$(find myrmex_gripper_controller)/launch/myrmex_readout.launch">
       <arg name="rviz" value="false" />
       <arg name="debug" value="$(arg debug)" />

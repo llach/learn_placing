@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+    <arg name="start_controller" default="false" />
+
     <rosparam command="load" file="$(find myrmex_gripper_controller)/config/myrmex_gripper_controller.yaml" />
+
+    <group if="$(arg start_controller)">
+        <node name="$(anon start_mm)" pkg="myrmex_gripper_controller" type="start_mm.py" output="screen" />
+    </group>
 </launch>
