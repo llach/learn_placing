@@ -425,6 +425,7 @@ void MyrmexGripperController::drCallback(myrmex_gripper_controller::MyrmexContro
     f_target_ = config.f_target;
     goalMaintain_ = config.goal_maintain;
     force_thresholds_ = {config.force_threshold, config.force_threshold};
+    threshFac_ = config.threshold_factor;
 }
 
 void MyrmexGripperController::publishDebugInfo()

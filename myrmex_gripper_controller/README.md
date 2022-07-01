@@ -24,7 +24,7 @@ Now `myrmex_gripper_controller` should build without problems.
 2. Deploy myrmex controller workspace (e.g. using `pal_deploy`) to copy controller and config files to robot
 3. Reboot robot 
 
-If the controller is changed (but no pal_startup files), it's sufficient to execute `pal_restart_deployer` to refresh the running controller without reboot.
+If the controller code was changed (but no pal_startup files), it's sufficient to execute `pal_restart_deployer` to refresh the running controller without reboot afer re-deploying.
 In the WebCommander, you should see the myrmex controller entry we added under "Startup".
 You can also verify that the startup scripts work by looking at the param server: `rosparam list | grep \/myrmex\_gripper`
 
