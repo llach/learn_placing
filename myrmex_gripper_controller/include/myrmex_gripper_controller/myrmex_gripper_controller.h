@@ -94,6 +94,7 @@ private:
     double deltaF_ = 0;
     double error_int_ = 0;
     double max_error_ = 0;
+    double threshFac_ = 1.5;
 
     unsigned int k_ = 0;
     unsigned int f_sum_ = 0;

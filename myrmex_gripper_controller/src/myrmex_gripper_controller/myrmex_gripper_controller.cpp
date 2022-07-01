@@ -405,7 +405,13 @@ bool MyrmexGripperController::calibrate(std_srvs::Empty::Request& req, std_srvs:
     mm_procs_[0]->startCalibration();
     mm_procs_[1]->startCalibration();
 
+    // wait for calibration to be done
     while (!(mm_procs_[0]->is_calibrated && mm_procs_[1]->is_calibrated)) ros::Rate(5).sleep();
+    
+    // update thresholds based on the maximum observed value during the calibration process
+    force_thresholds_[0] = static_cast<unsigned int>(mm_procs_[0]->maxDeviation * threshFac_);
+    force_thresholds_[1] = static_cast<unsigned int>(mm_procs_[1]->maxDeviation * threshFac_);
+
     return true;
 }
 

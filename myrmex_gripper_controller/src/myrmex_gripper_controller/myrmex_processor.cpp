@@ -57,6 +57,8 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
             for (int s : calibrationSamples_) bias_ += s;
             bias_ = std::max(static_cast<unsigned int>(bias_/calibrationSamples_.size()), static_cast<unsigned int>(0));
 
+            maxDeviation -= bias_; // since maxDev is the maximum value of calibrationSamples_, this can never be negative -> no explicit check.
+
             calibrate_ = false;
             is_calibrated = true;
 
@@ -64,13 +66,14 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
         } 
         else 
         {
+            if (totalForce_ > maxDeviation) maxDeviation = totalForce_;
             calibrationSamples_[nSamples_] = totalForce_;
         }
         nSamples_++;
     } 
 }
 
-void MyrmexProcessor::startCalibration(){nSamples_ = 0; bias_ = 0; calibrate_ = true; is_calibrated = false;}
+void MyrmexProcessor::startCalibration(){nSamples_ = 0; bias_ = 0; maxDeviation = 0; calibrate_ = true; is_calibrated = false;}
 
 unsigned int MyrmexProcessor::getBias(){lock_guard<mutex> l(totalLock_); return bias_;}
 unsigned int MyrmexProcessor::getTotalForce(){lock_guard<mutex> l(totalLock_); return totalForce_;}

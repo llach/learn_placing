@@ -16,6 +16,7 @@ class MyrmexProcessor
 public:
     MyrmexProcessor(std::string suffix, int B = 0, bool normalize = false, ros::NodeHandle nh = ros::NodeHandle());
 
+    unsigned int maxDeviation = 0;
     std::atomic<bool> is_calibrated = { false };
 
     void startCalibration();
