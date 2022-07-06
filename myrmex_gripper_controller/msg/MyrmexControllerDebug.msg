@@ -12,20 +12,20 @@ int8 VIOLATED=5
 std_msgs/Header header
 
 uint32 k
-uint32 f_sum
-uint32 f_target
+float32 f_sum
+float32 f_target
 
-uint32[] f
-uint32[] bias
-uint32[] f_thresholds
+float32[] f
+float32[] bias
+float32[] f_thresholds
 
-float64 Ki
-float64 Kp
-float64 delta_q
-float64 delta_f
-float64 max_error
-float64 error_integral
+float32 Ki
+float32 Kp
+float32 delta_q
+float32 delta_f
+float32 max_error
+float32 error_integral
 
-float64[] u
-float64[] q_T
-float64[] des_q
+float32[] u
+float32[] q_T
+float32[] des_q

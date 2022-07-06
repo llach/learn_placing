@@ -88,29 +88,29 @@ private:
 
     bool goalMaintain_ = true;
 
-    double Ki_ = 0;
-    double Kp_ = 0;
-    double deltaQ_ = 0;
-    double deltaF_ = 0;
-    double error_int_ = 0;
-    double max_error_ = 0;
-    double threshFac_ = 1.5;
+    float Ki_ = 0;
+    float Kp_ = 0;
+    float deltaQ_ = 0;
+    float deltaF_ = 0;
+    float error_int_ = 0;
+    float max_error_ = 0;
+    float threshFac_ = 1.5;
 
-    unsigned int k_ = 0;
-    unsigned int f_sum_ = 0;
-    unsigned int f_target_ = 0;
-    unsigned int last_f_sum_ = 0;
+    float k_ = 0;
+    float f_sum_ = 0;
+    float f_target_ = 0;
+    float last_f_sum_ = 0;
     
-    std::vector<unsigned int> forces_ = {0, 0};
-    std::vector<unsigned int> last_forces_ = {0, 0};
-    std::vector<unsigned int> force_thresholds_ = {200, 200};
+    std::vector<float> forces_ = {0, 0};
+    std::vector<float> last_forces_ = {0, 0};
+    std::vector<float> force_thresholds_ = {0.4, 0.4};
 
-    std::vector<double> u_ = {0, 0};
-    std::vector<double> q_T_ = {0, 0};      // joint positions at first contact 
-    std::vector<double> des_q_ = {0, 0};
-    std::vector<double> last_u_ = {0, 0};
+    std::vector<float> u_ = {0, 0};
+    std::vector<float> q_T_ = {0, 0};      // joint positions at first contact 
+    std::vector<float> des_q_ = {0, 0};
+    std::vector<float> last_u_ = {0, 0};
 
-    unsigned int f_sum_threshold_ = force_thresholds_[0]+force_thresholds_[1];
+    float f_sum_threshold_ = force_thresholds_[0]+force_thresholds_[1];
 
     ros::Publisher debugPub_;
     ros::ServiceServer killService_;

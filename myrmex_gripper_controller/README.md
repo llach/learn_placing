@@ -30,4 +30,9 @@ You can also verify that the startup scripts work by looking at the param server
 
 **After each robot start**
 
-Execute `cd misc && ./enable_myrmex_controller.sh`. This is only necessary if the script itself doesn't switch controllers itself.
+```bash
+pal_deploy
+ssh $TIAGO_IP -t "pal_restart_deployer; exit;"
+rosrun myrmex_gripper_controller start_mm.py
+rosservice call /myrmex_gripper_controller/calibrate "{}"
+```

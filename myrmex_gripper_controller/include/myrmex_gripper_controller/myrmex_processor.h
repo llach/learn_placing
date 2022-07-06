@@ -16,13 +16,13 @@ class MyrmexProcessor
 public:
     MyrmexProcessor(std::string suffix, int B = 0, bool normalize = false, ros::NodeHandle nh = ros::NodeHandle());
 
-    unsigned int maxDeviation = 0;
+    float maxDeviation = 0;
     std::atomic<bool> is_calibrated = { false };
 
     void startCalibration();
 
-    unsigned int getBias();
-    unsigned int getTotalForce();
+    float getBias();
+    float getTotalForce();
 
 private:
     // params
@@ -33,12 +33,12 @@ private:
     // internal members
     std::string name_;
     std::mutex totalLock_;
-    unsigned int bias_ = 0;
-    unsigned int totalForce_ = 0;
+    float bias_ = 0;
+    float totalForce_ = 0;
 
     unsigned short nSamples_ = 0;
     std::atomic<bool> calibrate_ = { false };
-    std::vector<int> calibrationSamples_ = std::vector<int>(4000);
+    std::vector<float> calibrationSamples_ = std::vector<float>(4000);
 
     // ros members
     ros::NodeHandle nh_;

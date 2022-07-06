@@ -1,5 +1,6 @@
 #include "myrmex_gripper_controller/myrmex_processor.h"
 
+#include <cmath>
 #include <vector>
 
 using namespace std;
@@ -39,10 +40,10 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
 
     {
         lock_guard<mutex> l(totalLock_);
-        unsigned int msum = myma.sum();
+        float msum = static_cast<float>(myma.sum());
 
         // avoid underflow of unsigned int
-        totalForce_ = msum < bias_ ? 0 : msum - bias_;
+        totalForce_ = (msum/std::pow(10,4)) - bias_;
     }
 
     // calibration procedure. can be started by calling the `startCalibration()` member function 
@@ -54,15 +55,16 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
 
             // calculate bias
             bias_ = 0; 
-            for (int s : calibrationSamples_) bias_ += s;
-            bias_ = std::max(static_cast<unsigned int>(bias_/calibrationSamples_.size()), static_cast<unsigned int>(0));
+            for (float s : calibrationSamples_) bias_ += s;
+            bias_ = bias_/calibrationSamples_.size();
 
             maxDeviation -= bias_; // since maxDev is the maximum value of calibrationSamples_, this can never be negative -> no explicit check.
 
             calibrate_ = false;
             is_calibrated = true;
 
-            ROS_INFO_NAMED(name_, "calibration done");
+            std::cout << name_ << " " << bias_ << std::endl;
+            ROS_INFO_NAMED(name_, "calibration done, bias: %f", bias_);
         } 
         else 
         {
@@ -75,5 +77,5 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
 
 void MyrmexProcessor::startCalibration(){nSamples_ = 0; bias_ = 0; maxDeviation = 0; calibrate_ = true; is_calibrated = false;}
 
-unsigned int MyrmexProcessor::getBias(){lock_guard<mutex> l(totalLock_); return bias_;}
-unsigned int MyrmexProcessor::getTotalForce(){lock_guard<mutex> l(totalLock_); return totalForce_;}
+float MyrmexProcessor::getBias(){lock_guard<mutex> l(totalLock_); return bias_;}
+float MyrmexProcessor::getTotalForce(){lock_guard<mutex> l(totalLock_); return totalForce_;}

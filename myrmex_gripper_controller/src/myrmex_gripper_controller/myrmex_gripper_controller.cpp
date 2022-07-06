@@ -35,6 +35,8 @@
 /* Author: Luca Lach
 */
 
+#include <cmath>
+
 #include <myrmex_gripper_controller/MyrmexControllerDebug.h>
 #include <myrmex_gripper_controller/myrmex_gripper_controller.h>
 
@@ -274,7 +276,7 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
 
   if (rt_active_goal_ && state_ == FORCE_CTRL)
   {
-    double dt = period.toSec();
+    float dt = period.toSec();
 
     deltaF_ = ((f_target_ - f_sum_) / k_);
 
@@ -409,8 +411,9 @@ bool MyrmexGripperController::calibrate(std_srvs::Empty::Request& req, std_srvs:
     while (!(mm_procs_[0]->is_calibrated && mm_procs_[1]->is_calibrated)) ros::Rate(5).sleep();
     
     // update thresholds based on the maximum observed value during the calibration process
-    force_thresholds_[0] = static_cast<unsigned int>(mm_procs_[0]->maxDeviation * threshFac_);
-    force_thresholds_[1] = static_cast<unsigned int>(mm_procs_[1]->maxDeviation * threshFac_);
+    // DISABLED for now, this heuristic is too tight. given minimal sensor drift and non-gaussian noise, false positives are more likely over time
+    // force_thresholds_[0] = mm_procs_[0]->maxDeviation * threshFac_;
+    // force_thresholds_[1] = mm_procs_[1]->maxDeviation * threshFac_;
 
     return true;
 }
