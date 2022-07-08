@@ -41,6 +41,7 @@
 #include <mutex>
 #include <limits>
 #include <atomic>
+#include <algorithm>
 
 #include <myrmex_gripper_controller/myrmex_processor.h>
 #include <myrmex_gripper_controller/MyrmexControllerDRConfig.h>
@@ -53,6 +54,11 @@
 
 
 namespace myrmex_gripper_controller {
+
+template <typename T>
+T clip(const T& n, const T& lower, const T& upper) {
+  return std::max(lower, std::min(n, upper));
+}
 
 // controller states
 enum CONTROLLER_STATE {TRAJECTORY_EXEC, TRANSITION, FORCE_CTRL};
@@ -67,6 +73,9 @@ const std::map<SENSOR_STATE, std::string> STATE_STRING = {
         {GOAL, "reached goal"},
         {VIOLATED, "violated goal constraints"}
 };
+
+const float JOINT_MIN = 0.0;
+const float JOINT_MAX = 0.043;
 
 typedef std::unique_ptr<MyrmexProcessor> MyrmexProcPtr;
 

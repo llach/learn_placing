@@ -1,0 +1,4 @@
+<launch>
+    <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" />
+    <node name="$(anon plotj)" pkg="plotjuggler" type="plotjuggler" output="screen" args="-l $(dirname)/../config/plotjuggler.xml" />
+</launch>

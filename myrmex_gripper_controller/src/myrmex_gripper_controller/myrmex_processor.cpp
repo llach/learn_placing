@@ -43,7 +43,7 @@ void MyrmexProcessor::tactileCallback(const tactile_msgs::TactileState::ConstPtr
         float msum = static_cast<float>(myma.sum());
 
         // avoid underflow of unsigned int
-        totalForce_ = (msum/std::pow(10,4)) - bias_;
+        totalForce_ = (msum/std::pow(10,5)) - bias_;
     }
 
     // calibration procedure. can be started by calling the `startCalibration()` member function 

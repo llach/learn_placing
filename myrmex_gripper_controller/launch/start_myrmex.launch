@@ -1,5 +1,4 @@
 <launch>
-    <arg name="viz"  default="false"/>
     <arg name="debug"  default="false"/>
 
     <include file="$(find myrmex_gripper_controller)/launch/load_myrmex_controller.launch">
@@ -9,11 +8,4 @@
         <arg name="rviz" value="false" />
         <arg name="debug" value="$(arg debug)" />
     </include>
-
-    <!-- Run Rviz and PlotJuggler -->
-    <group if="$(arg viz)" >
-        <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" />
-        <node name="$(anon plotj)" pkg="plotjuggler" type="plotjuggler" output="screen" args="-l $(dirname)/../config/plotjuggler.xml" />
-    </group>
-    
 </launch>

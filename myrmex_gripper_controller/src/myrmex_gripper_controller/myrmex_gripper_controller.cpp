@@ -281,15 +281,15 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
     deltaF_ = ((f_target_ - f_sum_) / k_);
 
     error_int_ += deltaF_ * dt;
-    if (error_int_ > max_error_)
-      error_int_ = max_error_;
-    if (error_int_ < -max_error_)
-      error_int_ = -max_error_;
+    // if (error_int_ > max_error_)
+    //   error_int_ = max_error_;
+    // if (error_int_ < -max_error_)
+    //   error_int_ = -max_error_;
 
-   if(last_f_sum_ >= f_sum_threshold_ && f_sum_ < f_sum_threshold_){
-     ROS_INFO_NAMED(name_, "reset ADD error integral");
-     error_int_ = 0.0;
-   }
+//    if(last_f_sum_ >= f_sum_threshold_ && f_sum_ < f_sum_threshold_){
+//      ROS_INFO_NAMED(name_, "reset ADD error integral");
+//      error_int_ = 0.0;
+//    }
 
     deltaQ_ = Kp_ * deltaF_ + Ki_ * error_int_;
 
@@ -301,6 +301,7 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
       
       u_[i] = -deltaQ_/2;
       des_q_[i] = current_state_.position[i] + u_[i];
+      des_q_[i] = clip(des_q_[i], JOINT_MIN, JOINT_MAX);
 
       desired_joint_state_.position[0] = des_q_[i];
       desired_joint_state_.velocity[0] = (u_[i] - last_u_[i]) / (dt);
@@ -376,6 +377,7 @@ void MyrmexGripperController::goalCB(GoalHandle gh)
   // reset internal parameters
   q_T_ = {0, 0};
   state_ = TRAJECTORY_EXEC;
+  error_int_ = 0;
   sensor_states_ = {NO_CONTACT, NO_CONTACT};
 
   JointTrajectoryController::goalCB(gh);

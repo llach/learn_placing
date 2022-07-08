@@ -41,7 +41,7 @@ def send_trajectory(to):
     for rp, lp, t in zip(rpoints, lpoints, times):
         jt.points.append(JointTrajectoryPoint(positions=[rp, lp], time_from_start=rospy.Time(t)))
 
-    res = cpub.send_goal_and_wait(FollowJointTrajectoryGoal(trajectory=jt))
+    res = cpub.send_goal(FollowJointTrajectoryGoal(trajectory=jt))
     print(f"result {res}")
 
 def open_gripper(): send_trajectory(JT_MAX)
@@ -50,6 +50,7 @@ def close_gripper(): send_trajectory(JT_MIN)
 rospy.init_node("oc")
 rospy.Subscriber("/joint_states", JointState, js_cb)
 kill_service = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
+calib_service = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Empty)
 
 USE_MM = True
 _pre = ""
@@ -69,6 +70,10 @@ try:
             open_gripper()
         elif inp == "c":
             close_gripper()
+        elif inp == "k":
+            kill_service()
+        elif inp == "cal":
+            calib_service()
 except KeyboardInterrupt:
     pass
 print("bye")
