@@ -111,6 +111,9 @@ class TIAGoController(object):
         assert len(pos)==len(self.joint_msg.position), "number of joints / state mismatch"
         return self.robot.fk(self.target_link, dict(zip(self.joint_msg.name, pos)))
 
+    def fk_for_link(self, target_link):
+        return self.robot.fk(target_link, dict(zip(self.joint_msg.name, self.joint_msg.position)))
+
     def solve(self, tasks):
         """Hierarchically solve tasks of the form J dq = e"""
         def invert_clip(s):
@@ -174,6 +177,7 @@ class TIAGoController(object):
             h[usedM:usedM+M] = bound
             return usedM + M
 
+        failed=False
         for idx, task in enumerate(tasks):
             try:  # inequality tasks are pairs of (J, ub, lb=None)
                 J, ub, lb = task
@@ -193,8 +197,9 @@ class TIAGoController(object):
                                         G=G[:usedM, :N+M], h=h[:usedM], A=None, b=None,
                                         lb=lower[:N+M], ub=upper[:N+M])
             if result is None:
-                print("{}: failed  ".format(idx), end='')
+                print("{}: failed  ".format(idx))
                 usedM = oldM  # ignore subtask and continue with subsequent tasks
+                failed=True
             else: # adapt added constraints for next iteration
                 dq, slacks = result[:N], result[N:]
                 # print("{}:".format(idx), slacks, " ", end='')
@@ -204,7 +209,7 @@ class TIAGoController(object):
                     h[oldM+M:usedM] -= slacks
         # print()
         self.nullspace = numpy.zeros((self.N, 0))
-        return dq
+        return dq, failed
 
     @staticmethod
     def vstack(items):
@@ -251,7 +256,12 @@ class TIAGoController(object):
             oTask = self.cone_task(eef_axis, To[0:3, 0], 0.99)
             tasks.append(oTask)
 
-            q_delta = self.solve_qp(tasks)
+            _, Jelbow = self.fk_for_link("arm_7_link")
+            Jup = Jelbow[2]-self.J[2]
+            tasks.append((Jup, 10.0, 0.02))
+
+            q_delta, failed = self.solve_qp(tasks)
+            if failed: return None, True
 
             if prev_qdelta is not None:
                 qd = numpy.array(q_delta[1:])
@@ -267,4 +277,4 @@ class TIAGoController(object):
         else:
             print("maximum steps")
 
-        return state
+        return state, failed

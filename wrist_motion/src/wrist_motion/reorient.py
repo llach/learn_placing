@@ -50,7 +50,7 @@ class Reorient:
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
         self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         
-        self.tol = np.array([0.2, 0.2, 0.1])
+        self.tol = np.array([0.3, 0.3, 0.3])
         self.eef_axis = np.array([0,0,1])
 
         self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
@@ -123,7 +123,7 @@ class Reorient:
 
         self.marker_pub.publish(ma)
 
-    def plan_random(self, publish_traj=True):
+    def plan_random(self, publish_traj=True, check_validity=True):
         print("getting current state")
 
         self.should_get_js = True
@@ -131,7 +131,16 @@ class Reorient:
 
         print("generating trajectory")
         self.To = sample_random_orientation_southern_hemisphere()
-        goal_state = self.c.reorientation_trajectory(self.To, self.Tinit, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
+        goal_state, failed = self.c.reorientation_trajectory(self.To, self.Tinit, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
+
+        if failed: return None, failed
+
+        Tarm, _ = self.c.fk_for_link("arm_7_link")
+        Thand, _ = self.c.fk_for_link("gripper_grasping_frame")
+
+        if Tarm[2,3]<Thand[2,3]: 
+            print("z constraint failed")
+            return None, failed
 
         traj_points = np.linspace(self.start_state, goal_state, 10)
         traj_times = np.linspace(0, 3, 10)
@@ -150,12 +159,13 @@ class Reorient:
         disp = DisplayTrajectory(trajectory_start=init_rs)
         disp.trajectory.append(rt)
 
-        validities = [self.check_validity(rs) for rs in rss]
-        if all(validities):
-            print("valid trajectory")
-        else:
-            print("trajectory not valid!")
-            return False
+        if check_validity:
+            validities = [self.check_validity(rs) for rs in rss]
+            if all(validities):
+                print("valid trajectory")
+            else:
+                print("trajectory not valid!")
+                return False
 
         if publish_traj:
             while self.traj_pub.get_num_connections()<1:
@@ -163,7 +173,7 @@ class Reorient:
             self.traj_pub.publish(disp)
 
         self.pub_markers()
-        return rt
+        return rt, failed
     
     def execute(self, tr, wait=True):
         print("executing trajectory ...")

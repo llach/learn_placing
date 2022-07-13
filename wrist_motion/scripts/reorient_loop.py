@@ -2,19 +2,27 @@
 
 import time
 import rospy
+import signal
 import argparse
 
 from sensor_msgs.msg import JointState
 from wrist_motion import Reorient
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--sim", default=False, action="store_true")
+parser.add_argument("--real", default=False, action="store_true")
 
 args, _ = parser.parse_known_args()
 
 rospy.init_node("c")
 
-if args.sim:
+ro = Reorient()
+if not args.real:
+    should_plan = True
+    def handler(signum, frame):
+        global should_plan
+        should_plan = False
+        
+    signal.signal(signal.SIGINT, handler)
     print("sim setup")
     joint_pub = rospy.Publisher('/move_group/fake_controller_joint_states', JointState, queue_size=10)
 
@@ -28,15 +36,32 @@ if args.sim:
     while joint_pub.get_num_connections()<1:
         time.sleep(0.5)
     joint_pub.publish(JointState(name=ACTIVE_JOINTS, position=INITIAL_STATE))
+    
+    try:
+        while should_plan:
+            failed = True
+            while failed and should_plan:
+                tr, failed = ro.plan_random(publish_traj=False, check_validity=False)
+            if tr == None: continue
+            
+            joint_pub.publish(JointState(
+                name=ACTIVE_JOINTS,
+                position=tr.joint_trajectory.points[-1].positions
+            ))
 
-ro = Reorient()
-try:
-    while True:
-        tr = ro.plan_random()
-        inp = input("next?\n")
-        if inp == "q":
-            break
-        elif inp == "e":
-            ro.execute(tr)
-except KeyboardInterrupt:
-    print("bye")
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("bye")
+else:
+    try:
+        while True:
+            failed = False
+            while not failed:
+                tr, failed = ro.plan_random()
+            inp = input("next?\n")
+            if inp == "q":
+                break
+            elif inp == "e":
+                ro.execute(tr)
+    except KeyboardInterrupt:
+        print("bye")
