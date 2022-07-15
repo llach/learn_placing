@@ -1,0 +1,7 @@
+<launch>
+
+    <node pkg="state_estimation" type="ft_contact_detection.py" name="ft_contact_detection"  output="screen" />
+
+  <!-- Run Rviz -->
+  <!-- <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" /> -->
+</launch>
