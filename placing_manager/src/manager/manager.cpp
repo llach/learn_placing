@@ -3,9 +3,13 @@
 using namespace control_msgs;
 using namespace trajectory_msgs;
 using namespace placing_manager;
+using namespace controller_manager_msgs;
 
 PlacingManager::PlacingManager() :
-    torsoAc_("/torso_stop_controller/follow_joint_trajectory", true)
+    torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
+    loadControllerSrv_(n.serviceClient<controller_manager_msgs::LoadController>("/controller_manager/load_controller"))
+    // listControllersSrv_,
+    // switchControllerSrv_,
 {}
 
 void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
@@ -23,6 +27,10 @@ void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
     std::lock_guard<std::mutex> l(jsLock_);
     currentTorsoQ_ = msg->position[torsoIdx_];
 }
+
+/*
+        TORSO CONTROLLER METHODS
+*/
 
 void PlacingManager::moveTorso(float targetQ, float duration, bool absolute = true){
     float startQ;
@@ -57,4 +65,11 @@ void PlacingManager::moveTorso(float targetQ, float duration, bool absolute = tr
 
 float PlacingManager::lerp(float a, float b, float f) {
     return a + f * (b - a);
+}
+
+/*
+        CONTROLLER MANAGER METHODS
+*/
+bool isControllerRunning(std::string name) {
+
 }

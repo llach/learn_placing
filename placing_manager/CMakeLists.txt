@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   control_msgs
   trajectory_msgs
+  controller_manager_msgs
 )
 
 ###################################
@@ -26,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- CATKIN_DEPENDS roscpp actionlib sensor_msgs control_msgs trajectory_msgs
+ CATKIN_DEPENDS roscpp actionlib sensor_msgs control_msgs trajectory_msgs controller_manager_msgs
 )
 
 ###########

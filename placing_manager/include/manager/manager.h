@@ -10,6 +10,9 @@
 
 // ros msgs
 #include <sensor_msgs/JointState.h>
+#include <controller_manager_msgs/LoadController.h>
+#include <controller_manager_msgs/ListControllers.h>
+#include <controller_manager_msgs/SwitchController.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 
 namespace placing_manager {
@@ -26,13 +29,19 @@ private:
     std::string baseFrame_ = "base_footprint";
     std::string torsoJointName_ = "torso_lift_joint";
 
-    float currentTorsoQ_ = 0.0;
+    float currentTorsoQ_ = -1.0;
 
+    ros::ServiceClient loadControllerSrv_;
+    ros::ServiceClient listControllersSrv_;
+    ros::ServiceClient switchControllerSrv_;
+    
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> torsoAc_;
 
     float lerp(float a, float b, float f);
     void moveTorso(float targetQ, float duration, bool absolute);
     void jsCallback(const sensor_msgs::JointState::ConstPtr& msg);
+
+    bool isControllerRunning(std::string name);
 };
 
 } // namespace placing_manager 
