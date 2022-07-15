@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>placing_manager</name>
+  <version>0.0.1</version>
+  <description>The gaze_manager package</description>
+
+  <maintainer email="luca.lach@pal-robotics.com">Luca Lach</maintainer>
+
+  <license>Propietary</license>
+
+  <author email="luca.lach@pal-robotics.com">Luca Lach</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>actionlib</depend>
+  <depend>sensor_msgs</depend>
+  <depend>control_msgs</depend>
+  <depend>trajectory_msgs</depend>
+
+</package>
