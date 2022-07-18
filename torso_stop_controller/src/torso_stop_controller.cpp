@@ -228,8 +228,6 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
       current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
       rt_active_goal_.reset();
       successful_joint_traj_.reset();
-
-      setHoldPosition(time_data.uptime);
     }
   }
 
