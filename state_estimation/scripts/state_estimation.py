@@ -27,7 +27,7 @@ class StateEstimator:
 
         self.april_sub = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.marker_cb)
         self.tfl = tf.TransformListener()
-        self.angle_pub = rospy.Publisher("normal_angle", Float64, queue_size=1)
+        self.angle_pub = rospy.Publisher("/normal_angle", Float64, queue_size=1)
 
     def marker_cb(self, am: AprilTagDetectionArray):
         if not self.calibrated and len(am.detections)<1:

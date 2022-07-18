@@ -27,6 +27,7 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     moveTorso(initialTorsoQ_, 1.0, true);
 
     ROS_INFO("PlacingManager::PlacingManager() done");
+
     initialized_ = true;
 }
 
@@ -43,28 +44,7 @@ bool PlacingManager::collectSample(){
 }
 
 /*
-        DATA CALLBACKS
-*/
-
-void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
-{
-    if (torsoIdx_ == -1){
-        for (int i = 0; i < msg->name.size(); i++){
-            if (msg->name[i] == torsoJointName_) torsoIdx_ = i;
-        }
-        if (torsoIdx_ == -1){
-            ROS_FATAL("some joint index was not found: torso=%d", torsoIdx_);
-            return;
-        }
-    }
-
-    std::lock_guard<std::mutex> l(jsLock_);
-    currentTorsoQ_ = msg->position[torsoIdx_];
-}
-
-
-/*
-        TORSO CONTROLLER METHODS
+    TORSO CONTROLLER METHODS
 */
 
 void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
@@ -103,7 +83,7 @@ float PlacingManager::lerp(float a, float b, float f) {
 }
 
 /*
-        CONTROLLER MANAGER METHODS
+    CONTROLLER MANAGER METHODS
 */
 bool PlacingManager::ensureRunningController(std::string name, std::string stop){
     if (!isControllerRunning(name)){
@@ -131,3 +111,80 @@ bool PlacingManager::isControllerRunning(std::string name) {
     }
     return false;
 }
+
+
+/*
+    DATA CALLBACKS
+*/
+
+void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
+{
+    if (torsoIdx_ == -1){
+        for (int i = 0; i < msg->name.size(); i++){
+            if (msg->name[i] == torsoJointName_) torsoIdx_ = i;
+        }
+        if (torsoIdx_ == -1){
+            ROS_FATAL("some joint index was not found: torso=%d", torsoIdx_);
+            return;
+        }
+    }
+
+    std::lock_guard<std::mutex> l(jsLock_);
+    currentTorsoQ_ = msg->position[torsoIdx_];
+}
+
+void PlacingManager::mmLeftCB(const tactile_msgs::TactileState::ConstPtr& msg){
+    std::lock_guard<std::mutex> l(mlLock_);
+    auto time = ros::Time::now();
+    lastMlTime_ = time;
+
+    if (paused_) return;
+
+    mlData_.push_back(msg);
+    mlTime_.push_back(time);
+}
+
+void PlacingManager::mmRightCB(const tactile_msgs::TactileState::ConstPtr& msg){
+    std::lock_guard<std::mutex> l(mrLock_);
+    auto time = ros::Time::now();
+    lastMrTime_ = time;
+
+    if (paused_) return;
+
+    mrData_.push_back(msg);
+    mrTime_.push_back(time);
+}
+
+void PlacingManager::ftCB(const geometry_msgs::WrenchStamped::ConstPtr& msg){
+    std::lock_guard<std::mutex> l(ftLock_);
+    auto time = ros::Time::now();
+    lastFtTime_ = time;
+
+    if (paused_) return;
+
+    ftData_.push_back(msg);
+    ftTime_.push_back(time);
+}
+
+void PlacingManager::contactCB(const std_msgs::Bool::ConstPtr& msg){
+    std::lock_guard<std::mutex> l(contactLock_);
+    auto time = ros::Time::now();
+    lastContactTime_ = time;
+
+    if (paused_) return;
+
+    contactData_.push_back(msg);
+    contactTime_.push_back(time);
+}
+
+void PlacingManager::objectStateCB(const std_msgs::Float64::ConstPtr& msg){
+    std::lock_guard<std::mutex> l(objectStateLock_);
+    auto time = ros::Time::now();
+    lastObjectStateTime_ = time;
+
+    if (paused_) return;
+
+    objectStateData_.push_back(msg);
+    objectStateTime_.push_back(time);
+}
+

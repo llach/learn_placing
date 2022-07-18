@@ -17,6 +17,7 @@
   <depend>actionlib</depend>
   <depend>sensor_msgs</depend>
   <depend>control_msgs</depend>
+  <depend>tactile_msgs</depend>
   <depend>trajectory_msgs</depend>
   <depend>controller_manager_msgs</depend>
 
