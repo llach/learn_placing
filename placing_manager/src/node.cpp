@@ -13,8 +13,11 @@ int main(int argc, char **argv)
     spinner.start();
 
     PlacingManager pm;
-    pm.init();
-    
+    if (not pm.init(ros::Duration(3))){
+        ROS_ERROR("Failed to init pm");
+        return -1;
+    }
+
     int n;
     while (ros::ok()) {
         cout << "waiting" << endl;

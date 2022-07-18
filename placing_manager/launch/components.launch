@@ -1,6 +1,27 @@
 <launch>
+    <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="camera_prefix" default="/usb_cam/" />
+    <arg name="image_topic" default="image_raw" />
+    <arg name="rviz" default="false" />
+
+    <group if="$(eval arg('rviz') == true)">
+        <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
+    </group>
+
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector" />
+    
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector"  output="screen" launch-prefix="$(arg launch_prefix)" >
+        <!-- Remap topics from those used in code to those on the ROS network -->
+        <remap from="image_rect" to="$(arg camera_prefix)/$(arg image_topic)" />
+        <remap from="camera_info" to="$(arg camera_prefix)/camera_info" />
+
+        <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
+    </node>
 
     <node pkg="state_estimation" type="ft_contact_detection.py" name="ft_contact_detection"  output="screen" />
+    <node pkg="state_estimation" type="state_estimation.py" name="state_estimation"  output="screen" />
 
   <!-- Run Rviz -->
   <!-- <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" /> -->

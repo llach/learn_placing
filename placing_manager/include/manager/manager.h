@@ -32,7 +32,7 @@ class PlacingManager{
 public:
     PlacingManager(float initialTorsoQ = 0.25);
 
-    bool init();
+    bool init(ros::Duration timeout);
     bool collectSample();
     
 private:
@@ -62,6 +62,7 @@ private:
     
     void moveTorso(float targetQ, float duration, bool absolute = true);
 
+    bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);
 

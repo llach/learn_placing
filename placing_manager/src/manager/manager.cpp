@@ -36,15 +36,14 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     initialized_ = true;
 }
 
-bool PlacingManager::init(){
-    bool a = true;
-    while(a){
-        {
-            std::lock_guard<std::mutex> l(jsLock_); 
-            a = currentTorsoQ_==-1.0; 
-        }
+bool PlacingManager::init(ros::Duration timeout){
+    ros::Time start = ros::Time::now();
+
+    while(not checkLastTimes(ros::Time::now()-ros::Duration(1))){
         waitRate_.sleep();
+        if (ros::Time::now() > start+timeout) return false;
     }
+
     {
         std::lock_guard<std::mutex> l(jsLock_); 
         ROS_INFO("moving torso from %f to %f", currentTorsoQ_, initialTorsoQ_);
@@ -54,14 +53,65 @@ bool PlacingManager::init(){
     return true;
 }
 
+bool PlacingManager::checkLastTimes(ros::Time n){
+    {
+        std::lock_guard<std::mutex> l(jsLock_);
+        if (lastJsTime_ < n) {
+            ROS_WARN("js not fresh");
+            return false;
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(mlLock_);
+        if (lastMlTime_ < n) {
+            ROS_WARN("mm left not fresh");
+            return false;
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(mrLock_);
+        if (lastMrTime_ < n) {
+            ROS_WARN("mm right not fresh");
+            return false;
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(ftLock_);
+        if (lastFtTime_ < n) {
+            ROS_WARN("ft not fresh");
+            return false;
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(contactLock_);
+        if (lastContactTime_ < n) {
+            ROS_WARN("contact not fresh");
+            return false;
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(objectStateLock_);
+        if (lastObjectStateTime_ < n) {
+            ROS_WARN("object state not fresh");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample ###");
+
+    if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
+        ROS_ERROR("data not fresh");
+        return false;
+    }
 
     ROS_INFO("moving torso down towards the table ...");
     moveTorso(0.15, 3.0);
 
-    // ROS_INFO("move torso up again");
-    // moveTorso(initialTorsoQ_, 2.0); // TODO less time here -> faster
+    ROS_INFO("move torso up again");
+    moveTorso(initialTorsoQ_, 2.0); // TODO less time here -> faster
 
     return true;
 }
