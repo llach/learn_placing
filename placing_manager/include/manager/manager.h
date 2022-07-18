@@ -1,8 +1,7 @@
 /* Author: Luca Lach
 */
 
-#ifndef PLACING_MANAGER_H
-#define PLACING_MANAGER_H
+#pragma once
 
 // std includes
 #include <mutex>
@@ -19,12 +18,16 @@
 #include <controller_manager_msgs/SwitchController.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 
+// local includes
+#include <manager/topic_buffer.h>
+
 namespace placing_manager {
 
 class PlacingManager{
 public:
     PlacingManager(float initialTorsoQ = 0.25);
-
+    bool collectSample();
+    
 private:
     std::mutex jsLock_;
 
@@ -49,6 +52,7 @@ private:
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> torsoAc_;
 
     float lerp(float a, float b, float f);
+    
     void moveTorso(float targetQ, float duration, bool absolute = true);
     void jsCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
@@ -57,4 +61,3 @@ private:
 };
 
 } // namespace placing_manager 
-#endif  // GAZE_MANAGER_H

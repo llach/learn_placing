@@ -47,8 +47,8 @@ include_directories(
 
 # Declare a C++ library
 add_library(${PROJECT_NAME}_lib
-  src/manager/torso.cpp
-  src/manager/manager.cpp
+src/manager/manager.cpp
+src/manager/topic_buffer.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_lib ${catkin_LIBRARIES})

@@ -211,6 +211,10 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
       for (unsigned int i = 0; i < joints_.size(); ++i) {
         ROS_INFO_NAMED(name_, "Setting torso position to %f", current_state_.position[i]);
 
+        desired_state_.position[i] = current_state_.position[i];
+        desired_state_.velocity[i] = 0.0;
+        desired_state_.acceleration[i] = 0.0;
+
         state_joint_error_.position[i] = 0.0;
         state_joint_error_.velocity[i] = 0.0;
         state_joint_error_.acceleration[i] = 0.0;
@@ -224,6 +228,8 @@ void TorsoStopController::update(const ros::Time& time, const ros::Duration& per
       current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
       rt_active_goal_.reset();
       successful_joint_traj_.reset();
+
+      setHoldPosition(time_data.uptime);
     }
   }
 

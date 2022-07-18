@@ -30,7 +30,14 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     initialized_ = true;
 }
 
-bool collectSample(){
+bool PlacingManager::collectSample(){
+    ROS_INFO("### collecting data sample ###");
+
+    ROS_INFO("moving torso down towards the table ...");
+    moveTorso(0.15, 3.0);
+
+    // ROS_INFO("move torso up again");
+    // moveTorso(initialTorsoQ_, 2.0); // TODO less time here -> faster
 
     return true;
 }
