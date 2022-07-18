@@ -8,6 +8,7 @@ using namespace placing_manager;
 using namespace controller_manager_msgs;
 
 PlacingManager::PlacingManager(float initialTorsoQ) :
+    waitRate_(50),
     initialTorsoQ_(initialTorsoQ),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
@@ -23,12 +24,34 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     ROS_INFO("waiting for torso AC...");
     torsoAc_.waitForServer();
 
-    ROS_INFO("moving torso to %f", initialTorsoQ_);
-    moveTorso(initialTorsoQ_, 1.0, true);
+    ROS_INFO("creating data subscribers ...");
+    jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
+    myrmexLSub_ = n_.subscribe("/tactile_left", 1, &PlacingManager::mmLeftCB, this);
+    myrmexRSub_ = n_.subscribe("/tactile_right", 1, &PlacingManager::mmRightCB, this);
+    ftSub_ = n_.subscribe("/wrist_ft", 1, &PlacingManager::ftCB, this);
+    contactSub_ = n_.subscribe("/table_contact/in_contact", 1, &PlacingManager::contactCB, this);
+    objectStateSub_ = n_.subscribe("/normal_angle", 1, &PlacingManager::objectStateCB, this);
 
     ROS_INFO("PlacingManager::PlacingManager() done");
-
     initialized_ = true;
+}
+
+bool PlacingManager::init(){
+    bool a = true;
+    while(a){
+        {
+            std::lock_guard<std::mutex> l(jsLock_); 
+            a = currentTorsoQ_==-1.0; 
+        }
+        waitRate_.sleep();
+    }
+    {
+        std::lock_guard<std::mutex> l(jsLock_); 
+        ROS_INFO("moving torso from %f to %f", currentTorsoQ_, initialTorsoQ_);
+    }
+
+    moveTorso(initialTorsoQ_, 1.0, true);
+    return true;
 }
 
 bool PlacingManager::collectSample(){
@@ -117,7 +140,7 @@ bool PlacingManager::isControllerRunning(std::string name) {
     DATA CALLBACKS
 */
 
-void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
+void PlacingManager::jsCB(const sensor_msgs::JointState::ConstPtr& msg)
 {
     if (torsoIdx_ == -1){
         for (int i = 0; i < msg->name.size(); i++){
@@ -131,6 +154,15 @@ void PlacingManager::jsCallback(const sensor_msgs::JointState::ConstPtr& msg)
 
     std::lock_guard<std::mutex> l(jsLock_);
     currentTorsoQ_ = msg->position[torsoIdx_];
+
+    auto time = ros::Time::now();
+    lastJsTime_ = time;
+
+    if (paused_) return;
+
+    jsData_.push_back(msg);
+    jsTime_.push_back(time);
+
 }
 
 void PlacingManager::mmLeftCB(const tactile_msgs::TactileState::ConstPtr& msg){

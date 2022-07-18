@@ -8,11 +8,13 @@ using namespace placing_manager;
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "placing_manager");
-    PlacingManager pm;
 
     AsyncSpinner spinner(4);
     spinner.start();
 
+    PlacingManager pm;
+    pm.init();
+    
     int n;
     while (ros::ok()) {
         cout << "waiting" << endl;

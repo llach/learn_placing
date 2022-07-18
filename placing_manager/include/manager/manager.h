@@ -28,61 +28,11 @@
 
 namespace placing_manager {
 
-std::vector<std::string> dataTopics = {
-    "/tactile_right",
-    "/tactile_left",
-    "/wrist_ft",
-    "/table_contact/in_contact",
-    "/normal_angle",
-    "/joint_states"
-};
-
-std::vector<std::type_index> msgs = {
-    typeid(tactile_msgs::TactileState)
-};
-
-// std::tuple<
-//     TopicBuffer<tactile_msgs::TactileState>,
-//     TopicBuffer<tactile_msgs::TactileState>,
-//     TopicBuffer<geometry_msgs::WrenchStamped>,
-//     TopicBuffer<std_msgs::Bool>,
-//     TopicBuffer<std_msgs::Float64>,
-//     TopicBuffer<sensor_msgs::JointState>
-// > dataSources;
-
-
-// std::vector<std::any> {
-    // tactile_msgs::TactileState,
-    // tactile_msgs::TactileState,
-    // geometry_msgs::WrenchStamped,
-    // std_msgs::Bool,
-    // std_msgs::Float64,
-    // sensor_msgs::JointState,
-// };
-
-
-// std::map<std::string, std::string> name2topic {
-//     {"myrmex_right",    "/tactile_right"},
-//     {"myrmex_left",     "/tactile_left"},
-//     {"ft",              "/wrist_ft"},
-//     {"contact",         "/table_contact/in_contact"},
-//     {"object_state",    "/normal_angle"},
-//     {"joint_states",    "/joint_states"},
-// };
-
-// std::map<std::string, std::type_index> name2msg {
-//     {"myrmex_right",    tactile_msgs::TactileState},
-//     {"myrmex_left",     tactile_msgs::TactileState},
-//     {"ft",              geometry_msgs::WrenchStamped},
-//     {"contact",         std_msgs::Bool},
-//     {"object_state",    std_msgs::Float64},
-//     {"joint_states",    sensor_msgs::JointState},
-// };
-
-
 class PlacingManager{
 public:
     PlacingManager(float initialTorsoQ = 0.25);
+
+    bool init();
     bool collectSample();
     
 private:
@@ -100,6 +50,7 @@ private:
     float currentTorsoQ_ = -1.0;
 
     ros::NodeHandle n_;
+    ros::Rate waitRate_;
 
     ros::ServiceClient loadControllerSrv_;
     ros::ServiceClient listControllersSrv_;
@@ -110,7 +61,6 @@ private:
     float lerp(float a, float b, float f);
     
     void moveTorso(float targetQ, float duration, bool absolute = true);
-    void jsCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
     bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);
@@ -122,6 +72,7 @@ private:
     std::mutex contactLock_;
     std::mutex objectStateLock_;
 
+    ros::Subscriber jsSub_;
     ros::Subscriber myrmexLSub_;
     ros::Subscriber myrmexRSub_;
     ros::Subscriber ftSub_;
@@ -149,6 +100,7 @@ private:
     ros::Time lastContactTime_;
     ros::Time lastObjectStateTime_;
 
+    void jsCB(const sensor_msgs::JointState::ConstPtr& msg);
     void mmLeftCB(const tactile_msgs::TactileState::ConstPtr& msg);
     void mmRightCB(const tactile_msgs::TactileState::ConstPtr& msg);
     void ftCB(const geometry_msgs::WrenchStamped::ConstPtr& msg);
