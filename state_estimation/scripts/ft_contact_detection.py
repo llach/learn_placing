@@ -57,7 +57,7 @@ def ft_cb(m):
 
     if not calibrated:
         if calibration_samples == []:
-            print("starting calibration ...")
+            print("starting FT calibration ...")
 
         if len(calibration_samples)<N_CALIBRATION_SAMPLES:
             calibration_samples.append(wrench_to_vec(m.wrench))
@@ -65,7 +65,7 @@ def ft_cb(m):
             means = np.mean(calibration_samples, axis=0)
             stds = np.std(calibration_samples, axis=0)
             calibrated = True
-            print("calibration done!")
+            print("FT calibration done!")
     else:
         delta_ws.append(np.abs(wrench_to_vec(m.wrench)-means))
         if len(delta_ws)>=M_SAMPLES:

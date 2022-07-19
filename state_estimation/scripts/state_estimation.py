@@ -3,6 +3,7 @@ import tf
 import rospy
 import numpy as np
 
+from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import Float64
 from apriltag_ros.msg import AprilTagDetectionArray
 from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate
@@ -29,6 +30,15 @@ class StateEstimator:
         self.april_sub = rospy.Subscriber("/tag_detections", AprilTagDetectionArray, self.marker_cb)
         self.tfl = tf.TransformListener()
         self.angle_pub = rospy.Publisher("/normal_angle", Float64, queue_size=1)
+        self.calib_srv = rospy.Service("object_state_calibration", Empty, self.calibrate_cb)
+
+    def calibrate_cb(self, *args, **kwargs):
+        r = rospy.Rate(50)
+
+        self.calibrated = False
+        while not self.calibrated: r.sleep()
+
+        return EmptyResponse()
 
     def marker_cb(self, am: AprilTagDetectionArray):
         if not self.calibrated and len(am.detections)<1:
@@ -44,16 +54,19 @@ class StateEstimator:
                 q = self.get_tag_tf(m.id[0])
                 marker_vs.append(rotate_v(self.marker_axis_up, q))
             except:
-                rospy.logwarn(f"transform for marker {m.id[0]} not ready.")
-                # pass
+                # rospy.logwarn(f"transform for marker {m.id[0]} not ready.")
+                pass
         if len(marker_vs) == 0:
-            rospy.logwarn(f"no successful marker transormation")
+            # rospy.logwarn(f"no successful marker transormation")
+            pass
             # return
 
         mean_v = np.mean(marker_vs, axis=0)
         if not self.calibrated:
+            print("starting TAG calibration")
             self.table_normal = mean_v
             self.calibrated = True
+            print("TAG calibration done")
             return
         
         angle = np.dot(mean_v, self.table_normal)
