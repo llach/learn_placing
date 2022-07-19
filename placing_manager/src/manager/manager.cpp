@@ -2,6 +2,7 @@
 
 using namespace std;
 using namespace rosbag;
+using namespace std_msgs;
 using namespace std_srvs;
 using namespace control_msgs;
 using namespace trajectory_msgs;
@@ -132,6 +133,18 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bufferFt.storeData(bag, fromTime, toTime);
     bufferContact.storeData(bag, fromTime, toTime);
     bufferObjectState.storeData(bag, fromTime, toTime);
+
+    // store some bag metadata
+    String s;
+
+    s.data = "fromTime";
+    bag.write("bag_times", fromTime, s);
+
+    s.data = "contactTime";
+    bag.write("bag_times", contactTime, s);
+    
+    s.data = "toTime";
+    bag.write("bag_times", toTime, s);
 
     bag.close();
 }

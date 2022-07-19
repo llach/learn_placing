@@ -18,6 +18,7 @@
 
 // ros msgs
 #include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/JointState.h>

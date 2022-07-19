@@ -1,6 +1,6 @@
 import rosbag
 
-bag_path = "/home/llach/placing_data/2022-07-19.13:14:09.bag"
+bag_path = "/home/llach/placing_data/2022-07-19.13:31:12.bag"
 
 def bag_to_dict(b):
     d = {}
