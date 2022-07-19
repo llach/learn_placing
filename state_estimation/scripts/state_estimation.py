@@ -45,8 +45,10 @@ class StateEstimator:
                 marker_vs.append(rotate_v(self.marker_axis_up, q))
             except:
                 rospy.logwarn(f"transform for marker {m.id[0]} not ready.")
+                # pass
         if len(marker_vs) == 0:
             rospy.logwarn(f"no successful marker transormation")
+            # return
 
         mean_v = np.mean(marker_vs, axis=0)
         if not self.calibrated:
@@ -55,7 +57,7 @@ class StateEstimator:
             return
         
         angle = np.dot(mean_v, self.table_normal)
-        print((np.arccos(angle)*180)/np.pi)
+        # print((np.arccos(angle)*180)/np.pi)
         self.angle_pub.publish(angle)
 
     def get_tag_tf(self, num):

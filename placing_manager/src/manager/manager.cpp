@@ -1,15 +1,37 @@
 #include <manager/manager.h>
 
 using namespace std;
+using namespace rosbag;
 using namespace std_srvs;
 using namespace control_msgs;
 using namespace trajectory_msgs;
 using namespace placing_manager;
 using namespace controller_manager_msgs;
 
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+const std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+
 PlacingManager::PlacingManager(float initialTorsoQ) :
     waitRate_(50),
+    dataCutOff_(0.7),
     initialTorsoQ_(initialTorsoQ),
+    bufferJs(n_,            "joint_states", "/joint_states"),
+    bufferMyLeft(n_,        "myrmex_left", "/tactile_left"),
+    bufferMyRight(n_,       "myrmex_right", "/tactile_right"),
+    bufferFt(n_,            "ft", "/wrist_ft"),
+    bufferContact(n_,       "contact", "/table_contact/in_contact"),
+    bufferObjectState(n_,   "object_state", "/normal_angle"),
+    jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
     listControllersSrv_(n_.serviceClient<ListControllers>("/controller_manager/list_controllers")),
@@ -24,19 +46,14 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     ROS_INFO("waiting for torso AC...");
     torsoAc_.waitForServer();
 
-    ROS_INFO("creating data subscribers ...");
-    jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
-    myrmexLSub_ = n_.subscribe("/tactile_left", 1, &PlacingManager::mmLeftCB, this);
-    myrmexRSub_ = n_.subscribe("/tactile_right", 1, &PlacingManager::mmRightCB, this);
-    ftSub_ = n_.subscribe("/wrist_ft", 1, &PlacingManager::ftCB, this);
-    contactSub_ = n_.subscribe("/table_contact/in_contact", 1, &PlacingManager::contactCB, this);
-    objectStateSub_ = n_.subscribe("/normal_angle", 1, &PlacingManager::objectStateCB, this);
+    // jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
 
     ROS_INFO("PlacingManager::PlacingManager() done");
     initialized_ = true;
 }
 
 bool PlacingManager::init(ros::Duration timeout){
+   
     ros::Time start = ros::Time::now();
 
     while(not checkLastTimes(ros::Time::now()-ros::Duration(1))){
@@ -53,50 +70,70 @@ bool PlacingManager::init(ros::Duration timeout){
     return true;
 }
 
+void PlacingManager::pause(){
+    bufferJs.paused_ = true;
+    bufferMyLeft.paused_ = true;
+    bufferMyRight.paused_ = true;
+    bufferFt.paused_ = true;
+    bufferContact.paused_ = true;
+    bufferObjectState.paused_ = true;
+
+    paused_ = true;
+}
+void PlacingManager::unpause(){
+    bufferJs.paused_ = false;
+    bufferMyLeft.paused_ = false;
+    bufferMyRight.paused_ = false;
+    bufferFt.paused_ = false;
+    bufferContact.paused_ = false;
+    bufferObjectState.paused_ = false;
+
+    paused_ = false;
+}
+
 bool PlacingManager::checkLastTimes(ros::Time n){
-    {
-        std::lock_guard<std::mutex> l(jsLock_);
-        if (lastJsTime_ < n) {
-            ROS_WARN("js not fresh");
-            return false;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> l(mlLock_);
-        if (lastMlTime_ < n) {
-            ROS_WARN("mm left not fresh");
-            return false;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> l(mrLock_);
-        if (lastMrTime_ < n) {
-            ROS_WARN("mm right not fresh");
-            return false;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> l(ftLock_);
-        if (lastFtTime_ < n) {
-            ROS_WARN("ft not fresh");
-            return false;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> l(contactLock_);
-        if (lastContactTime_ < n) {
-            ROS_WARN("contact not fresh");
-            return false;
-        }
-    }
-    {
-        std::lock_guard<std::mutex> l(objectStateLock_);
-        if (lastObjectStateTime_ < n) {
-            ROS_WARN("object state not fresh");
-            return false;
-        }
-    }
+    if (not bufferJs.isFresh(n)) return false;
+    if (not bufferMyLeft.isFresh(n)) return false;
+    if (not bufferMyRight.isFresh(n)) return false;
+    if (not bufferFt.isFresh(n)) return false;
+    if (not bufferContact.isFresh(n)) return false;
+    if (not bufferObjectState.isFresh(n)) return false;
+
     return true;
+}
+
+ros::Time PlacingManager::getContactTime(){
+    {
+        std::lock_guard<std::mutex> l(bufferContact.m_);
+        ROS_INFO_STREAM("got " << bufferContact.times_.size() << " samples ");
+        for (size_t i = 0; i<bufferContact.times_.size(); i++){
+            if (bufferContact.data_[i].data) return bufferContact.times_[i];
+        }
+    }
+    ROS_FATAL("no contact detected!!");
+    return ros::Time(0);
+}
+
+void PlacingManager::storeSample(ros::Time contactTime){
+    std::string date = currentDateTime();
+
+    ros::Time fromTime = contactTime - dataCutOff_;
+    ros::Time toTime = contactTime + dataCutOff_;
+
+    std::string file = "/home/llach/placing_data/"+date+".bag";
+    ROS_INFO_STREAM("storing file at " << file);
+
+    Bag bag;
+    bag.open(file, bagmode::Write);
+    
+    bufferJs.storeData(bag, fromTime, toTime);
+    bufferMyLeft.storeData(bag, fromTime, toTime);
+    bufferMyRight.storeData(bag, fromTime, toTime);
+    bufferFt.storeData(bag, fromTime, toTime);
+    bufferContact.storeData(bag, fromTime, toTime);
+    bufferObjectState.storeData(bag, fromTime, toTime);
+
+    bag.close();
 }
 
 bool PlacingManager::collectSample(){
@@ -107,8 +144,18 @@ bool PlacingManager::collectSample(){
         return false;
     }
 
+    unpause();
     ROS_INFO("moving torso down towards the table ...");
     moveTorso(0.15, 3.0);
+    pause();
+
+    ros::Time contactTime = getContactTime();
+    if (contactTime != ros::Time(0)){
+        ROS_INFO_STREAM("contact detected at " << contactTime);
+        storeSample(contactTime);
+    } else{
+        ROS_FATAL("no contact -> can't store sample");
+    }
 
     ROS_INFO("move torso up again");
     moveTorso(initialTorsoQ_, 2.0); // TODO less time here -> faster
@@ -204,69 +251,4 @@ void PlacingManager::jsCB(const sensor_msgs::JointState::ConstPtr& msg)
 
     std::lock_guard<std::mutex> l(jsLock_);
     currentTorsoQ_ = msg->position[torsoIdx_];
-
-    auto time = ros::Time::now();
-    lastJsTime_ = time;
-
-    if (paused_) return;
-
-    jsData_.push_back(msg);
-    jsTime_.push_back(time);
-
 }
-
-void PlacingManager::mmLeftCB(const tactile_msgs::TactileState::ConstPtr& msg){
-    std::lock_guard<std::mutex> l(mlLock_);
-    auto time = ros::Time::now();
-    lastMlTime_ = time;
-
-    if (paused_) return;
-
-    mlData_.push_back(msg);
-    mlTime_.push_back(time);
-}
-
-void PlacingManager::mmRightCB(const tactile_msgs::TactileState::ConstPtr& msg){
-    std::lock_guard<std::mutex> l(mrLock_);
-    auto time = ros::Time::now();
-    lastMrTime_ = time;
-
-    if (paused_) return;
-
-    mrData_.push_back(msg);
-    mrTime_.push_back(time);
-}
-
-void PlacingManager::ftCB(const geometry_msgs::WrenchStamped::ConstPtr& msg){
-    std::lock_guard<std::mutex> l(ftLock_);
-    auto time = ros::Time::now();
-    lastFtTime_ = time;
-
-    if (paused_) return;
-
-    ftData_.push_back(msg);
-    ftTime_.push_back(time);
-}
-
-void PlacingManager::contactCB(const std_msgs::Bool::ConstPtr& msg){
-    std::lock_guard<std::mutex> l(contactLock_);
-    auto time = ros::Time::now();
-    lastContactTime_ = time;
-
-    if (paused_) return;
-
-    contactData_.push_back(msg);
-    contactTime_.push_back(time);
-}
-
-void PlacingManager::objectStateCB(const std_msgs::Float64::ConstPtr& msg){
-    std::lock_guard<std::mutex> l(objectStateLock_);
-    auto time = ros::Time::now();
-    lastObjectStateTime_ = time;
-
-    if (paused_) return;
-
-    objectStateData_.push_back(msg);
-    objectStateTime_.push_back(time);
-}
-

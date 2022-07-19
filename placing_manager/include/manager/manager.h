@@ -5,10 +5,15 @@
 
 // std includes
 #include <mutex>
+#include <time.h>
+#include <string>
+#include <stdio.h>
+#include <iostream>
 #include <typeindex>
 
 // misc ros includes
 #include <ros/ros.h>
+#include <rosbag/bag.h>
 #include <actionlib/client/simple_action_client.h>
 
 // ros msgs
@@ -36,6 +41,8 @@ public:
     bool collectSample();
     
 private:
+    ros::Duration dataCutOff_;
+
     std::atomic<bool> paused_;
     bool initialized_ = false;
 
@@ -62,51 +69,24 @@ private:
     
     void moveTorso(float targetQ, float duration, bool absolute = true);
 
+    ros::Time getContactTime();
+    void pause();
+    void unpause();
+    void storeSample(ros::Time contactTime);
     bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);
 
+    TopicBuffer<sensor_msgs::JointState> bufferJs;
+    TopicBuffer<tactile_msgs::TactileState> bufferMyLeft;
+    TopicBuffer<tactile_msgs::TactileState> bufferMyRight;
+    TopicBuffer<geometry_msgs::WrenchStamped> bufferFt;
+    TopicBuffer<std_msgs::Bool> bufferContact;
+    TopicBuffer<std_msgs::Float64> bufferObjectState;
+
     std::mutex jsLock_;
-    std::mutex mlLock_;
-    std::mutex mrLock_;
-    std::mutex ftLock_;
-    std::mutex contactLock_;
-    std::mutex objectStateLock_;
-
     ros::Subscriber jsSub_;
-    ros::Subscriber myrmexLSub_;
-    ros::Subscriber myrmexRSub_;
-    ros::Subscriber ftSub_;
-    ros::Subscriber contactSub_;
-    ros::Subscriber objectStateSub_;
-
-    std::vector<sensor_msgs::JointStateConstPtr> jsData_;
-    std::vector<tactile_msgs::TactileStateConstPtr> mlData_;
-    std::vector<tactile_msgs::TactileStateConstPtr> mrData_;
-    std::vector<geometry_msgs::WrenchStampedConstPtr> ftData_;
-    std::vector<std_msgs::BoolConstPtr> contactData_;
-    std::vector<std_msgs::Float64ConstPtr> objectStateData_;
-
-    std::vector<ros::Time> jsTime_;
-    std::vector<ros::Time> mlTime_;
-    std::vector<ros::Time> mrTime_;
-    std::vector<ros::Time> ftTime_;
-    std::vector<ros::Time> contactTime_;
-    std::vector<ros::Time> objectStateTime_;
-
-    ros::Time lastJsTime_;
-    ros::Time lastMlTime_;
-    ros::Time lastMrTime_;
-    ros::Time lastFtTime_;
-    ros::Time lastContactTime_;
-    ros::Time lastObjectStateTime_;
-
     void jsCB(const sensor_msgs::JointState::ConstPtr& msg);
-    void mmLeftCB(const tactile_msgs::TactileState::ConstPtr& msg);
-    void mmRightCB(const tactile_msgs::TactileState::ConstPtr& msg);
-    void ftCB(const geometry_msgs::WrenchStamped::ConstPtr& msg);
-    void contactCB(const std_msgs::Bool::ConstPtr& msg);
-    void objectStateCB(const std_msgs::Float64::ConstPtr& msg);
 };
 
 } // namespace placing_manager 

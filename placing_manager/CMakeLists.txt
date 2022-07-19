@@ -9,6 +9,7 @@ add_compile_options(-std=c++14)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rosbag
   std_srvs
   actionlib
   sensor_msgs
@@ -29,7 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- CATKIN_DEPENDS roscpp std_srvs actionlib sensor_msgs tactile_msgs control_msgs trajectory_msgs controller_manager_msgs
+ CATKIN_DEPENDS roscpp rosbag std_srvs actionlib sensor_msgs tactile_msgs control_msgs trajectory_msgs controller_manager_msgs
 )
 
 ###########
@@ -49,7 +50,6 @@ include_directories(
 # Declare a C++ library
 add_library(${PROJECT_NAME}_lib
 src/manager/manager.cpp
-src/manager/topic_buffer.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_lib ${catkin_LIBRARIES})
