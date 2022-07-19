@@ -34,6 +34,7 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     bufferObjectState(n_,   "object_state", "/normal_angle"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
+    ftCalibrationSrv_(n_.serviceClient<Empty>("/table_contact/calibrate")),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
     listControllersSrv_(n_.serviceClient<ListControllers>("/controller_manager/list_controllers")),
     switchControllerSrv_(n_.serviceClient<SwitchController>("/controller_manager/switch_controller"))
@@ -47,7 +48,11 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     ROS_INFO("waiting for torso AC...");
     torsoAc_.waitForServer();
 
-    // jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
+    ROS_INFO("waiting for FT calibration service ...");
+    ftCalibrationSrv_.waitForExistence();
+
+    ROS_INFO("setting up joint states subscriber ...");
+    jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
 
     ROS_INFO("PlacingManager::PlacingManager() done");
     initialized_ = true;
@@ -134,6 +139,8 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bufferContact.storeData(bag, fromTime, toTime);
     bufferObjectState.storeData(bag, fromTime, toTime);
 
+    // TODO store wrist trajectory + meta data 
+
     // store some bag metadata
     String s;
 
@@ -150,7 +157,14 @@ void PlacingManager::storeSample(ros::Time contactTime){
 }
 
 bool PlacingManager::collectSample(){
-    ROS_INFO("### collecting data sample ###");
+    ROS_INFO("### collecting data sample no. %d ###", nSamples_);
+
+    if (nSamples_ % nFTRecalibrate_ == 0){
+        ROS_INFO("recalibrating FT after %d samples", nSamples_);
+
+        Empty e;
+        ftCalibrationSrv_.call(e);
+    }
 
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
         ROS_ERROR("data not fresh");
@@ -159,8 +173,14 @@ bool PlacingManager::collectSample(){
 
     unpause();
     ROS_INFO("moving torso down towards the table ...");
+
+    ros::Time startMoveing = ros::Time::now();
     moveTorso(0.15, 3.0);
+    ros::Duration moveDur = ros::Time::now() - startMoveing;
+
+    // robot moved 
     pause();
+    nSamples_++;
 
     ros::Time contactTime = getContactTime();
     if (contactTime != ros::Time(0)){
@@ -171,7 +191,7 @@ bool PlacingManager::collectSample(){
     }
 
     ROS_INFO("move torso up again");
-    moveTorso(initialTorsoQ_, 2.0); // TODO less time here -> faster
+    moveTorso(initialTorsoQ_, moveDur.toSec());
 
     return true;
 }

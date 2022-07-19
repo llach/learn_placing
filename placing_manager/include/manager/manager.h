@@ -42,12 +42,15 @@ public:
     bool collectSample();
     
 private:
+    // parameters
+    int nFTRecalibrate_ = 5;
     ros::Duration dataCutOff_;
 
     std::atomic<bool> paused_;
     bool initialized_ = false;
 
     int torsoIdx_ = -1;
+    int nSamples_ = 0;
 
     std::string baseFrame_ = "base_footprint";
     std::string torsoJointName_ = "torso_lift_joint";
@@ -60,6 +63,7 @@ private:
     ros::NodeHandle n_;
     ros::Rate waitRate_;
 
+    ros::ServiceClient ftCalibrationSrv_;
     ros::ServiceClient loadControllerSrv_;
     ros::ServiceClient listControllersSrv_;
     ros::ServiceClient switchControllerSrv_;
