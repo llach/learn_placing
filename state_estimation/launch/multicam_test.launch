@@ -1,0 +1,24 @@
+<launch>
+    <arg name="cam1_video" default="/dev/video0" />
+    <arg name="cam2_video" default="/dev/video2" />
+
+    <node pkg="tf" type="static_transform_publisher" name="base_cam_tf" args="0 0 0.5 0 0 0 1 base_link head_camera 100" />
+
+    <node pkg="usb_cam" type="usb_cam_node" name="webcam" output="screen" >
+        <param name="camera_name" value="webcam" />
+        <param name="pixel_format" value="yuyv" />
+        <param name="video_device" value="$(arg cam1_video)" />
+    </node>
+
+    <node pkg="usb_cam" type="usb_cam_node" name="external_webcam" output="screen" >
+        <param name="camera_name" value="external_webcam" />
+        <param name="pixel_format" value="yuyv" />
+        <param name="video_device" value="$(arg cam2_video)" />
+    </node>
+
+    <include file="$(find state_estimation)/launch/multicam_detection.launch" >
+        <arg name="cam1" value="webcam" />
+        <arg name="cam2" value="external_webcam" />
+    </include>
+
+</launch>

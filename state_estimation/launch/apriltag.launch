@@ -1,6 +1,6 @@
 <launch>
   <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
-  <arg name="camera_prefix" default="/camera/color/" />
+  <arg name="camera_prefix" default="/usb_cam/" />
   <arg name="image_topic" default="image_raw" />
   <arg name="rviz" default="false" />
 
