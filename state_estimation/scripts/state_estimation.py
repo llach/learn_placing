@@ -160,7 +160,7 @@ if __name__ == "__main__":
     se = StateEstimator(["external_webcam", "webcam"])
     se.calibrate_cb()
     
-    r = rospy.Rate(5)
+    r = rospy.Rate(30)
     while not rospy.is_shutdown():
         se.process()
         r.sleep()
