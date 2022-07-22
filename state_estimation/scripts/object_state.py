@@ -151,7 +151,7 @@ class StateEstimator:
     def process(self):
         latest = rospy.Time.now()-self.max_age
 
-        tfs = {}
+        tfs = []
 
         angles = []
         qoffsets = []
@@ -176,11 +176,11 @@ class StateEstimator:
                     if tt.cam_name not in cameras: cameras.append(tt.cam_name)
                     # store & publish tf for this marker id if none is present 
                     if mid not in tfs: 
-                        tfs.update({mid: md.transform})
+                        tfs.append(mid)
                         self.br.sendTransform(
                             v2l(md.transform.transform.translation), 
                             q2l(md.transform.transform.rotation), 
-                            md.timestamp, 
+                            rospy.Time.now(), 
                             f"tag_{mid}", 
                             md.transform.header.frame_id)
                         
