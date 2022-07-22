@@ -12,6 +12,8 @@ from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import TransformStamped
 from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate
 
+from state_estimation.msg import ObjectStateEstimate
+
 def v2l(v):
     return np.array([v.x, v.y, v.z])
 
@@ -25,6 +27,20 @@ def rotate_v(v, q):
         quaternion_multiply(q, v),
         quaternion_conjugate(q)
     )[:3]
+
+class MarkerDetection:
+
+    def __init__(self, mid, timestamp, transform):
+        self.mid = mid
+        self.timestamp = timestamp
+        self.transform = transform
+
+        # only set if we have calibration data
+        self.angle = None
+        self.qoffset = None
+        self.voffset = None
+        self.qcurrent = None
+        self.vcurrent = None
 
 class TagTransformator:
 
@@ -59,7 +75,11 @@ class TagTransformator:
 
     def tag_cb(self, am: AprilTagDetectionArray):
         nmarkers = len(am.detections)
-        if nmarkers == 0: return
+        if nmarkers == 0: 
+            self.l.acquire()
+            self.markers.append(None)
+            self.l.release()
+            return
 
         # assumption: all markers are orientated the same way on the block
         # -> knowing the offset from one marker-Z will be the same for other markers
@@ -68,7 +88,6 @@ class TagTransformator:
         markers = {}
         for d in am.detections:
             mid = d.id[0]
-            markers.update({mid: []})
 
             tfs = TransformStamped()
             tfs.header = am.header
@@ -76,16 +95,18 @@ class TagTransformator:
             tfs.transform.translation = d.pose.pose.pose.position
             tfs.transform.rotation = d.pose.pose.pose.orientation
 
-            markers[mid].append(timestamp)
-            markers[mid].append(tfs)
+            m =  MarkerDetection(mid=mid, timestamp=timestamp, transform=tfs) 
 
             if self.calibrated:
                 qcurrent = q2l(tfs.transform.rotation)
                 vcurrent = rotate_v(self.MARKER_AXIS_UP, qcurrent)
                 rad = np.dot(self.vstart, vcurrent)
-                markers[mid].append(rad) # append the current orientation
-            else:
-                markers[mid].append(None) 
+
+                m.angle = rad
+                m.voffset = self.vstart
+                m.qoffset = self.qoffset
+                m.qcurrent = qcurrent
+                m.vcurrent = vcurrent
             
             if self.should_calibrate:
                 # collect rotations that we use to calculate the 
@@ -96,6 +117,7 @@ class TagTransformator:
                     self.vstart = rotate_v(self.MARKER_AXIS_UP, self.qoffset)
                     self.calibrated = True
                     print(f"calibration for cam {self.cam_name} done")
+            markers.update({m.mid:m})
 
         self.l.acquire()
         self.markers.append(markers)
@@ -130,28 +152,55 @@ class StateEstimator:
         latest = rospy.Time.now()-self.max_age
 
         tfs = {}
-        angs = []
-        final_ang = []
+
+        angles = []
+        qoffsets = []
+        voffsets = []
+        qcurrents = []
+        vcurrents = []
+        cameras = []
+
         for tt in self.tts: # loop over M cams ...
 
-            angs.append([])
+            angles.append([])
+            qcurrents.append([])
+            vcurrents.append([])
+            qoffsets.append([])
+            voffsets.append([])
+
             tt.l.acquire()
-
             for m in tt.markers:            # ... and their last N detections ...
-                for mid, v in m.items():    # ... and each marker per detection
-                    if v[0] < latest: continue # ignore old markers
-
+                if m == None: continue      # ... skip non-detections ...
+                for mid, md in m.items():    # ... and each marker per detection
+                    if md.timestamp < latest: continue # ignore old markers
+                    if tt.cam_name not in cameras: cameras.append(tt.cam_name)
                     # store & publish tf for this marker id if none is present 
                     if mid not in tfs: 
-                        tfs.update({mid: v[1]})
-                        self.br.sendTransform(v2l(v[1].transform.translation), q2l(v[1].transform.rotation), v[1].header.stamp, f"tag_{mid}", v[1].header.frame_id)
+                        tfs.update({mid: md.transform})
+                        self.br.sendTransform(
+                            v2l(md.transform.transform.translation), 
+                            q2l(md.transform.transform.rotation), 
+                            md.timestamp, 
+                            f"tag_{mid}", 
+                            md.transform.header.frame_id)
                         
                     # store angle if one was calculated
-                    if v[2] is not None:
-                        angs[-1].append(v[2])
+                    if md.angle is not None:
+                        angles[-1].append(md.angle)
+                        vcurrents[-1].append(md.vcurrent)
+                        qcurrents[-1].append(md.qcurrent)
+                        qoffsets[-1].append(md.qoffset)
+                        voffsets[-1].append(md.voffset)
             tt.l.release()
-            if len(angs[-1])>0:final_ang.append(np.mean(angs[-1]))
-        final_ang = np.mean(final_ang)
+        if np.any([len(a)>0 for a in angles]):
+            final_ang = np.mean([np.mean(a) for a in angles if len(a)>0])
+        else:
+            final_ang = -10 # == no detection whatsoever
+        
+        qc = [np.mean(q, axis=0) for q in qcurrents if len(q)>0]
+        vc = [np.mean(v, axis=0) for v in vcurrents if len(v)>0]
+        qo = [q[0] for q in qoffsets if len(q)>0]
+        vo = [v[0] for v in voffsets if len(v)>0]
 
         if self.calibrated: self.angle_pub.publish(final_ang)
 
