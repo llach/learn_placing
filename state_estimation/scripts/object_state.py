@@ -10,7 +10,7 @@ from std_msgs.msg import Float64, String
 from std_srvs.srv import Empty, EmptyResponse
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
-from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse
+from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse, quaternion_slerp
 
 from state_estimation.msg import ObjectStateEstimate
 
@@ -135,6 +135,7 @@ class StateEstimator:
             self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples))
 
         self.calibrated = False
+        self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
 
     def calibrate_cb(self, *args, **kwargs):
@@ -218,7 +219,10 @@ class StateEstimator:
                 quaternion_multiply(c, quaternion_inverse(o)) 
                 for c, o in zip(qc, qo)
             ]
-            qp = np.mean(qdiffs, axis=0)
+            if len(qdiffs)==1: # there is a denormalization error here where |q|=0.98 TODO
+                qp = qdiffs[0]
+            if len(qdiffs)==2:
+                qp = quaternion_slerp(*qdiffs, 0.5)
 
             otf = TransformStamped()
             otf.header.frame_id = "base_link"
@@ -233,6 +237,20 @@ class StateEstimator:
                             rospy.Time.now(), 
                             "object", 
                             "base_link")
+
+            try:
+                (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
+                rotGO = quaternion_multiply(qp, quaternion_inverse(rotG))
+
+                self.br.sendTransform(
+                            [0,0,0], 
+                            rotGO,
+                            rospy.Time.now(), 
+                            "grasped_object", 
+                            "gripper_grasping_frame")
+
+            except (tf.LookupException, tf.ConnectivityException):
+                print("unable to find gripper transform!")
 
         if self.calibrated: self.ose_pub.publish(ose)
 
