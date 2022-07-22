@@ -6,10 +6,10 @@ import rospy
 import numpy as np
 
 from threading import Lock
+from std_msgs.msg import Float64, String
 from std_srvs.srv import Empty, EmptyResponse
-from std_msgs.msg import Float64
 from apriltag_ros.msg import AprilTagDetectionArray
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
 from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate
 
 from state_estimation.msg import ObjectStateEstimate
@@ -125,14 +125,14 @@ class TagTransformator:
 
 class StateEstimator:
 
-    def __init__(self, cams = [], max_age = rospy.Duration(2)):
+    def __init__(self, cams = [], max_age = rospy.Duration(2), n_calibration_samples = 50):
         self.max_age = max_age
-        self.angle_pub = rospy.Publisher("/normal_angle", Float64, queue_size=1)
-        self.calib_srv = rospy.Service("object_state_calibration", Empty, self.calibrate_cb)
+        self.ose_pub = rospy.Publisher("/object_state_estimate", ObjectStateEstimate, queue_size=1)
+        self.calib_srv = rospy.Service("/object_state_calibration", Empty, self.calibrate_cb)
 
         self.tts = []
         for cam in cams:
-            self.tts.append(TagTransformator(cam))
+            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples))
 
         self.calibrated = False
         self.br = tf.TransformBroadcaster()
@@ -193,16 +193,25 @@ class StateEstimator:
                         voffsets[-1].append(md.voffset)
             tt.l.release()
         if np.any([len(a)>0 for a in angles]):
-            final_ang = np.mean([np.mean(a) for a in angles if len(a)>0])
+            mean_angs = [np.mean(a) for a in angles if len(a)>0]
+            final_ang = np.mean(mean_angs)
         else:
             final_ang = -10 # == no detection whatsoever
+            mean_angs = []
         
-        qc = [np.mean(q, axis=0) for q in qcurrents if len(q)>0]
-        vc = [np.mean(v, axis=0) for v in vcurrents if len(v)>0]
-        qo = [q[0] for q in qoffsets if len(q)>0]
-        vo = [v[0] for v in voffsets if len(v)>0]
+        ose = ObjectStateEstimate()
 
-        if self.calibrated: self.angle_pub.publish(final_ang)
+        ose.qcurrents = [Quaternion(*np.mean(q, axis=0)) for q in qcurrents if len(q)>0]
+        ose.vcurrents = [Vector3(*np.mean(v, axis=0)) for v in vcurrents if len(v)>0]
+        ose.qoffsets = [Quaternion(*q[0]) for q in qoffsets if len(q)>0]
+        ose.voffsets = [Vector3(*v[0]) for v in voffsets if len(v)>0]
+
+        ose.angle = Float64(final_ang)
+        ose.angles = [Float64(ma) for ma in mean_angs]
+
+        ose.cameras = [String(ca) for ca in cameras]
+
+        if self.calibrated: self.ose_pub.publish(ose)
 
 if __name__ == "__main__":
     rospy.init_node("object_state_estimation")
