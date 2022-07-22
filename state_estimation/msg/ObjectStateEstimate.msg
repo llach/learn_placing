@@ -5,3 +5,4 @@ geometry_msgs/Vector3[] voffsets
 geometry_msgs/Vector3[] vcurrents
 geometry_msgs/Quaternion[] qoffsets
 geometry_msgs/Quaternion[] qcurrents
+geometry_msgs/TransformStamped transform

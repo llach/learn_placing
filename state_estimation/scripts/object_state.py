@@ -10,7 +10,7 @@ from std_msgs.msg import Float64, String
 from std_srvs.srv import Empty, EmptyResponse
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
-from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate
+from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse
 
 from state_estimation.msg import ObjectStateEstimate
 
@@ -46,7 +46,7 @@ class TagTransformator:
 
     MARKER_AXIS_UP = [0,-1,0]
 
-    def __init__(self, cam_name, n_samples = 10, common_frame="camera_link", n_calibration_samples = 50):
+    def __init__(self, cam_name, n_samples = 10, common_frame="camera_link", n_calibration_samples = 20):
         self.cam_name = cam_name
         self.n_samples = n_samples
         self.common_frame = common_frame
@@ -144,7 +144,7 @@ class StateEstimator:
         time.sleep(3)
         
         self.calibrated = np.any([tt.calibrated for tt in self.tts])
-        print("SE calibration done:", self.calibrated, [tt.calibrated for tt in self.tts])
+        print("SE calibration done:", self.calibrated, [tt.cam_name for tt in self.tts], [tt.calibrated for tt in self.tts])
         
         return EmptyResponse()
 
@@ -210,6 +210,29 @@ class StateEstimator:
         ose.angles = [Float64(ma) for ma in mean_angs]
 
         ose.cameras = [String(ca) for ca in cameras]
+            
+        if len(ose.angles)>0:
+            qc  = [q2l(q) for q in ose.qcurrents]
+            qo  = [q2l(q) for q in ose.qoffsets]
+            qdiffs = [
+                quaternion_multiply(c, quaternion_inverse(o)) 
+                for c, o in zip(qc, qo)
+            ]
+            qp = np.mean(qdiffs, axis=0)
+
+            otf = TransformStamped()
+            otf.header.frame_id = "base_link"
+            otf.child_frame_id = "object"
+            otf.transform.rotation = Quaternion(*qp)
+            otf.transform.translation = Vector3(0,0,0)
+
+            ose.transform = otf
+            self.br.sendTransform(
+                            v2l(otf.transform.translation), 
+                            q2l(otf.transform.rotation), 
+                            rospy.Time.now(), 
+                            "object", 
+                            "base_link")
 
         if self.calibrated: self.ose_pub.publish(ose)
 
