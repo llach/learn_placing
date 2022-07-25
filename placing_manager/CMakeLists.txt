@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tactile_msgs
   control_msgs
   trajectory_msgs
+  state_estimation
   controller_manager_msgs
 )
 
@@ -30,7 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- CATKIN_DEPENDS roscpp rosbag std_srvs actionlib sensor_msgs tactile_msgs control_msgs trajectory_msgs controller_manager_msgs
+ CATKIN_DEPENDS roscpp rosbag std_srvs actionlib sensor_msgs tactile_msgs control_msgs trajectory_msgs state_estimation controller_manager_msgs
 )
 
 ###########

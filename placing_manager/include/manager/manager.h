@@ -24,6 +24,7 @@
 #include <sensor_msgs/JointState.h>
 #include <tactile_msgs/TactileState.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <state_estimation/ObjectStateEstimate.h>
 #include <controller_manager_msgs/LoadController.h>
 #include <controller_manager_msgs/ListControllers.h>
 #include <controller_manager_msgs/SwitchController.h>
@@ -87,7 +88,7 @@ private:
     TopicBuffer<tactile_msgs::TactileState> bufferMyRight;
     TopicBuffer<geometry_msgs::WrenchStamped> bufferFt;
     TopicBuffer<std_msgs::Bool> bufferContact;
-    TopicBuffer<std_msgs::Float64> bufferObjectState;
+    TopicBuffer<state_estimation::ObjectStateEstimate> bufferObjectState;
 
     std::mutex jsLock_;
     ros::Subscriber jsSub_;

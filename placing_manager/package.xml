@@ -20,6 +20,7 @@
   <depend>control_msgs</depend>
   <depend>tactile_msgs</depend>
   <depend>trajectory_msgs</depend>
+  <depend>state_estimation</depend>
   <depend>controller_manager_msgs</depend>
 
 </package>

@@ -27,7 +27,7 @@ include_directories(
 )
 
 install(PROGRAMS
-  scripts/state_estimation.py scripts/ft_contact_detection.py
+  scripts/object_state.py scripts/ft_contact_detection.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

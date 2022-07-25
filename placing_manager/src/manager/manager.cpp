@@ -9,6 +9,10 @@ using namespace trajectory_msgs;
 using namespace placing_manager;
 using namespace controller_manager_msgs;
 
+// TODO store wrist trajectory + meta data 
+// TODO record tf
+// TODO print rosbag info after storing
+
 // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -31,7 +35,7 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     bufferMyRight(n_,       "myrmex_right", "/tactile_right"),
     bufferFt(n_,            "ft", "/wrist_ft"),
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
-    bufferObjectState(n_,   "object_state", "/normal_angle"),
+    bufferObjectState(n_,   "object_state", "/object_state_estimate"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
     ftCalibrationSrv_(n_.serviceClient<Empty>("/table_contact/calibrate")),
@@ -99,8 +103,8 @@ void PlacingManager::unpause(){
 
 bool PlacingManager::checkLastTimes(ros::Time n){
     if (not bufferJs.isFresh(n)) return false;
-    if (not bufferMyLeft.isFresh(n)) return false;
-    if (not bufferMyRight.isFresh(n)) return false;
+    // if (not bufferMyLeft.isFresh(n)) return false;
+    // if (not bufferMyRight.isFresh(n)) return false;
     if (not bufferFt.isFresh(n)) return false;
     if (not bufferContact.isFresh(n)) return false;
     if (not bufferObjectState.isFresh(n)) return false;
@@ -139,7 +143,7 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bufferContact.storeData(bag, fromTime, toTime);
     bufferObjectState.storeData(bag, fromTime, toTime);
 
-    // TODO store wrist trajectory + meta data 
+    
 
     // store some bag metadata
     String s;

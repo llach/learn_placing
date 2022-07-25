@@ -36,3 +36,10 @@ An object is given to TIAGo, i.e. it's being held between TIAGo's fingers and th
 
 * 28 trials take $\approx$ 3:24min ($\rightarrow$ 7,3$\frac{\text{sec}}{\text{trial}}$)
 * problem: gripper motors overheat, the grip loosens and the object slips too much when in contact
+
+# How to use:
+
+* connect laptop to TIAGo
+* connect Myrmex to laptop
+* start myrmex  readout: `roslaunch ...`
+* start other components: `roslaunch placing_manager components.launch`
