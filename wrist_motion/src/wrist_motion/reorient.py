@@ -3,7 +3,9 @@ import time
 import numpy as np
 import moveit_commander
 
+from tf import TransformListener
 from tf import transformations as tf
+from tf.transformations import quaternion_matrix
 from wrist_motion.tiago_controller import TIAGoController
 from wrist_motion.marker import frame, box, orientationArrow
 
@@ -38,6 +40,9 @@ def sample_random_orientation_southern_hemisphere():
     return tf.quaternion_matrix(tf.quaternion_multiply(Qzt, Qyp))
 
 
+OBJECT_FRAME = "/grasped_object"
+GRIPPER_FRAME = "/gripper_grasping_frame"
+
 class Reorient:
     JOINTS = ['torso_lift_joint', 'arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint', 'arm_5_joint', 'arm_6_joint', 'arm_7_joint']
     PLANNING_GROUP = 'arm_torso'
@@ -51,14 +56,38 @@ class Reorient:
         self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         
         self.tol = np.array([0.3, 0.3, 0.3])
-        self.eef_axis = np.array([0,0,1])
+        self.eef_axis = np.array([0,0,-1])
 
-        self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
+        self.Toff = tf.rotation_matrix(0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
 
         self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
         self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
         self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
         self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
+
+        self.li = TransformListener()
+        for _ in range(6):
+            try:
+                self.li.waitForTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time.now(), rospy.Duration(3))
+                break
+            except Exception as e:
+                print(e)
+        self.update_obj_transform()
+
+    def update_obj_transform(self):
+        oT = self.get_object_transform()
+        # print(f"updating object TF to\n{oT}")
+        self.c.robot.joints["target"].set_T(oT)
+
+    def get_object_transform(self):
+        try:
+            (trans, rot) = self.li.lookupTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time(0))
+            T = quaternion_matrix(rot)
+            T[0:3, 3] = trans
+            return T
+        except Exception as e:
+            print(f"could not get gripper-object transform:\n{e}")
+            return np.eye(4)
 
     def jointstate_sb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
@@ -128,6 +157,9 @@ class Reorient:
 
         self.should_get_js = True
         while self.should_get_js: time.sleep(0.1) # jointstate subscriber thread will set flag to false when done
+        
+        # gets current object tf and applies it to the last, fixed target joint of the robot's model
+        self.update_obj_transform()
 
         print("generating trajectory")
         self.To = sample_random_orientation_southern_hemisphere()

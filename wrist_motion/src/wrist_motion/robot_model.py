@@ -105,6 +105,9 @@ class Joint():
         self.T[0:3, 3] = numpy.array([p.x, p.y, p.z])
         self.mimic = None
 
+    def set_T(self, T):
+        self.T = T
+
 
 class RobotModel():
     def __init__(self, param='robot_description', ignore_joints=[]):

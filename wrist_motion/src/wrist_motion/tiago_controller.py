@@ -256,9 +256,9 @@ class TIAGoController(object):
             oTask = self.cone_task(eef_axis, To[0:3, 0], 0.99)
             tasks.append(oTask)
 
-            _, Jelbow = self.fk_for_link("arm_7_link")
-            Jup = Jelbow[2]-self.J[2]
-            tasks.append((Jup, 10.0, 0.02))
+            # _, Jelbow = self.fk_for_link("arm_7_link")
+            # Jup = Jelbow[2]-self.J[2]
+            # tasks.append((Jup, 10.0, 0.02))
 
             q_delta, failed = self.solve_qp(tasks)
             if failed: return None, True

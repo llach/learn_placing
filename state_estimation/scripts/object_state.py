@@ -14,11 +14,16 @@ from tf.transformations import unit_vector, quaternion_multiply, quaternion_conj
 
 from state_estimation.msg import ObjectStateEstimate
 
+def normalized(a, axis=-1, order=2):
+    l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
+    l2[l2==0] = 1
+    return a / np.expand_dims(l2, axis)
+
 def v2l(v):
     return np.array([v.x, v.y, v.z])
 
 def q2l(q):
-    return np.array([q.x, q.y, q.z, q.w])
+    return normalized(np.array([q.x, q.y, q.z, q.w]))[0]
 
 def rotate_v(v, q):
     v = list(unit_vector(v))
@@ -241,10 +246,11 @@ class StateEstimator:
             try:
                 (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
                 rotGO = quaternion_multiply(qp, quaternion_inverse(rotG))
+                rotGO = normalized(rotGO)[0]
 
                 self.br.sendTransform(
                             [0,0,0], 
-                            rotGO,
+                            normalized(rotGO)[0],
                             rospy.Time.now(), 
                             "grasped_object", 
                             "gripper_grasping_frame")
@@ -259,7 +265,7 @@ if __name__ == "__main__":
     se = StateEstimator(["external_webcam", "webcam"])
     se.calibrate_cb()
     
-    r = rospy.Rate(30)
+    r = rospy.Rate(60)
     while not rospy.is_shutdown():
         se.process()
         r.sleep()
