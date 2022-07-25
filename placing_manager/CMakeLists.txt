@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   trajectory_msgs
   state_estimation
   controller_manager_msgs
+  moveit_ros_planning_interface
 )
 
 ###################################

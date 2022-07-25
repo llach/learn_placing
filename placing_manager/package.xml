@@ -22,5 +22,6 @@
   <depend>trajectory_msgs</depend>
   <depend>state_estimation</depend>
   <depend>controller_manager_msgs</depend>
+  <depend>moveit_ros_planning_interface</depend>
 
 </package>

@@ -10,4 +10,7 @@
   <author>Luca Lach</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometry_msgs</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>message_runtime</depend>
 </package>

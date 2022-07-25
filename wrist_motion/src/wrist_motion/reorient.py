@@ -78,6 +78,9 @@ class Reorient:
         oT = self.get_object_transform()
         # print(f"updating object TF to\n{oT}")
         self.c.robot.joints["target"].set_T(oT)
+    
+    def get_target_joint_tf(self):
+        return self.c.robot.joints["target"].T
 
     def get_object_transform(self):
         try:
@@ -172,7 +175,7 @@ class Reorient:
 
         if Tarm[2,3]<Thand[2,3]: 
             print("z constraint failed")
-            return None, failed
+            return None, True
 
         traj_points = np.linspace(self.start_state, goal_state, 10)
         traj_times = np.linspace(0, 3, 10)

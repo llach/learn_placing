@@ -1,0 +1,5 @@
+---
+sensor_msgs/JointState final_arm_state
+moveit_msgs/RobotTrajectory trajectory
+geometry_msgs/TransformStamped object_transform
+---

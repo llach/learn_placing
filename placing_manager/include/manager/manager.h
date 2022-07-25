@@ -15,6 +15,7 @@
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <actionlib/client/simple_action_client.h>
+#include <moveit/move_group_interface/move_group_interface.h>
 
 // ros msgs
 #include <std_msgs/Bool.h>
@@ -69,6 +70,7 @@ private:
     ros::ServiceClient listControllersSrv_;
     ros::ServiceClient switchControllerSrv_;
 
+    moveit::planning_interface::MoveGroupInterface moveGroup_;
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> torsoAc_;
 
     float lerp(float a, float b, float f);

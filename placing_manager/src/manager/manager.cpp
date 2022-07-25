@@ -37,6 +37,7 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
     bufferObjectState(n_,   "object_state", "/object_state_estimate"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
+    moveGroup_("arm_torso"),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
     ftCalibrationSrv_(n_.serviceClient<Empty>("/table_contact/calibrate")),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
