@@ -16,15 +16,16 @@ CON_TOPIC = f"{BASE_TOPIC}/in_contact"
 CON_TS_TOPIC = f"{BASE_TOPIC}/contact_timestamp"
 CALIBRATE_SERVER_TOPIC = f"{BASE_TOPIC}/calibrate"
 
-N_CALIBRATION_SAMPLES = 150
+N_CALIBRATION_SAMPLES = 25
 M_SAMPLES = 5
-STD_TRESH = 5
+STD_TRESH = 8
 
 """
 global variables
 """
 calibration_samples = []
 calibrated = False
+factor = 2
 
 means = None
 stds = None
@@ -33,6 +34,7 @@ con_pub = None
 con_ts_pub = None
 
 delta_ws = deque(maxlen=M_SAMPLES)
+ws = deque(maxlen=M_SAMPLES)
 
 r = None
 
@@ -67,13 +69,13 @@ def ft_cb(m):
             calibrated = True
             print("FT calibration done!")
     else:
-        delta_ws.append(np.abs(wrench_to_vec(m.wrench)-means))
-        if len(delta_ws)>=M_SAMPLES:
-            delta_w = np.median(delta_ws, axis=0) # we take the median over N_SAMPLES samples to avoid false-positives due to outliers
-            for i, (v, std) in enumerate(zip(delta_w, stds)):
-                if v>STD_TRESH*std:
-                    print(f"element {i:.4f} detected contact ({v:.4f} > {STD_TRESH*std})")
-                    in_contact = True
+        ws.append(wrench_to_vec(m.wrench))
+        if len(ws)>=M_SAMPLES:
+            diff = np.abs(np.median(ws, axis=0)-means)
+
+            if np.any(diff>factor):
+                print(f"contact detected: {diff}")
+                in_contact = True
 
     if in_contact:
         con_pub.publish(True)

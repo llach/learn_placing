@@ -19,12 +19,12 @@ print("waiting for eac")
 eac.wait_for_server()
 
 
-# pwg = PlanWristGoal()
-# wac.send_goal_and_wait(pwg)
-# pwr = wac.get_result()
+pwg = PlanWristGoal()
+wac.send_goal_and_wait(pwg)
+pwr = wac.get_result()
 
-# etg = ExecuteTrajectoryGoal()
-# etg.trajectory = pwr.trajectory
-# eac.send_goal_and_wait(etg)
+etg = ExecuteTrajectoryGoal()
+etg.trajectory = pwr.trajectory
+eac.send_goal_and_wait(etg)
 
-# print(eac.get_result())
+print(eac.get_result())

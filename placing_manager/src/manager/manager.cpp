@@ -172,12 +172,12 @@ void PlacingManager::reorientate(){}
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
-    if (nSamples_ % nFTRecalibrate_ == 0){
-        ROS_INFO("recalibrating FT after %d samples", nSamples_);
+    // if (nSamples_ % nFTRecalibrate_ == 0){
+    ROS_INFO("recalibrating FT");
 
-        Empty e;
-        ftCalibrationSrv_.call(e);
-    }
+    Empty e;
+    ftCalibrationSrv_.call(e);
+    // }
 
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
         ROS_ERROR("data not fresh");
