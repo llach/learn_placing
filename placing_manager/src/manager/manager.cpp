@@ -1,10 +1,14 @@
 #include <manager/manager.h>
 
+#include <chrono>
+#include <thread>
+
 using namespace std;
 using namespace rosbag;
 using namespace std_msgs;
 using namespace std_srvs;
 using namespace control_msgs;
+using namespace wrist_motion;
 using namespace trajectory_msgs;
 using namespace placing_manager;
 using namespace controller_manager_msgs;
@@ -37,7 +41,8 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
     bufferObjectState(n_,   "object_state", "/object_state_estimate"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
-    moveGroup_("arm_torso"),
+    wristAc_("/wrist_plan", true),
+    executeAc_("/execute_trajectory", true),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
     ftCalibrationSrv_(n_.serviceClient<Empty>("/table_contact/calibrate")),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
@@ -50,8 +55,11 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
         return; 
     }
 
-    ROS_INFO("waiting for torso AC...");
+    ROS_INFO("waiting for torso AC ...");
     torsoAc_.waitForServer();
+
+    // ROS_INFO("waiting for execution AC ...");
+    // executeAc_.waitForServer();
 
     ROS_INFO("waiting for FT calibration service ...");
     ftCalibrationSrv_.waitForExistence();
@@ -144,8 +152,6 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bufferContact.storeData(bag, fromTime, toTime);
     bufferObjectState.storeData(bag, fromTime, toTime);
 
-    
-
     // store some bag metadata
     String s;
 
@@ -161,6 +167,8 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bag.close();
 }
 
+void PlacingManager::reorientate(){}
+    
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
@@ -195,8 +203,24 @@ bool PlacingManager::collectSample(){
         ROS_FATAL("no contact -> can't store sample");
     }
 
-    ROS_INFO("move torso up again");
+    ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
+
+    ROS_INFO("planning arm reorientation ...");
+    wristAc_.sendGoalAndWait(PlanWristGoal());
+    auto pwr = wristAc_.getResult();
+
+    moveit_msgs::ExecuteTrajectoryGoal executeGoal;
+    executeGoal.trajectory = pwr->trajectory;
+    
+    ROS_INFO("executing arm reorientation ...");
+    executeAc_.sendGoal(executeGoal);
+    
+    int waitSecs = (int) 1000*executeGoal.trajectory.joint_trajectory.points.back().time_from_start.toSec();
+    ROS_INFO_STREAM("waiting for " << waitSecs << " milliseconds");
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitSecs));
+
+    ROS_INFO("done.");
 
     return true;
 }

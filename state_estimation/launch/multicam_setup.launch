@@ -5,7 +5,8 @@
   <arg name="cam1" default="webcam" />
   <arg name="cam2" default="external_webcam" />
 
-  <arg name="cam2_video" default="/dev/video2" />
+  <arg name="cam1_video" default="/dev/video2" />
+  <arg name="cam2_video" default="/dev/video0" />
 
    <group if="$(arg rviz)">
      <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
@@ -46,6 +47,7 @@
     <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
     <param name="publish_tf" value="false" />
+    <param name="video_device" value="$(arg cam2_video)" />
     <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
   </node>
 

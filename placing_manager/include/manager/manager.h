@@ -15,7 +15,6 @@
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <actionlib/client/simple_action_client.h>
-#include <moveit/move_group_interface/move_group_interface.h>
 
 // ros msgs
 #include <std_msgs/Bool.h>
@@ -25,6 +24,8 @@
 #include <sensor_msgs/JointState.h>
 #include <tactile_msgs/TactileState.h>
 #include <geometry_msgs/WrenchStamped.h>
+#include <wrist_motion/PlanWristAction.h>
+#include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <state_estimation/ObjectStateEstimate.h>
 #include <controller_manager_msgs/LoadController.h>
 #include <controller_manager_msgs/ListControllers.h>
@@ -70,7 +71,8 @@ private:
     ros::ServiceClient listControllersSrv_;
     ros::ServiceClient switchControllerSrv_;
 
-    moveit::planning_interface::MoveGroupInterface moveGroup_;
+    actionlib::SimpleActionClient<wrist_motion::PlanWristAction> wristAc_;
+    actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> executeAc_;
     actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> torsoAc_;
 
     float lerp(float a, float b, float f);
@@ -80,6 +82,7 @@ private:
     ros::Time getContactTime();
     void pause();
     void unpause();
+    void reorientate();
     void storeSample(ros::Time contactTime);
     bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);

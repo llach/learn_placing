@@ -9,7 +9,7 @@ from sensor_msgs.msg import JointState
 from wrist_motion import Reorient
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--real", default=False, action="store_true")
+parser.add_argument("--real", default=True, action="store_true")
 
 args, _ = parser.parse_known_args()
 
@@ -45,7 +45,7 @@ if not args.real:
             if tr == None: continue
             
             joint_pub.publish(JointState(
-                name=ACTIVE_JOINTS,
+                name=ACTIVE_JOINTS[1:],
                 position=tr.joint_trajectory.points[-1].positions
             ))
 
@@ -53,11 +53,12 @@ if not args.real:
     except KeyboardInterrupt:
         print("bye")
 else:
+    print("starting ...")
     try:
         while True:
-            failed = False
-            while not failed:
-                tr, failed = ro.plan_random()
+            failed = True
+            while failed:
+                tr, failed = ro.plan_random(publish_traj=False)
             inp = input("next?\n")
             if inp == "q":
                 break

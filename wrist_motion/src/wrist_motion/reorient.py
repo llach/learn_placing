@@ -53,7 +53,7 @@ class Reorient:
         self.should_get_js = True
 
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
-        self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
+        # self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         
         self.tol = np.array([0.3, 0.3, 0.3])
         self.eef_axis = np.array([0,0,-1])
@@ -63,7 +63,7 @@ class Reorient:
         self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
         self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
         self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
-        self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
+        # self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
 
         self.li = TransformListener()
         for _ in range(6):
@@ -73,6 +73,7 @@ class Reorient:
             except Exception as e:
                 print(e)
         self.update_obj_transform()
+        print("setup done")
 
     def update_obj_transform(self):
         oT = self.get_object_transform()
@@ -155,7 +156,7 @@ class Reorient:
 
         self.marker_pub.publish(ma)
 
-    def plan_random(self, publish_traj=True, check_validity=True):
+    def plan_random(self, publish_traj=False, check_validity=True):
         print("getting current state")
 
         self.should_get_js = True
@@ -177,18 +178,19 @@ class Reorient:
             print("z constraint failed")
             return None, True
 
-        traj_points = np.linspace(self.start_state, goal_state, 10)
-        traj_times = np.linspace(0, 3, 10)
+        # torso is frist joint, on the real robot we can't use it (otherwise moveit complains about planning groups / controllers)
+        traj_points = np.linspace(self.start_state[1:], goal_state[1:], 10)
+        traj_times = np.linspace(0, 2, 10)
 
         rss = []
         traj = JointTrajectory()
-        traj.joint_names = self.c.joint_msg.name
+        traj.joint_names = self.c.joint_msg.name[1:]
 
         for p, t in zip(traj_points, traj_times):
-            rss.append(self.raw2rs(self.JOINTS, p))
+            rss.append(self.raw2rs(self.JOINTS[1:], p))
             traj.points.append(JointTrajectoryPoint(positions=p, time_from_start=rospy.Duration(t)))
 
-        init_rs = self.raw2rs(self.JOINTS, self.start_state)
+        init_rs = self.raw2rs(self.JOINTS[1:], self.start_state)
 
         rt = RobotTrajectory(joint_trajectory=traj)
         disp = DisplayTrajectory(trajectory_start=init_rs)
@@ -210,7 +212,7 @@ class Reorient:
         self.pub_markers()
         return rt, failed
     
-    def execute(self, tr, wait=True):
-        print("executing trajectory ...")
-        self.mg.execute(tr, wait=wait)
-        print("execution finished.")
+    # def execute(self, tr, wait=True):
+    #     print("executing trajectory ...")
+    #     self.mg.execute(tr, wait=wait)
+    #     print("execution finished.")

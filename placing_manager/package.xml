@@ -17,11 +17,12 @@
   <depend>std_srvs</depend>
   <depend>actionlib</depend>
   <depend>sensor_msgs</depend>
+  <depend>moveit_msgs</depend>
   <depend>control_msgs</depend>
+  <depend>wrist_motion</depend>
   <depend>tactile_msgs</depend>
   <depend>trajectory_msgs</depend>
   <depend>state_estimation</depend>
   <depend>controller_manager_msgs</depend>
-  <depend>moveit_ros_planning_interface</depend>
 
 </package>
