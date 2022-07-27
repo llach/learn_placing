@@ -238,7 +238,7 @@ class StateEstimator:
             self.br.sendTransform(
                             v2l(otf.transform.translation), 
                             q2l(otf.transform.rotation), 
-                            rospy.Time.now(), 
+                            rospy.Time.now(),
                             "object", 
                             "base_link")
 

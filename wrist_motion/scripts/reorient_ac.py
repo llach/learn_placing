@@ -14,9 +14,10 @@ def plan(goal):
     global ro
     global _as
     print("generating new arm trajectory ...")
-    failed = True
-    while failed:
+    for _ in range(15):
         tr, failed = ro.plan_random()
+        if not failed: break
+    if failed: _as.set_succeeded(PlanWristResult())
 
     oT = ro.get_target_joint_tf()
     pwr = PlanWristResult()

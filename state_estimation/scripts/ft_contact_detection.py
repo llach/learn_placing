@@ -3,18 +3,20 @@ import rospy
 import numpy as np
 
 from collections import deque
-from std_msgs.msg import Bool, Time
+from std_msgs.msg import Time
 from std_srvs.srv import Empty, EmptyResponse
-from geometry_msgs.msg import WrenchStamped
+from state_estimation.msg import BoolHead
+from geometry_msgs.msg import WrenchStamped, Vector3
 
 """
 Topics & Parameters
 """
 FT_TOPIC = "/wrist_ft"
 BASE_TOPIC = "/table_contact"
-CON_TOPIC = f"{BASE_TOPIC}/in_contact"
-CON_TS_TOPIC = f"{BASE_TOPIC}/contact_timestamp"
-CALIBRATE_SERVER_TOPIC = f"{BASE_TOPIC}/calibrate"
+CON_TOPIC = BASE_TOPIC+"/in_contact"
+CON_TS_TOPIC = BASE_TOPIC+"/contact_timestamp"
+DIFF_TOPIC = BASE_TOPIC+"/diff"
+CALIBRATE_SERVER_TOPIC = BASE_TOPIC+"/calibrate"
 
 N_CALIBRATION_SAMPLES = 25
 M_SAMPLES = 5
@@ -25,7 +27,7 @@ global variables
 """
 calibration_samples = []
 calibrated = False
-factor = 2
+factor = 1.5
 
 means = None
 stds = None
@@ -38,7 +40,7 @@ ws = deque(maxlen=M_SAMPLES)
 
 r = None
 
-def wrench_to_vec(w: WrenchStamped):
+def wrench_to_vec(w):
     return [
         w.force.x,
         w.force.y,
@@ -54,8 +56,12 @@ def ft_cb(m):
     
     global con_pub
     global con_ts_pub
+    global diff_pub
 
     in_contact = False
+
+    delay = rospy.Time.now()-m.header.stamp
+    # print(delay.to_sec())
 
     if not calibrated:
         if calibration_samples == []:
@@ -72,16 +78,18 @@ def ft_cb(m):
         ws.append(wrench_to_vec(m.wrench))
         if len(ws)>=M_SAMPLES:
             diff = np.abs(np.median(ws, axis=0)-means)
+            diff_pub.publish(Vector3(*diff))
 
             if np.any(diff>factor):
-                print(f"contact detected: {diff}")
+                print("contact detected:", diff)
+                print(delay.to_sec())
                 in_contact = True
 
     if in_contact:
-        con_pub.publish(True)
+        con_pub.publish(BoolHead(header=m.header, in_contact=True))
         con_ts_pub.publish(rospy.Time.now())
     else:
-        con_pub.publish(False)
+        con_pub.publish(BoolHead(header=m.header, in_contact=False))
         con_ts_pub.publish(rospy.Time(0))
 
 def reset_calibration(*args, **kwargs):
@@ -90,12 +98,12 @@ def reset_calibration(*args, **kwargs):
     global calibrated
     global calibration_samples
 
-    print(f"current means: {means}")
+    print("current means:",means)
     calibration_samples = []
     calibrated = False
     while not calibrated:
         r.sleep()
-    print(f"new means: {means}")
+    print("new means:",means)
 
     return EmptyResponse()
 
@@ -103,8 +111,9 @@ rospy.init_node("ft_contact_detection")
 r = rospy.Rate(50)
 
 ft_sub = rospy.Subscriber(FT_TOPIC, WrenchStamped, ft_cb, queue_size=1)
-con_pub = rospy.Publisher(CON_TOPIC, Bool, queue_size=1)
+con_pub = rospy.Publisher(CON_TOPIC, BoolHead, queue_size=1)
 con_ts_pub = rospy.Publisher(CON_TS_TOPIC, Time, queue_size=1)
+diff_pub = rospy.Publisher(DIFF_TOPIC, Vector3, queue_size=1)
 calibrate_srv = rospy.Service(CALIBRATE_SERVER_TOPIC, Empty, reset_calibration)
 
 while not rospy.is_shutdown():

@@ -126,7 +126,7 @@ ros::Time PlacingManager::getContactTime(){
         std::lock_guard<std::mutex> l(bufferContact.m_);
         ROS_INFO_STREAM("got " << bufferContact.times_.size() << " samples ");
         for (size_t i = 0; i<bufferContact.times_.size(); i++){
-            if (bufferContact.data_[i].data) return bufferContact.times_[i];
+            if (bufferContact.data_[i].in_contact) return bufferContact.times_[i];
         }
     }
     ROS_FATAL("no contact detected!!");
@@ -167,17 +167,38 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bag.close();
 }
 
-void PlacingManager::reorientate(){}
+bool PlacingManager::reorientate(){
+    ROS_INFO("planning arm reorientation ...");
+    wristAc_.sendGoalAndWait(PlanWristGoal());
+    auto pwr = wristAc_.getResult();
+
+    if (pwr->trajectory.joint_trajectory.points.size()==0){
+        ROS_FATAL("planning failed!");
+        return false;
+    }
+
+    moveit_msgs::ExecuteTrajectoryGoal executeGoal;
+    executeGoal.trajectory = pwr->trajectory;
+   
+    ROS_INFO("executing arm reorientation ...");
+    executeAc_.sendGoal(executeGoal);
+    
+    int waitSecs = (int) 1000*executeGoal.trajectory.joint_trajectory.points.back().time_from_start.toSec();
+    ROS_INFO_STREAM("waiting for " << waitSecs << " milliseconds");
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitSecs));
+
+    ROS_INFO("done.");
+}
     
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
-    // if (nSamples_ % nFTRecalibrate_ == 0){
-    ROS_INFO("recalibrating FT");
+    // we explicitly check whether the object is visible, if not we reorientate until it is
+    
 
+    ROS_INFO("recalibrating FT");
     Empty e;
     ftCalibrationSrv_.call(e);
-    // }
 
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
         ROS_ERROR("data not fresh");
@@ -188,7 +209,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("moving torso down towards the table ...");
 
     ros::Time startMoveing = ros::Time::now();
-    moveTorso(0.15, 3.0);
+    moveTorso(-0.15, 3.0, false);
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
     // robot moved 
@@ -206,21 +227,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    ROS_INFO("planning arm reorientation ...");
-    wristAc_.sendGoalAndWait(PlanWristGoal());
-    auto pwr = wristAc_.getResult();
-
-    moveit_msgs::ExecuteTrajectoryGoal executeGoal;
-    executeGoal.trajectory = pwr->trajectory;
-    
-    ROS_INFO("executing arm reorientation ...");
-    executeAc_.sendGoal(executeGoal);
-    
-    int waitSecs = (int) 1000*executeGoal.trajectory.joint_trajectory.points.back().time_from_start.toSec();
-    ROS_INFO_STREAM("waiting for " << waitSecs << " milliseconds");
-    std::this_thread::sleep_for(std::chrono::milliseconds(waitSecs));
-
-    ROS_INFO("done.");
+    reorientate();
 
     return true;
 }

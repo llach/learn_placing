@@ -41,7 +41,7 @@
 #include <mutex>
 #include <atomic>
 
-#include <std_msgs/Bool.h>
+#include <state_estimation/BoolHead.h>
 
 #include <joint_trajectory_controller/joint_trajectory_controller.h>
 #include <trajectory_interface/quintic_spline_segment.h>

@@ -22,6 +22,7 @@
 #include <std_srvs/Empty.h>
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/JointState.h>
+#include <state_estimation/BoolHead.h>
 #include <tactile_msgs/TactileState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <wrist_motion/PlanWristAction.h>
@@ -39,7 +40,7 @@ namespace placing_manager {
 
 class PlacingManager{
 public:
-    PlacingManager(float initialTorsoQ = 0.25);
+    PlacingManager(float initialTorsoQ = 0.15);
 
     bool init(ros::Duration timeout);
     bool collectSample();
@@ -82,7 +83,7 @@ private:
     ros::Time getContactTime();
     void pause();
     void unpause();
-    void reorientate();
+    bool reorientate();
     void storeSample(ros::Time contactTime);
     bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);
@@ -92,7 +93,7 @@ private:
     TopicBuffer<tactile_msgs::TactileState> bufferMyLeft;
     TopicBuffer<tactile_msgs::TactileState> bufferMyRight;
     TopicBuffer<geometry_msgs::WrenchStamped> bufferFt;
-    TopicBuffer<std_msgs::Bool> bufferContact;
+    TopicBuffer<state_estimation::BoolHead> bufferContact;
     TopicBuffer<state_estimation::ObjectStateEstimate> bufferObjectState;
 
     std::mutex jsLock_;

@@ -60,8 +60,14 @@ bool TorsoStopController::init(hardware_interface::PositionJointInterface* hw,
     action_server_->start();
 
     in_contact_ = false;
-    in_contact_sub_ = root_nh.subscribe<std_msgs::Bool>("/table_contact/in_contact", 1, 
-            [this](const std_msgs::BoolConstPtr& msg){this->in_contact_=msg->data;});
+    in_contact_sub_ = root_nh.subscribe<state_estimation::BoolHead>("/table_contact/in_contact", 1, 
+            [this](const state_estimation::BoolHeadConstPtr& msg){
+                this->in_contact_=msg->in_contact;
+                if (this->in_contact_){
+                    ros::Duration d = ros::Time::now()-msg->header.stamp;
+                    ROS_INFO_STREAM_NAMED(name_, "contact detected, delay: " << d.toSec());
+                }
+            });
 
     moving_down_ = false;
 

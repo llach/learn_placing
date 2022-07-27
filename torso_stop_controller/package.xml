@@ -12,7 +12,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
-  <depend>std_msgs</depend>
+  <depend>state_estimation</depend>
   <depend>controller_interface</depend>
   <depend>joint_trajectory_controller</depend>
 
