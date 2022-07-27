@@ -202,8 +202,7 @@ class StateEstimator:
             mean_angs = [np.mean(a) for a in angles if len(a)>0]
             final_ang = np.mean(mean_angs)
         else:
-            final_ang = -10 # == no detection whatsoever
-            mean_angs = []
+            return
         
         ose = ObjectStateEstimate()
 
@@ -216,7 +215,7 @@ class StateEstimator:
         ose.angles = [Float64(ma) for ma in mean_angs]
 
         ose.cameras = [String(ca) for ca in cameras]
-            
+
         if len(ose.angles)>0:
             qc  = [q2l(q) for q in ose.qcurrents]
             qo  = [q2l(q) for q in ose.qoffsets]
