@@ -1,5 +1,9 @@
 import numpy as np
 
+"""
+TODO what is max, what is min value
+"""
+
 def remove_outer(data, B=0):
     """
     expects an array of (N, 16, 16), with N = number of samples
@@ -16,6 +20,11 @@ def reshape_mm_vector(data):
     N = data.shape[0]
     return np.reshape(data, (N,16,16))
 
+def normalize_mm(data):
+    """ converts values from range [0,4095] to [0,1]
+    """
+    return data/4095
+
 
 if __name__ == "__main__":
     import pickle
@@ -28,8 +37,9 @@ if __name__ == "__main__":
     left = reshape_mm_vector(mm_data["/tactile_left"])
     right = reshape_mm_vector(mm_data["/tactile_right"])
 
-    # one matrix for all samples
+    # one matrix for all samples and normalize
     data = np.concatenate([left, right], axis=0)
+    data = normalize_mm(data)
 
     # (optional) since the outermost taxels are prone 
     # to false positives, we can cut them away 
