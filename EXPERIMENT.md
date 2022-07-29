@@ -5,6 +5,7 @@
    2. [on robot PC] `pal_restart_deployer`
 3. Put object on the table, make sure cameras have sight
 4. All further shells assume ROS_MASTER_URI to be set to the robot (and ROS_IP to be set accordingly). To check run `rostopic hz /joint_states` on experiment PC, if messages come it's fine.
+5. Start Myrmex: `roslaunch tiago_myrmex myrmex_readout.launch`
 5. Start components: `roslaunch placing_manager components.launch`
 6. Setup experiments: `rosrun placing_manager setup_experiment.py`
 

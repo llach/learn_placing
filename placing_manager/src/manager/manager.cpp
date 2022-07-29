@@ -58,8 +58,8 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     ROS_INFO("waiting for torso AC ...");
     torsoAc_.waitForServer();
 
-    // ROS_INFO("waiting for execution AC ...");
-    // executeAc_.waitForServer();
+    ROS_INFO("waiting for execution AC ...");
+    executeAc_.waitForServer();
 
     ROS_INFO("waiting for FT calibration service ...");
     ftCalibrationSrv_.waitForExistence();
@@ -112,8 +112,8 @@ void PlacingManager::unpause(){
 
 bool PlacingManager::checkLastTimes(ros::Time n){
     if (not bufferJs.isFresh(n)) return false;
-    // if (not bufferMyLeft.isFresh(n)) return false;
-    // if (not bufferMyRight.isFresh(n)) return false;
+    if (not bufferMyLeft.isFresh(n)) return false;
+    if (not bufferMyRight.isFresh(n)) return false;
     if (not bufferFt.isFresh(n)) return false;
     if (not bufferContact.isFresh(n)) return false;
     if (not bufferObjectState.isFresh(n)) return false;

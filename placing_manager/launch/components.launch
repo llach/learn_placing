@@ -5,7 +5,6 @@
         <arg name="cam2" value="external_webcam" />
     </include>
 
-    <!-- <node pkg="state_estimation" type="ft_contact_detection.py" name="ft_contact_detection"  output="screen" /> -->
     <node pkg="state_estimation" type="object_state.py" name="state_estimation"  output="screen" />
     <node pkg="wrist_motion"     type="reorient_ac.py" name="wrist_motion"  output="screen" />
 
