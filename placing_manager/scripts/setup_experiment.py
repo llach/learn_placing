@@ -81,6 +81,9 @@ if __name__ == "__main__":
     gravityAC = actionlib.ActionClient("/gravity_compensation", EmptyAction)
     mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 
+    print("enabling torso controller ...")
+    safe_switch("torso_controller", "torso_stop_controller")
+
     print("enabling myrmex controller ...")
     safe_switch("gripper_controller", "myrmex_gripper_controller")
 
