@@ -2,7 +2,7 @@ import rospy
 import actionlib
 
 from std_srvs.srv import Empty
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from trajectory_msgs.msg import JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
 from cm_interface import safe_switch

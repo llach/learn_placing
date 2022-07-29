@@ -78,7 +78,7 @@ if __name__ == "__main__":
     objectStateCalib = rospy.ServiceProxy("/object_state_calibration", Empty)
     ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
 
-    gravityAC = actionlib.ActionClient("/gravity_compensation", EmptyAction)
+    gravityAC = actionlib.SimpleActionClient("/gravity_compensation", EmptyAction)
     mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 
     print("enabling torso controller ...")
