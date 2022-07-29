@@ -58,8 +58,8 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
     ROS_INFO("waiting for torso AC ...");
     torsoAc_.waitForServer();
 
-    ROS_INFO("waiting for execution AC ...");
-    executeAc_.waitForServer();
+    // ROS_INFO("waiting for execution AC ...");
+    // executeAc_.waitForServer();
 
     ROS_INFO("waiting for FT calibration service ...");
     ftCalibrationSrv_.waitForExistence();
@@ -209,7 +209,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("moving torso down towards the table ...");
 
     ros::Time startMoveing = ros::Time::now();
-    moveTorso(-0.15, 3.0, false);
+    moveTorso(0.0, 6.0);
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
     // robot moved 
