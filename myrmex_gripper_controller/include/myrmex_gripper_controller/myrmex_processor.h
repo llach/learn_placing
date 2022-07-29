@@ -38,7 +38,7 @@ private:
 
     unsigned short nSamples_ = 0;
     std::atomic<bool> calibrate_ = { false };
-    std::vector<float> calibrationSamples_ = std::vector<float>(4000);
+    std::vector<float> calibrationSamples_ = std::vector<float>(1000);
 
     // ros members
     ros::NodeHandle nh_;

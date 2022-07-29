@@ -310,7 +310,6 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
       desired_state_.velocity[i] = desired_joint_state_.velocity[0];
       desired_state_.acceleration[i] = desired_joint_state_.acceleration[0];
 
-
       state_joint_error_.position[0] =
               angles::shortest_angular_distance(current_state_.position[i], desired_joint_state_.position[0]);
       state_joint_error_.velocity[0] = desired_joint_state_.velocity[0] - current_state_.velocity[i];
@@ -332,6 +331,15 @@ void MyrmexGripperController::update(const ros::Time& time, const ros::Duration&
     rt_active_goal_.reset();
     successful_joint_traj_.reset();
   } 
+  // check for force success
+  if (current_active_goal && !goalMaintain_ && state_ == FORCE_CTRL && f_target_ <= f_sum_) {
+    ROS_INFO_NAMED(name_, "FORCE SUCCESS");
+
+    current_active_goal->preallocated_result_->error_code = control_msgs::FollowJointTrajectoryResult::SUCCESSFUL;
+    current_active_goal->setSucceeded(current_active_goal->preallocated_result_);
+    rt_active_goal_.reset();
+    successful_joint_traj_.reset();
+  }
 
   // Hardware interface adapter: Generate and send commands
   hw_iface_adapter_.updateCommand(time_data.uptime, time_data.period,
@@ -397,11 +405,12 @@ bool MyrmexGripperController::kill(std_srvs::Empty::Request& req, std_srvs::Empt
     return true;
 }
 
-bool MyrmexGripperController::calibrate(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+bool MyrmexGripperController::calibrate(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
     RealtimeGoalHandlePtr current_active_goal(rt_active_goal_);
     if (current_active_goal) {
         ROS_INFO_NAMED(name_, "Cannot calibrate sensors during goal execution");
+        res.success = false;
         return false;
     }
 
@@ -409,14 +418,23 @@ bool MyrmexGripperController::calibrate(std_srvs::Empty::Request& req, std_srvs:
     mm_procs_[0]->startCalibration();
     mm_procs_[1]->startCalibration();
 
-    // wait for calibration to be done
-    while (!(mm_procs_[0]->is_calibrated && mm_procs_[1]->is_calibrated)) ros::Rate(5).sleep();
+    // wait for calibration to be done with timeout
+    ros::Time maxTime = ros::Time::now() + ros::Duration(5);
+    while (!(mm_procs_[0]->is_calibrated && mm_procs_[1]->is_calibrated)) {
+        if (ros::Time::now()>= maxTime) {
+            ROS_ERROR_NAMED(name_, "calibration failed (is myrmex readout started?)");
+            res.success = false;
+            return true;
+        }
+        ros::Rate(5).sleep();
+    }
     
     // update thresholds based on the maximum observed value during the calibration process
     // DISABLED for now, this heuristic is too tight. given minimal sensor drift and non-gaussian noise, false positives are more likely over time
     // force_thresholds_[0] = mm_procs_[0]->maxDeviation * threshFac_;
     // force_thresholds_[1] = mm_procs_[1]->maxDeviation * threshFac_;
 
+    res.success = true;
     return true;
 }
 

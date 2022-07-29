@@ -48,6 +48,7 @@
 
 #include <std_msgs/Bool.h>
 #include <std_srvs/Empty.h>
+#include <std_srvs/Trigger.h>
 #include <dynamic_reconfigure/server.h>
 #include <trajectory_interface/quintic_spline_segment.h>
 #include <joint_trajectory_controller/joint_trajectory_controller.h>
@@ -135,7 +136,7 @@ private:
     virtual void goalCB(GoalHandle gh) override;
 
     bool kill(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
-    bool calibrate(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+    bool calibrate(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
     void drCallback(myrmex_gripper_controller::MyrmexControllerDRConfig &config, uint32_t level);
 
 protected:

@@ -1,0 +1,3 @@
+rosrun: "state_estimation ft_contact_detection.py"
+dependencies: []
+finishes: False

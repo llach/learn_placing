@@ -3,7 +3,7 @@ import rospy
 import actionlib
 import numpy as np
 
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, Trigger
 from sensor_msgs.msg import JointState
 from pal_common_msgs.msg import EmptyAction, EmptyActionGoal
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     rospy.Subscriber("/joint_states", JointState, js_cb)
 
     mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
-    mmCalib = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Empty)
+    mmCalib = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Trigger)
     objectStateCalib = rospy.ServiceProxy("/object_state_calibration", Empty)
     ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
 
@@ -136,7 +136,10 @@ if __name__ == "__main__":
         mmAC.wait_for_result()
 
         print("calibrating myrmex ...")
-        mmCalib()
+        res = mmCalib()
+        if not res.success:
+            print("MYRMEX CALIBRATION FAILED!")
+            exit(-1)
 
         input_or_quit("close?")
         close_gripper()
