@@ -27,7 +27,7 @@ global variables
 """
 calibration_samples = []
 calibrated = False
-factor = 1.5
+factor = 1.0
 
 means = None
 stds = None
@@ -75,15 +75,14 @@ def ft_cb(m):
             calibrated = True
             print("FT calibration done!")
     else:
-        ws.append(wrench_to_vec(m.wrench))
-        if len(ws)>=M_SAMPLES:
-            diff = np.abs(np.median(ws, axis=0)-means)
-            diff_pub.publish(Vector3(*diff))
+        w = wrench_to_vec(m.wrench)
+        diff = np.abs(w-means)
+        diff_pub.publish(Vector3(*diff))
 
-            if np.any(diff>factor):
-                print("contact detected:", diff)
-                print(delay.to_sec())
-                in_contact = True
+        if np.any(diff>factor):
+            print("contact detected:", diff)
+            print(delay.to_sec())
+            in_contact = True
 
     if in_contact:
         con_pub.publish(BoolHead(header=m.header, in_contact=True))
