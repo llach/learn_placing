@@ -1,5 +1,7 @@
 import numpy as np
 
+from tactile_insertion_rl import TactileInsertionRLNet
+
 """
 TODO what is max, what is min value
 """
@@ -44,4 +46,6 @@ if __name__ == "__main__":
     # (optional) since the outermost taxels are prone 
     # to false positives, we can cut them away 
     # data = remove_outer(data, B=1)
+
+    net = TactileInsertionRLNet()
     pass
