@@ -1,6 +1,8 @@
 import numpy as np
 import torch.nn as nn
 
+from torch import Tensor, cat
+
 def conv2D_outshape(img_size, padding, kernel, stride):
 
 	output_shape=(np.floor((img_size[0] + 2 * padding[0] - (kernel[0] - 1) - 1) / stride[0] + 1).astype(int),
@@ -63,6 +65,12 @@ class TactileInsertionRLNet(nn.Module):
             nn.Linear(self.fc_neurons[1], self.output_size),
         )
 
+    def forward(self, xs: list[Tensor]):
+        return self.mlp(cat([
+            self.conv1(xs[0]), 
+            self.conv1(xs[1])
+        ]))
+
     def _conv_pre(self):
         layers = []
         conv_outshape = None
@@ -81,7 +89,7 @@ class TactileInsertionRLNet(nn.Module):
                         padding=self.conv_padding
                     ),
                     nn.BatchNorm2d(outc, momentum=0.01),
-                    nn.ReLU(inplace=True),  
+                    nn.ReLU(inplace=True),   # ?
                 )
             )
             self.conv_outshape = conv2D_outshape(
