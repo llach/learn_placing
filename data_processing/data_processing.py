@@ -30,6 +30,7 @@ def normalize_mm(data):
 
 if __name__ == "__main__":
     import pickle
+    from torchsummary import summary
 
     # read data
     with open(f"{__file__.replace(__file__.split('/')[-1], '')}/2022-07-27-16-44-18.pkl", "rb") as f:
@@ -48,4 +49,5 @@ if __name__ == "__main__":
     # data = remove_outer(data, B=1)
 
     net = TactileInsertionRLNet()
+    summary(net, input_size=(2, 40, 16, 16))
     pass
