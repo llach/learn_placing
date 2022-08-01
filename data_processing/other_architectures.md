@@ -24,3 +24,19 @@ network arch:
 output: 1x3 (x, y, theta)
 
 code: https://github.com/siyuandong16/Tactile_insertion_with_RL
+
+## InsertionNet v1
+https://arxiv.org/pdf/2104.14223.pdf
+
+* 16 objects
+* 100 training samples from backwards learning (not sure if this is per object)
+* data augmentation -> 10000 repeats on 64000 sample batches -> 640000 samples in total
+* 200 test iterations per object -> 3200 test repeats
+
+## InsertionNet v2 
+https://arxiv.org/pdf/2203.01153.pdf
+
+* 16 objects
+* 150 training samples from backwards learning (not sure if this is per object)
+* data augmentation -> 1500 repeats on 64 sample batches -> 192000 samples in total
+* 200 test iterations per object -> 3200 test repeats
