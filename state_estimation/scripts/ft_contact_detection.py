@@ -19,7 +19,7 @@ DIFF_TOPIC = BASE_TOPIC+"/diff"
 CALIBRATE_SERVER_TOPIC = BASE_TOPIC+"/calibrate"
 
 N_CALIBRATION_SAMPLES = 25
-M_SAMPLES = 5
+M_SAMPLES = 3
 STD_TRESH = 8
 
 """
@@ -27,7 +27,7 @@ global variables
 """
 calibration_samples = []
 calibrated = False
-factor = 1.0
+factor = 1.3
 
 means = None
 stds = None
@@ -35,7 +35,7 @@ stds = None
 con_pub = None
 con_ts_pub = None
 
-delta_ws = deque(maxlen=M_SAMPLES)
+dws = deque(maxlen=M_SAMPLES)
 ws = deque(maxlen=M_SAMPLES)
 
 r = None
@@ -55,8 +55,9 @@ def ft_cb(m):
     global calibration_samples
     
     global con_pub
-    global con_ts_pub
     global diff_pub
+    global con_ts_pub
+    global diff_raw_pub
 
     in_contact = False
 
@@ -77,7 +78,11 @@ def ft_cb(m):
     else:
         w = wrench_to_vec(m.wrench)
         diff = np.abs(w-means)
-        diff_pub.publish(Vector3(*diff))
+        dws.append(diff)
+        diff_raw_pub.publish(Vector3(*diff))
+        if len(dws)<M_SAMPLES: return
+
+        diff_pub.publish(Vector3(*np.median(dws, axis=0)))
 
         if np.any(diff>factor):
             print("contact detected:", diff)
@@ -113,6 +118,7 @@ ft_sub = rospy.Subscriber(FT_TOPIC, WrenchStamped, ft_cb, queue_size=1)
 con_pub = rospy.Publisher(CON_TOPIC, BoolHead, queue_size=1)
 con_ts_pub = rospy.Publisher(CON_TS_TOPIC, Time, queue_size=1)
 diff_pub = rospy.Publisher(DIFF_TOPIC, Vector3, queue_size=1)
+diff_raw_pub = rospy.Publisher(DIFF_TOPIC+"_raw", Vector3, queue_size=1)
 calibrate_srv = rospy.Service(CALIBRATE_SERVER_TOPIC, Empty, reset_calibration)
 
 while not rospy.is_shutdown():

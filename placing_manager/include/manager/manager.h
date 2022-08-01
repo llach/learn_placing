@@ -40,7 +40,7 @@ namespace placing_manager {
 
 class PlacingManager{
 public:
-    PlacingManager(float initialTorsoQ = 0.15);
+    PlacingManager(float initialTorsoQ = 0.35);
 
     bool init(ros::Duration timeout);
     bool collectSample();

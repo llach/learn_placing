@@ -1,3 +1,4 @@
+from tkinter import N
 import rospy
 import time
 import numpy as np
@@ -9,6 +10,7 @@ from tf.transformations import quaternion_matrix
 from wrist_motion.tiago_controller import TIAGoController
 from wrist_motion.marker import frame, box, orientationArrow
 
+from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import ColorRGBA
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Vector3
@@ -55,12 +57,15 @@ class Reorient:
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
         # self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         
-        self.tol = np.array([0.3, 0.3, 0.3])
+        # tolerances are the box's side length (we pass tolernaces/2 to the planner)
+        # the black wagon at PAL measures 40x40x57
+        self.tol = np.array([0.30, 0.30, 0.07])
         self.eef_axis = np.array([0,0,-1])
 
         self.Toff = tf.rotation_matrix(0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
 
         self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
+        self.reinit_srv = rospy.Service('/reinit_wrist_planner', Empty, self.reinit)
         self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
         self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
         # self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
@@ -74,6 +79,11 @@ class Reorient:
                 print(e)
         self.update_obj_transform()
         print("setup done")
+
+    def reinit(self, req):
+        print("REINIT wrist planner")
+        self.Tinit = None
+        return EmptyResponse() 
 
     def update_obj_transform(self):
         oT = self.get_object_transform()
@@ -125,7 +135,7 @@ class Reorient:
         _T[0:3, 3] = T[0:3, 3]
         return _T
 
-    def pub_markers(self):
+    def pub_markers(self, pub_goal=True):
         start_T, _ = self.c.robot.fk(self.c.target_link, dict(zip(self.JOINTS, self.start_state)))
 
         start_frame = frame(start_T, ns="start_frame")
@@ -146,13 +156,15 @@ class Reorient:
         end_arrow.id = 9
 
         ma = MarkerArray(markers=[
-            *start_frame, 
-            *goal_frame,
+            *start_frame,
             tolerance_box,
             start_arrow,
-            goal_arrow,
             end_arrow
         ])
+
+        if pub_goal:
+            ma.markers.append(goal_arrow)
+            for gf in goal_frame: ma.markers.append(gf)
 
         self.marker_pub.publish(ma)
 
@@ -169,13 +181,16 @@ class Reorient:
         self.To = sample_random_orientation_southern_hemisphere()
         goal_state, failed = self.c.reorientation_trajectory(self.To, self.Tinit, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
 
-        if failed: return None, failed
+        if failed: 
+            self.pub_markers(False)
+            return None, failed
 
         Tarm, _ = self.c.fk_for_link("arm_7_link")
         Thand, _ = self.c.fk_for_link("gripper_grasping_frame")
 
         if Tarm[2,3]<Thand[2,3]: 
             print("z constraint failed")
+            self.pub_markers(False)
             return None, True
 
         # torso is frist joint, on the real robot we can't use it (otherwise moveit complains about planning groups / controllers)
@@ -202,7 +217,8 @@ class Reorient:
                 print("valid trajectory")
             else:
                 print("trajectory not valid!")
-                return False
+                self.pub_markers(False)
+                return rt, True
 
         if publish_traj:
             while self.traj_pub.get_num_connections()<1:

@@ -77,9 +77,15 @@ if __name__ == "__main__":
     mmCalib = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Trigger)
     objectStateCalib = rospy.ServiceProxy("/object_state_calibration", Empty)
     ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
+    reinitSrv = rospy.ServiceProxy("/reinit_wrist_planner", Empty)
 
     gravityAC = actionlib.SimpleActionClient("/gravity_compensation", EmptyAction)
     mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+    torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+
+    up_goal = FollowJointTrajectoryGoal()
+    up_goal.trajectory.joint_names = ["torso_lift_joint"]
+    up_goal.trajectory.points.append(JointTrajectoryPoint(positions=[0.35], time_from_start=rospy.Duration(3.0)))
 
     print("enabling torso controller ...")
     safe_switch("torso_controller", "torso_stop_controller")
@@ -105,6 +111,15 @@ if __name__ == "__main__":
     print("waiting for ft calibration service ...")
     ftCalib.wait_for_service()
 
+    print("waiting for wrist planner reinit service ...")
+    reinitSrv.wait_for_service()
+
+    print("waiting for torso action ... ")
+    torsoAC.wait_for_server()
+
+    print("moving torso")
+    torsoAC.send_goal_and_wait(up_goal)
+
     print("################ setup done")
 
     ################################################
@@ -124,6 +139,9 @@ if __name__ == "__main__":
 
         input_or_quit("done?")
         gravityAC.cancel_all_goals()
+
+        print("reiniting reorient")
+        reinitSrv()
 
     ################################################
     ########### SETUP MYRMEX CONTROLLER ############

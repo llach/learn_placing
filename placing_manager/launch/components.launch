@@ -1,4 +1,5 @@
 <launch>
+    <arg name="rviz" default="false" />
 
      <include file="$(find state_estimation)/launch/multicam_setup.launch" >
         <arg name="cam1" value="webcam" />
@@ -9,5 +10,7 @@
     <node pkg="wrist_motion"     type="reorient_ac.py" name="wrist_motion"  output="screen" />
 
   <!-- Run Rviz -->
-  <!-- <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" /> -->
+  <group if="$(arg rviz)">
+    <node name="$(anon rviz)" pkg="rviz" type="rviz" output="screen" args="-d $(dirname)/../config/tiago.rviz" />
+  </group>
 </launch>

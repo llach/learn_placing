@@ -209,7 +209,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("moving torso down towards the table ...");
 
     ros::Time startMoveing = ros::Time::now();
-    moveTorso(0.0, 6.0);
+    moveTorso(0.0, 10.5);
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
     // robot moved 
