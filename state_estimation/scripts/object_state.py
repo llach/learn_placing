@@ -113,7 +113,7 @@ class TagTransformator:
         markers = {}
         for d in am.detections:
             mid = d.id[0]
-            if mid == 9 or mid == 8: continue
+            # if mid == 9 or mid == 8: continue
             axis = mid2axis(mid)
 
             tfs = TransformStamped()
@@ -126,6 +126,7 @@ class TagTransformator:
 
             qcurrent = q2l(tfs.transform.rotation)
             vcurrent = rotate_v(axis, qcurrent)
+            print(mid, vcurrent)
 
             if self.calibrated:
                 rad = np.dot(self.vstart, vcurrent)
@@ -162,7 +163,7 @@ class StateEstimator:
         self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
 
-        self.qref = None
+        self.vref = None
 
     def calibrate_cb(self, *args, **kwargs):
         print("calibrating SE ...")
@@ -185,7 +186,7 @@ class StateEstimator:
         vcurrents = []
         cameras = []
 
-        self.qref = None
+        self.vref = None
 
         for tt in self.tts: # loop over M cams ...
 
@@ -214,6 +215,7 @@ class StateEstimator:
                         angles[-1].append(md.angle)
                         vcurrents[-1].append(md.vcurrent)
                         voffsets[-1].append(md.voffset)
+                    
                         
             tt.l.release()
         if np.any([len(a)>0 for a in angles]):
