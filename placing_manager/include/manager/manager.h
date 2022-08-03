@@ -85,6 +85,7 @@ private:
     void unpause();
     bool reorientate();
     void storeSample(ros::Time contactTime);
+    bool checkSamples();
     bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);

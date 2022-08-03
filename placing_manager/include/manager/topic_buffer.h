@@ -41,6 +41,11 @@ public:
         return true;
     }
 
+    int numData(){
+        if (data_.size()==0) ROS_INFO("%s has no data!", name_);
+        return (int) data_.size();
+    }
+
     std::mutex m_;
     std::vector<T> data_;
     std::atomic<bool> paused_;

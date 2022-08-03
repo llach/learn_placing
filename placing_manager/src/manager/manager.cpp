@@ -116,7 +116,20 @@ bool PlacingManager::checkLastTimes(ros::Time n){
     if (not bufferMyRight.isFresh(n)) return false;
     if (not bufferFt.isFresh(n)) return false;
     if (not bufferContact.isFresh(n)) return false;
-    if (not bufferObjectState.isFresh(n)) return false;
+
+    // we don't check the freshness here since one reading during the downwards movement is sufficient
+    // if (not bufferObjectState.isFresh(n)) return false;
+
+    return true;
+}
+
+bool PlacingManager::checkSamples(){
+    if (bufferJs.numData()==0) return false;
+    if (bufferMyLeft.numData()==0) return false;
+    if (bufferMyRight.numData()==0) return false;
+    if (bufferFt.numData()==0) return false;
+    if (bufferContact.numData()==0) return false;
+    if (bufferObjectState.numData()==0) return false;
 
     return true;
 }
@@ -193,9 +206,6 @@ bool PlacingManager::reorientate(){
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
-    // we explicitly check whether the object is visible, if not we reorientate until it is
-    
-
     ROS_INFO("recalibrating FT");
     Empty e;
     ftCalibrationSrv_.call(e);
@@ -217,11 +227,15 @@ bool PlacingManager::collectSample(){
     nSamples_++;
 
     ros::Time contactTime = getContactTime();
-    if (contactTime != ros::Time(0)){
+    if (contactTime != ros::Time(0) && checkSamples()){
         ROS_INFO_STREAM("contact detected at " << contactTime);
         storeSample(contactTime);
-    } else{
+    } else if (contactTime == ros::Time(0) ) {
         ROS_FATAL("no contact -> can't store sample");
+    } else if (!checkSamples()) {
+        ROS_FATAL("missing samples");
+    } else {
+        ROS_FATAL("unknown error");
     }
 
     ROS_INFO("move torso up again ...");

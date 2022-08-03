@@ -1,24 +1,50 @@
 <launch>
-    <arg name="cam1_video" default="/dev/video0" />
-    <arg name="cam2_video" default="/dev/video2" />
+    <arg name="cam1" default="webcam" />
+    <arg name="cam1_video" default="/dev/video2" />
 
-    <node pkg="tf" type="static_transform_publisher" name="base_cam_tf" args="0 0 0.5 0 0 0 1 base_link head_camera 100" />
+    <arg name="cam2" default="aukey" />
+    <arg name="cam2_video" default="/dev/video0" />
 
-    <node pkg="usb_cam" type="usb_cam_node" name="webcam" output="screen" >
-        <param name="camera_name" value="webcam" />
+    <arg name="publish_marker_image" default="true" />
+
+     <node pkg="tf" type="static_transform_publisher" name="base_cam_tf" args="0 0 0.5 0 0 0 1 base_link head_camera 100" />
+     <node pkg="tf" type="static_transform_publisher" name="base_grasp_tf" args="0 0 0 0 0 0 1 base_link gripper_grasping_frame 100" />
+
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_1" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_1" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_2" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_2" />
+    
+    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam1)" output="screen" >
+        <param name="camera_name" value="$(arg cam1)" />
         <param name="pixel_format" value="yuyv" />
         <param name="video_device" value="$(arg cam1_video)" />
     </node>
 
-    <node pkg="usb_cam" type="usb_cam_node" name="external_webcam" output="screen" >
-        <param name="camera_name" value="external_webcam" />
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_1" output="screen" >
+        <remap from="image_rect" to="/usb_cam_$(arg cam1)/image_raw" />
+        <remap from="camera_info" to="/usb_cam_$(arg cam1)/camera_info" />
+        <remap from="tag_detections" to="/tag_detections_$(arg cam1)" />
+        <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam1)" />
+
+        <param name="publish_tag_detections_image" type="bool" value="true" />
+    </node>
+
+    <!-- <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam2)" output="screen" >
+        <param name="camera_name" value="$(arg cam2)" />
         <param name="pixel_format" value="yuyv" />
         <param name="video_device" value="$(arg cam2_video)" />
     </node>
 
-    <include file="$(find state_estimation)/launch/multicam_detection.launch" >
-        <arg name="cam1" value="webcam" />
-        <arg name="cam2" value="external_webcam" />
-    </include>
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_2" output="screen" >
+        <remap from="image_rect" to="/usb_cam_$(arg cam2)/image_raw" />
+        <remap from="camera_info" to="/usb_cam_$(arg cam2)/camera_info" />
+        <remap from="tag_detections" to="/tag_detections_$(arg cam2)" />
+        <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
+        <param name="publish_tag_detections_image" type="bool" value="true" />
+    </node> -->
+
+    <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
 </launch>
