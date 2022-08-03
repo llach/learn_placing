@@ -52,10 +52,11 @@ if __name__ == "__main__":
     # data = remove_outer(data, B=1)
 
     net = TactileInsertionRLNet()
-    summary(net, input_size=(2, 40, 16, 16))
+    net(torch.randn((30, 2, 40, 16, 16)))
+    # summary(net, input_size=(2, 40, 16, 16))
     
-    sw = SummaryWriter()
-    sw.add_graph(net, torch.randn((30, 2, 40, 16, 16)))
-    sw.close()
+    # sw = SummaryWriter()
+    # sw.add_graph(net, torch.randn((30, 2, 40, 16, 16)))
+    # sw.close()
     
     pass

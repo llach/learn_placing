@@ -1,11 +1,15 @@
+import torch
 import numpy as np
 import torch.nn as nn
 
-from torch import Tensor, cat
+from torch import Tensor
 from collections import OrderedDict
 
 def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilation=(1,1)):
-    _, Hin, Win = in_shape
+    if len(in_shape)==2:
+        Hin, Win = in_shape
+    else:
+        _, Hin, Win = in_shape
 
     Hout = np.int(np.floor(((Hin+2*padding[0]-dilation[0]*(kernel[0]-1)-1)/(stride[0]))+1))
     Wout = np.int(np.floor(((Win+2*padding[1]-dilation[1]*(kernel[1]-1)-1)/(stride[1]))+1))
@@ -30,7 +34,7 @@ class TactileInsertionRLNet(nn.Module):
     """
 
     def __init__(self, 
-        input_dim = [40,16,16], 
+        input_dim = [16,16], 
         kernel_sizes = [(5,5), (3,3)],
         cnn_out_channels = [32, 64],
         conv_stride = (2,2),
@@ -56,11 +60,11 @@ class TactileInsertionRLNet(nn.Module):
 
         # input channels are whatever comes out of the previous layer.
         # first time it's the number of image dimensions
-        self.cnn_in_channels = [self.input_dim[0]] + self.cnn_out_channels[:-1]
+        self.cnn_in_channels = [1] + self.cnn_out_channels[:-1]
 
         # one conv for left, one for right sensor sequences
-        self.conv1 = self._conv_pre("left")
-        self.conv2 = self._conv_pre("right")
+        self.conv1, self.rnn1 = self._conv_pre("left")
+        self.conv2, self.rnn2 = self._conv_pre("right")
 
         # MLP marrying the two preprocessed input sequences
         self.mlp = nn.Sequential(
@@ -74,15 +78,39 @@ class TactileInsertionRLNet(nn.Module):
     def forward(self, xs: list[Tensor]):
         """
         xs has dimensions: (batch, sensors, channels, H, W)
-        we input the sequence of tactile images in the channels dimension
-        we have to pass each sensor sequence to their respective CNN-LSTM pre-processors
+        * we input the sequence of tactile images in the channels dimension
+        * we have to pass each sensor sequence to their respective CNN-RNN pre-processors
         -> select xs[:,S,:], where S is the sensors index in {0,1}
+        * then we loop over each image in the sequence, pass it into the CNN individually, concatenate the result and pass it into the RNN
         """
-        # TODO MLP and LSTM still missing :(
-        return cat([
-            self.conv1(xs[:,0,:]), 
-            self.conv1(xs[:,1,:])
-        ])
+        cnnout1 = []
+        cnnout2 = []
+        for s in range(xs.shape[2]): # loop over sequence frames
+            """
+            xs[:,0,s,:] is of shape (batch, H, W). the channel dimension is lost after we select it with `s`.
+            however, we need to have the channel dimension for the conv layers (even though it will be of dimensionality one).
+            -> we unsqueeze, yielding (batch, channel, H, W) with channel=1.
+            """
+            cnnout1.append(self.conv1(torch.unsqueeze(xs[:,0,s,:], 1)))
+            cnnout2.append(self.conv2(torch.unsqueeze(xs[:,1,s,:], 1)))
+        """
+        * CNN output a list of length SEQUENCE, each element with size (batch, self.conv_output).
+        * stack makes this (sequence, batch, conv_out)
+        * transpose swaps the first dimensions, arriving at a batch-first configuration: (batch, sequence, conv_out)
+
+        fun fact: we only need to transpose here to be batch-frist conform, a mode that we explicitly need to set when creating the LSTM.
+        the default mode is sequence-first, which would save us two transpose operations, but break consistency with other layers
+        """
+        cnnout1 = torch.stack(cnnout1).transpose_(0,1)
+        cnnout2 = torch.stack(cnnout2).transpose_(0,1)
+        
+        rnnout1, (h_n1, h_c1) = self.rnn1(cnnout1, None)
+        rnnout2, (h_n2, h_c2) = self.rnn2(cnnout2, None)
+        pass
+        # return cat([
+        #     self.conv1(xs[:,0,:]), 
+        #     self.conv1(xs[:,1,:])
+        # ])
 
     def _conv_pre(self, name):
         layers = []
@@ -92,19 +120,16 @@ class TactileInsertionRLNet(nn.Module):
                 self.cnn_in_channels, 
                 self.cnn_out_channels
             )):
-            layers.append(
-                nn.Sequential(OrderedDict([
-                    (f"conv2d_{i}_{name}", nn.Conv2d(
-                        in_channels=inc, 
-                        out_channels=outc, 
-                        kernel_size=kern, 
-                        stride=self.conv_stride, 
-                        padding=self.conv_padding
-                    )),
-                    (f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)),
-                    (f"relu_conv_{i}_{name}", nn.ReLU(inplace=True)),   # why inplace?
-                ]))
-            )
+
+            layers.append((f"conv2d_{i}_{name}", nn.Conv2d(
+                    in_channels=inc, 
+                    out_channels=outc, 
+                    kernel_size=kern, 
+                    stride=self.conv_stride, 
+                    padding=self.conv_padding)
+            ))
+            layers.append((f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)))
+            layers.append((f"relu_conv_{i}_{name}", nn.ReLU(inplace=True)))# why inplace?
             conv_outshape = conv2D_outshape(
                 self.input_dim if conv_outshape is None else conv_outshape,
                 Cout=outc,
@@ -112,17 +137,16 @@ class TactileInsertionRLNet(nn.Module):
                 kernel=kern,
                 stride=self.conv_stride
             )
-        layers.append(nn.Flatten())
+        layers.append((f"flatten_{name}", nn.Flatten()))
 
-        # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
-        layers.append(nn.Linear(np.prod(conv_outshape), self.conv_output))
-        layers.append(nn.ReLU())
+        # # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
+        layers.append((f"post_cnn_linear_{name}", nn.Linear(np.prod(conv_outshape), self.conv_output)))
+        layers.append((f"post_cnn_relu_{name}", nn.ReLU()))
 
-        # TODO no idea what to put as sequence length ...
-        # layers.append(nn.LSTM(
-        #     input_size=self.conv_output,
-        #     hidden_size=self.rnn_neurons,
-        #     num_layers=self.rnn_layers,
-        #     batch_first=True
-        # ))
-        return nn.Sequential(*layers)
+        rnn = nn.LSTM(
+            input_size=self.conv_output,
+            hidden_size=self.rnn_neurons,
+            num_layers=self.rnn_layers,
+            batch_first=True
+        )
+        return nn.Sequential(OrderedDict(layers)), rnn
