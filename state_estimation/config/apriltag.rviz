@@ -61,23 +61,21 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_link:
-          Value: false
-        grasped_object:
-          Value: false
+          Value: true
         gripper_grasping_frame:
           Value: false
         head_camera:
           Value: false
-        object:
-          Value: true
         tag_2:
-          Value: false
+          Value: true
         tag_3:
-          Value: false
+          Value: true
         tag_4:
-          Value: false
+          Value: true
         tag_7:
-          Value: false
+          Value: true
+        tag_8:
+          Value: true
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -87,8 +85,7 @@ Visualization Manager:
       Tree:
         base_link:
           gripper_grasping_frame:
-            grasped_object:
-              {}
+            {}
           head_camera:
             tag_2:
               {}
@@ -98,8 +95,8 @@ Visualization Manager:
               {}
             tag_7:
               {}
-          object:
-            {}
+            tag_8:
+              {}
       Update Interval: 0
       Value: true
     - Class: rviz/Image
@@ -142,7 +139,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.7616814374923706
+      Distance: 3.104684591293335
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -158,9 +155,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.319797545671463
+      Pitch: 0.4797974228858948
       Target Frame: <Fixed Frame>
-      Yaw: 2.8153929710388184
+      Yaw: 2.7853927612304688
     Saved: ~
 Window Geometry:
   Displays:

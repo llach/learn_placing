@@ -1,8 +1,8 @@
 <launch>
-    <arg name="cam1" default="webcam" />
+    <arg name="cam1" default="cam1" />
     <arg name="cam1_video" default="/dev/video2" />
 
-    <arg name="cam2" default="aukey" />
+    <arg name="cam2" default="cam2" />
     <arg name="cam2_video" default="/dev/video0" />
 
     <arg name="publish_marker_image" default="true" />
@@ -31,7 +31,7 @@
         <param name="publish_tag_detections_image" type="bool" value="true" />
     </node>
 
-    <!-- <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam2)" output="screen" >
+    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam2)" output="screen" >
         <param name="camera_name" value="$(arg cam2)" />
         <param name="pixel_format" value="yuyv" />
         <param name="video_device" value="$(arg cam2_video)" />
@@ -44,7 +44,7 @@
         <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
         <param name="publish_tag_detections_image" type="bool" value="true" />
-    </node> -->
+    </node>
 
     <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
 </launch>
