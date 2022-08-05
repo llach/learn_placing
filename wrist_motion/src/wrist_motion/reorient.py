@@ -59,7 +59,7 @@ class Reorient:
         
         # tolerances are the box's side length (we pass tolernaces/2 to the planner)
         # the black wagon at PAL measures 40x40x57
-        self.tol = np.array([0.30, 0.30, 0.07])
+        self.tol = np.array([0.30, 0.30, 0.05])
         self.eef_axis = np.array([0,0,-1])
 
         self.Toff = tf.rotation_matrix(0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
