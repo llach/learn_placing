@@ -1,22 +1,34 @@
+import os
 import pickle 
 import rosbag
 import numpy as np
 
-fpath = "/home/llach/robot_mitm_ws/2022-07-27-16-44-18.bag"
-bag = rosbag.Bag(fpath)
-msgs = {}
+
+def time2dt(msg):
+    return
 
 def msg2matrix(msg):
     return np.array(msg.sensors[0].values, dtype=int)
 
-for topic, msg, t in bag.read_messages():
-    if topic not in msgs: msgs.update({topic: []})
-    msgs[topic].append(msg2matrix(msg))
+base_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
+for fi in os.listdir(base_path):
+    if "pkl" in fi: continue
+    
+    try:
+        fpath = f"{base_path}/{fi}"
+        bag = rosbag.Bag(fpath)
+        msgs = {}
+    except Exception as e:
+        print(f"could not read bag file {fi}\n{e}")
 
-with open(fpath.replace(".bag", ".pkl"), "wb") as f:
-    pickle.dump(msgs, f)
+    for topic, msg, t in bag.read_messages():
+        if topic not in msgs: msgs.update({topic: []})
+        if "myrmex" in topic:
+            msgs[topic].append(msg2matrix(msg))
+        else:
+            continue
 
-with open(fpath.replace(".bag", ".pkl"), "rb") as f:
-    data = pickle.load(f)
+    with open(fpath.replace(".bag", ".pkl"), "wb") as f:
+        pickle.dump(msgs, f)
 
 pass

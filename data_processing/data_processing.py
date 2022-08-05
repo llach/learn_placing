@@ -1,7 +1,5 @@
 import numpy as np
 
-from tactile_insertion_rl import TactileInsertionRLNet
-
 """
 TODO what is max, what is min value
 """
@@ -34,6 +32,8 @@ if __name__ == "__main__":
     
     from torchsummary import summary
     from torch.utils.tensorboard import SummaryWriter
+
+    from tactile_insertion_rl import TactileInsertionRLNet
 
     # read data
     with open(f"{__file__.replace(__file__.split('/')[-1], '')}/2022-07-27-16-44-18.pkl", "rb") as f:
