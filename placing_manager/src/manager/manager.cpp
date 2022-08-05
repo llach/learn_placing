@@ -226,6 +226,8 @@ bool PlacingManager::collectSample(){
     pause();
     nSamples_++;
 
+    ROS_INFO("got %d object samples", bufferObjectState.numData());
+
     ros::Time contactTime = getContactTime();
     if (contactTime != ros::Time(0) && checkSamples()){
         ROS_INFO_STREAM("contact detected at " << contactTime);

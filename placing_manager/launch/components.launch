@@ -1,10 +1,7 @@
 <launch>
     <arg name="rviz" default="false" />
 
-     <include file="$(find state_estimation)/launch/multicam_setup.launch" >
-        <arg name="cam1" value="webcam" />
-        <arg name="cam2" value="external_webcam" />
-    </include>
+     <include file="$(find state_estimation)/launch/multicam_setup.launch" />
 
     <node pkg="state_estimation" type="object_state.py" name="state_estimation"  output="screen" />
     <node pkg="wrist_motion"     type="reorient_ac.py" name="wrist_motion"  output="screen" />

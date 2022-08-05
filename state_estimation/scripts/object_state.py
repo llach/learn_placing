@@ -126,7 +126,6 @@ class TagTransformator:
 
             qcurrent = q2l(tfs.transform.rotation)
             vcurrent = rotate_v(axis, qcurrent)
-            print(mid, vcurrent)
 
             if self.calibrated:
                 rad = np.dot(self.vstart, vcurrent)
@@ -274,7 +273,7 @@ class StateEstimator:
 
 if __name__ == "__main__":
     rospy.init_node("object_state_estimation")
-    se = StateEstimator(["cam1", "cam2"])
+    se = StateEstimator(["cam1", "cam2", "cam3"])
     se.calibrate_cb()
     
     r = rospy.Rate(60)

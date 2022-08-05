@@ -2,23 +2,24 @@
   <arg name="rviz" default="false" />
   <arg name="publish_marker_image" default="true" />
 
-  <arg name="cam1" default="aukey" />
-  <arg name="cam2" default="ausdom" />
-  <arg name="cam3" default="webcam" />
+  <arg name="cam1" default="cam1" />
+  <arg name="cam2" default="cam2" />
+  <arg name="cam3" default="cam3" />
 
   <arg name="cam1_video" default="/dev/video0" />
   <arg name="cam2_video" default="/dev/video2" />
-  <arg name="cam3_video" default="/dev/video5" />
 
    <group if="$(arg rviz)">
      <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
    </group>
 
   <!-- Set parameters -->
-  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector1" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector2" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector1" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector2" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_1" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_2" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_3" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_1" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_2" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_3" />
   
   <!--
     TAG DETECTOR 1
@@ -29,9 +30,9 @@
         <param name="video_device" value="$(arg cam1_video)" />
     </node>
 
-  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_$(arg cam1)" output="screen" >
-    <remap from="image_rect" to="/$(arg cam1)/image_raw" />
-    <remap from="camera_info" to="/$(arg cam1)/camera_info" />
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_1" output="screen" >
+    <remap from="image_rect" to="/usb_cam_$(arg cam1)/image_raw" />
+    <remap from="camera_info" to="/usb_cam_$(arg cam1)/camera_info" />
     <remap from="tag_detections" to="/tag_detections_$(arg cam1)" />
     <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam1)" />
 
@@ -47,39 +48,25 @@
         <param name="video_device" value="$(arg cam2_video)" />
     </node>
     
-  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_$(arg cam2)" output="screen" >
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_2" output="screen" >
     <!-- Remap topics from those used in code to those on the ROS network -->
-    <remap from="image_rect" to="/$(arg cam2)/image_raw" />
-    <remap from="camera_info" to="/$(arg cam2)/camera_info" />
+    <remap from="image_rect" to="/usb_cam_$(arg cam2)/image_raw" />
+    <remap from="camera_info" to="/usb_cam_$(arg cam2)/camera_info" />
     <remap from="tag_detections" to="/tag_detections_$(arg cam2)" />
     <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
     <param name="publish_tf" value="false" />
-    <param name="video_device" value="$(arg cam2_video)" />
     <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
   </node>
 
-  <!--
-    TAG DETECTOR 3
-  -->   
-    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam3)" output="screen" >
-        <param name="camera_name" value="$(arg cam3)" />
-        <!-- <param name="pixel_format" value="yuyv" /> -->
-        <param name="video_device" value="$(arg cam3_video)" />
-    </node>
-    
-  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_$(arg cam3)" output="screen" >
-    <!-- Remap topics from those used in code to those on the ROS network -->
-    <remap from="image_rect" to="/$(arg cam3)/image_raw" />
-    <remap from="camera_info" to="/$(arg cam3)/camera_info" />
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_3" output="screen" >
+    <remap from="image_rect" to="/usb_cam_$(arg cam3)/image_raw" />
+    <remap from="camera_info" to="/usb_cam_$(arg cam3)/camera_info" />
     <remap from="tag_detections" to="/tag_detections_$(arg cam3)" />
     <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam3)" />
 
     <param name="publish_tf" value="false" />
-    <param name="video_device" value="$(arg cam3_video)" />
-    <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
+    <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />
   </node>
-
-    
 
 </launch>
