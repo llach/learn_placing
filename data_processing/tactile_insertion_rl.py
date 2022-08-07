@@ -75,7 +75,7 @@ class TactileInsertionRLNet(nn.Module):
             nn.Linear(self.fc_neurons[1], self.output_size),
         )
 
-    def forward(self, xs: list[Tensor]):
+    def forward(self, x: Tensor):
         """
         xs has dimensions: (batch, sensors, channels, H, W)
         * we input the sequence of tactile images in the channels dimension
@@ -83,18 +83,20 @@ class TactileInsertionRLNet(nn.Module):
         -> select xs[:,S,:], where S is the sensors index in {0,1}
         * then we loop over each image in the sequence, pass it into the CNN individually, concatenate the result and pass it into the RNN
         """
+        if not isinstance(x, Tensor): x = torch.Tensor(x)
+
         cnnout1 = []
         cnnout2 = []
-        for s in range(xs.shape[2]): # loop over sequence frames
+        for s in range(x.shape[2]): # loop over sequence frames
             """
             xs[:,0,s,:] is of shape (batch, H, W). the channel dimension is lost after we select it with `s`.
             however, we need to have the channel dimension for the conv layers (even though it will be of dimensionality one).
             -> we unsqueeze, yielding (batch, channel, H, W) with channel=1.
             """
-            cnnout1.append(self.conv1(torch.unsqueeze(xs[:,0,s,:], 1)))
-            cnnout2.append(self.conv2(torch.unsqueeze(xs[:,1,s,:], 1)))
+            cnnout1.append(self.conv1(torch.unsqueeze(x[:,0,s,:], 1)))
+            cnnout2.append(self.conv2(torch.unsqueeze(x[:,1,s,:], 1)))
         """
-        * CNN output a list of length SEQUENCE, each element with size (batch, self.conv_output).
+        * CNN output is a list of length SEQUENCE, each element with size (batch, self.conv_output).
         * stack makes this (sequence, batch, conv_out)
         * transpose swaps the first dimensions, arriving at a batch-first configuration: (batch, sequence, conv_out)
 
@@ -104,13 +106,14 @@ class TactileInsertionRLNet(nn.Module):
         cnnout1 = torch.stack(cnnout1).transpose_(0,1)
         cnnout2 = torch.stack(cnnout2).transpose_(0,1)
         
-        rnnout1, (h_n1, h_c1) = self.rnn1(cnnout1, None)
-        rnnout2, (h_n2, h_c2) = self.rnn2(cnnout2, None)
-        pass
-        # return cat([
-        #     self.conv1(xs[:,0,:]), 
-        #     self.conv1(xs[:,1,:])
-        # ])
+        rnnout1, (_, _) = self.rnn1(cnnout1, None)
+        rnnout2, (_, _) = self.rnn2(cnnout2, None)
+        return self.mlp(
+            torch.cat([
+                rnnout1[:,-1,:], 
+                rnnout2[:,-1,:]
+            ], axis=1)
+        )
 
     def _conv_pre(self, name):
         layers = []
@@ -139,7 +142,8 @@ class TactileInsertionRLNet(nn.Module):
             )
         layers.append((f"flatten_{name}", nn.Flatten()))
 
-        # # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
+        # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
+        # the authors use two FC layers that they don't mention in the paper
         layers.append((f"post_cnn_linear_{name}", nn.Linear(np.prod(conv_outshape), self.conv_output)))
         layers.append((f"post_cnn_relu_{name}", nn.ReLU()))
 
