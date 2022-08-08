@@ -134,13 +134,13 @@ bool PlacingManager::checkLastTimes(ros::Time n){
 }
 
 bool PlacingManager::checkSamples(const ros::Time &n){
-    if (bufferJs.hasDataBefore(n)) return false;
-    if (bufferMyLeft.hasDataBefore(n)) return false;
-    if (bufferMyRight.hasDataBefore(n)) return false;
-    if (bufferFt.hasDataBefore(n)) return false;
-    if (bufferTf.hasDataBefore(n)) return false;
-    if (bufferContact.hasDataBefore(n)) return false;
-    if (bufferObjectState.hasDataBefore(n)) return false;
+    if (!bufferJs.hasDataBefore(n)) return false;
+    if (!bufferMyLeft.hasDataBefore(n)) return false;
+    if (!bufferMyRight.hasDataBefore(n)) return false;
+    if (!bufferFt.hasDataBefore(n)) return false;
+    if (!bufferTf.hasDataBefore(n)) return false;
+    if (!bufferContact.hasDataBefore(n)) return false;
+    if (!bufferObjectState.hasDataBefore(n)) return false;
 
     return true;
 }
@@ -263,7 +263,7 @@ bool PlacingManager::collectSample(){
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
     // we wait a bit for the data recording the get all the data
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // pause data recording
     pause();
