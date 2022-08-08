@@ -16,7 +16,7 @@ def store_gif(data, side, name, base_path):
     imgs[0].save(f"{base_path}/{name}_{side}.gif", save_all=True, append_images=imgs[1:], duration=100, loop=1)
 
 
-base_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
+base_path = f"{__file__.replace(__file__.split('/')[-1], '')}"
 for fi in os.listdir(base_path):
     if fi[-4:] != ".pkl": continue
     fino = fi.replace(".pkl", "")
@@ -24,5 +24,5 @@ for fi in os.listdir(base_path):
     with open(f"{base_path}/{fi}", "rb") as f:
         mm_data = pickle.load(f)
 
-    store_gif(mm_data["myrmex_left"], "left", fino, base_path)
-    store_gif(mm_data["myrmex_right"], "right", fino, base_path)
+    store_gif(mm_data["/tactile_left"], "left", fino, base_path)
+    store_gif(mm_data["/tactile_right"], "right", fino, base_path)
