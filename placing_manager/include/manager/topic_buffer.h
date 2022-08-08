@@ -41,8 +41,21 @@ public:
         return true;
     }
 
+    bool hasDataBefore(const ros::Time &n){
+        std::lock_guard<std::mutex> l(m_);
+        if (data_.size()==0) {ROS_INFO_STREAM(name_ << " has no data!"); return false;}
+
+        // we account for some lag in contact detection
+        ros::Time latest = n-ros::Duration(0.2);
+        for (auto t : times_){
+            if (t<latest) return true;
+        }
+        ROS_INFO_STREAM(name_ << " has no data before contact!");
+        return false;
+    }
+
     int numData(){
-        if (data_.size()==0) ROS_INFO("%s has no data!", name_);
+        if (data_.size()==0) ROS_INFO_STREAM(name_ << " has no data!");
         return (int) data_.size();
     }
 

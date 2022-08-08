@@ -10,6 +10,8 @@ add_compile_options(-std=c++14)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosbag
+  tf2_ros
+  tf2_msgs
   std_srvs
   actionlib
   sensor_msgs
@@ -33,7 +35,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
- CATKIN_DEPENDS roscpp rosbag std_srvs actionlib sensor_msgs moveit_msgs tactile_msgs control_msgs trajectory_msgs state_estimation controller_manager_msgs
+ CATKIN_DEPENDS roscpp rosbag tf2_ros tf2_msgs std_srvs actionlib sensor_msgs moveit_msgs tactile_msgs control_msgs trajectory_msgs state_estimation controller_manager_msgs
 )
 
 ###########

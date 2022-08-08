@@ -14,6 +14,8 @@
 
   <depend>roscpp</depend>
   <depend>rosbag</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_msgs</depend>
   <depend>std_srvs</depend>
   <depend>actionlib</depend>
   <depend>sensor_msgs</depend>

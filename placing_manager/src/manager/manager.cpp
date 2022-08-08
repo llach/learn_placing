@@ -30,21 +30,24 @@ const std::string currentDateTime() {
     return buf;
 }
 
-PlacingManager::PlacingManager(float initialTorsoQ) :
+PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     waitRate_(50),
     dataCutOff_(0.7),
     initialTorsoQ_(initialTorsoQ),
+    tableHeight_(tableHeight),
     bufferJs(n_,            "joint_states", "/joint_states"),
     bufferMyLeft(n_,        "tactile_left", "/tactile_left"),
     bufferMyRight(n_,       "tactile_right", "/tactile_right"),
     bufferFt(n_,            "ft", "/wrist_ft"),
+    bufferTf(n_,            "tf", "/tf"),
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
     bufferObjectState(n_,   "object_state", "/object_state_estimate"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
     wristAc_("/wrist_plan", true),
     executeAc_("/execute_trajectory", true),
     torsoAc_("/torso_stop_controller/follow_joint_trajectory", true),
-    ftCalibrationSrv_(n_.serviceClient<Empty>("/table_contact/calibrate")),
+    tfListener_(tfBuffer_),
+    ftCalibrationSrv_(n_.serviceClient<std_srvs::Empty>("/table_contact/calibrate")),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
     listControllersSrv_(n_.serviceClient<ListControllers>("/controller_manager/list_controllers")),
     switchControllerSrv_(n_.serviceClient<SwitchController>("/controller_manager/switch_controller"))
@@ -66,6 +69,13 @@ PlacingManager::PlacingManager(float initialTorsoQ) :
 
     ROS_INFO("setting up joint states subscriber ...");
     jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
+
+    try {
+        tfBuffer_.canTransform("base_footprint", "gripper_grasping_frame", ros::Time(0), ros::Duration(5));
+    } catch (tf2::TransformException &ex) {
+        ROS_FATAL("Could not setup get transform: %s",ex.what());
+        return;
+    }
 
     ROS_INFO("PlacingManager::PlacingManager() done");
     initialized_ = true;
@@ -94,6 +104,7 @@ void PlacingManager::pause(){
     bufferMyLeft.paused_ = true;
     bufferMyRight.paused_ = true;
     bufferFt.paused_ = true;
+    bufferTf.paused_ = true;
     bufferContact.paused_ = true;
     bufferObjectState.paused_ = true;
 
@@ -104,6 +115,7 @@ void PlacingManager::unpause(){
     bufferMyLeft.paused_ = false;
     bufferMyRight.paused_ = false;
     bufferFt.paused_ = false;
+    bufferTf.paused_ = false;
     bufferContact.paused_ = false;
     bufferObjectState.paused_ = false;
 
@@ -115,6 +127,7 @@ bool PlacingManager::checkLastTimes(ros::Time n){
     if (not bufferMyLeft.isFresh(n)) return false;
     if (not bufferMyRight.isFresh(n)) return false;
     if (not bufferFt.isFresh(n)) return false;
+    if (not bufferTf.isFresh(n)) return false;
     if (not bufferContact.isFresh(n)) return false;
 
     // we don't check the freshness here since one reading during the downwards movement is sufficient
@@ -123,13 +136,14 @@ bool PlacingManager::checkLastTimes(ros::Time n){
     return true;
 }
 
-bool PlacingManager::checkSamples(){
-    if (bufferJs.numData()==0) return false;
-    if (bufferMyLeft.numData()==0) return false;
-    if (bufferMyRight.numData()==0) return false;
-    if (bufferFt.numData()==0) return false;
-    if (bufferContact.numData()==0) return false;
-    if (bufferObjectState.numData()==0) return false;
+bool PlacingManager::checkSamples(const ros::Time &n){
+    if (bufferJs.hasDataBefore(n)) return false;
+    if (bufferMyLeft.hasDataBefore(n)) return false;
+    if (bufferMyRight.hasDataBefore(n)) return false;
+    if (bufferFt.hasDataBefore(n)) return false;
+    if (bufferTf.hasDataBefore(n)) return false;
+    if (bufferContact.hasDataBefore(n)) return false;
+    if (bufferObjectState.hasDataBefore(n)) return false;
 
     return true;
 }
@@ -162,6 +176,7 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bufferMyLeft.storeData(bag, fromTime, toTime);
     bufferMyRight.storeData(bag, fromTime, toTime);
     bufferFt.storeData(bag, fromTime, toTime);
+    bufferTf.storeData(bag, fromTime, toTime);
     bufferContact.storeData(bag, fromTime, toTime);
     bufferObjectState.storeData(bag, fromTime, toTime);
 
@@ -202,12 +217,33 @@ bool PlacingManager::reorientate(){
 
     ROS_INFO("done.");
 }
+
+float PlacingManager::getTorsoGoal(float &time){
+    geometry_msgs::TransformStamped t;
+    try {
+        t = tfBuffer_.lookupTransform("base_footprint", "gripper_grasping_frame", ros::Time(0), ros::Duration(5));
+    } catch (tf2::TransformException &ex) {
+        ROS_FATAL("Could not setup get transform: %s",ex.what());
+        return -1.0;
+    }
+    float gripperHeight = t.transform.translation.z;
+    float gripperTableDiff = gripperHeight-(tableHeight_+0.1);
+
+    float deltaQ;
+    {
+        std::lock_guard<std::mutex> l(jsLock_);
+        deltaQ = currentTorsoQ_-gripperTableDiff;
+    }
+    time = (deltaQ*100)*torsoVel_;
+    ROS_INFO("gripper height %f; gripper table diff %f; time %f; deltaQ %f", gripperHeight, gripperTableDiff, time, deltaQ);
+    return deltaQ;
+}
     
 bool PlacingManager::collectSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
     ROS_INFO("recalibrating FT");
-    Empty e;
+    std_srvs::Empty e;
     ftCalibrationSrv_.call(e);
 
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
@@ -219,7 +255,11 @@ bool PlacingManager::collectSample(){
     ROS_INFO("moving torso down towards the table ...");
 
     ros::Time startMoveing = ros::Time::now();
-    moveTorso(0.0, 10.5);
+
+    float tTime;
+    float tGoal = getTorsoGoal(tTime);
+
+    moveTorso(tGoal, tTime);
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
     // we wait a bit for the data recording the get all the data
@@ -232,14 +272,14 @@ bool PlacingManager::collectSample(){
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
     ros::Time contactTime = getContactTime();
-    if (contactTime != ros::Time(0) && checkSamples()){
-        
+    if (contactTime != ros::Time(0) && checkSamples(contactTime)){
+
         ROS_INFO_STREAM("contact detected at " << contactTime);
         storeSample(contactTime);
 
     } else if (contactTime == ros::Time(0) ) {
         ROS_FATAL("no contact -> can't store sample");
-    } else if (!checkSamples()) {
+    } else if (!checkSamples(contactTime)) {
         ROS_FATAL("missing samples");
     } else {
         ROS_FATAL("unknown error");
@@ -248,7 +288,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    reorientate();
+    // reorientate();
 
     return true;
 }
@@ -257,7 +297,7 @@ bool PlacingManager::collectSample(){
     TORSO CONTROLLER METHODS
 */
 
-void PlacingManager::moveTorso(float targetQ, float duration, bool absolute, bool async){
+void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
     float startQ;
     {   
         std::lock_guard<std::mutex> l(jsLock_);
@@ -282,14 +322,12 @@ void PlacingManager::moveTorso(float targetQ, float duration, bool absolute, boo
         jt.points.push_back(jp);
     }
 
+    ROS_INFO("moving torso to %f", targetQ);
+
     FollowJointTrajectoryGoal torsoGoal;
     torsoGoal.trajectory = jt;
 
-    if (async){
-        torsoAc_.sendGoal(torsoGoal);
-    } else {
-        torsoAc_.sendGoalAndWait(torsoGoal);
-    }
+    torsoAc_.sendGoalAndWait(torsoGoal);
 }
 
 float PlacingManager::lerp(float a, float b, float f) {

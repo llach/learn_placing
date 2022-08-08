@@ -14,6 +14,7 @@
 // misc ros includes
 #include <ros/ros.h>
 #include <rosbag/bag.h>
+#include <tf2_ros/transform_listener.h>
 #include <actionlib/client/simple_action_client.h>
 
 // ros msgs
@@ -21,6 +22,7 @@
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <std_msgs/Float64.h>
+#include <tf2_msgs/TFMessage.h>
 #include <sensor_msgs/JointState.h>
 #include <state_estimation/BoolHead.h>
 #include <tactile_msgs/TactileState.h>
@@ -40,7 +42,7 @@ namespace placing_manager {
 
 class PlacingManager{
 public:
-    PlacingManager(float initialTorsoQ = 0.35);
+    PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.75);
 
     bool init(ros::Duration timeout);
     bool collectSample();
@@ -62,10 +64,15 @@ private:
     std::string torsoStopControllerName_ = "torso_stop_controller";
 
     float initialTorsoQ_;
+    float tableHeight_;
     float currentTorsoQ_ = -1.0;
+    float torsoVel_ = 0.4; // sec/cm
 
     ros::NodeHandle n_;
     ros::Rate waitRate_;
+
+    tf2_ros::Buffer tfBuffer_;
+    tf2_ros::TransformListener tfListener_;
 
     ros::ServiceClient ftCalibrationSrv_;
     ros::ServiceClient loadControllerSrv_;
@@ -84,17 +91,19 @@ private:
     void pause();
     void unpause();
     bool reorientate();
+    float getTorsoGoal(float &time);
     void storeSample(ros::Time contactTime);
-    bool checkSamples();
+    bool checkSamples(const ros::Time &n);
     bool checkLastTimes(ros::Time n);
     bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);
 
+    TopicBuffer<tf2_msgs::TFMessage> bufferTf;
     TopicBuffer<sensor_msgs::JointState> bufferJs;
+    TopicBuffer<state_estimation::BoolHead> bufferContact;
     TopicBuffer<tactile_msgs::TactileState> bufferMyLeft;
     TopicBuffer<tactile_msgs::TactileState> bufferMyRight;
     TopicBuffer<geometry_msgs::WrenchStamped> bufferFt;
-    TopicBuffer<state_estimation::BoolHead> bufferContact;
     TopicBuffer<state_estimation::ObjectStateEstimate> bufferObjectState;
 
     std::mutex jsLock_;
