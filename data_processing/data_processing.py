@@ -19,6 +19,7 @@ def reshape_mm_vector(data):
     """ tactile data is published as a 256 vector, but we need it as 16x16 matrix
     """
     data = np.array(data)
+    if len(data.shape)==1: data = np.reshape(data, [1]+list(data.shape))
     N = data.shape[0]
     return np.reshape(data, (N,16,16))
 
@@ -40,6 +41,15 @@ def sync_mm_sample(m1, m2):
         m1[:40],
         m2[:40]
     ])
+
+def mm2img(data, cidx=2):
+    imgs = np.zeros(list(data.shape) + [3])
+    imgs[:,:,:,cidx] = data
+    imgs *= 255
+    return imgs.astype(np.uint8)
+
+def upscale_repeat(frames, factor=10):
+    return frames.repeat(factor, axis=1).repeat(factor, axis=2)
 
 def load_dataset(folder):
     ds = {

@@ -10,9 +10,9 @@ def time2dt(msg):
 def msg2matrix(msg):
     return np.array(msg.sensors[0].values, dtype=int)
 
-base_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
+base_path = f"{__file__.replace(__file__.split('/')[-1], '')}/"
 for fi in os.listdir(base_path):
-    if "pkl" in fi: continue
+    if "bag" not in fi or ".py" in fi: continue
     
     try:
         fpath = f"{base_path}/{fi}"
@@ -23,7 +23,7 @@ for fi in os.listdir(base_path):
 
     for topic, msg, t in bag.read_messages():
         if topic not in msgs: msgs.update({topic: []})
-        if "myrmex" in topic:
+        if "myrmex" in topic or "tactile" in topic:
             msgs[topic].append(msg2matrix(msg))
         else:
             continue
