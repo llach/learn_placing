@@ -222,7 +222,10 @@ bool PlacingManager::collectSample(){
     moveTorso(0.0, 10.5);
     ros::Duration moveDur = ros::Time::now() - startMoveing;
 
-    // robot moved 
+    // we wait a bit for the data recording the get all the data
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // pause data recording
     pause();
     nSamples_++;
 
@@ -230,8 +233,10 @@ bool PlacingManager::collectSample(){
 
     ros::Time contactTime = getContactTime();
     if (contactTime != ros::Time(0) && checkSamples()){
+        
         ROS_INFO_STREAM("contact detected at " << contactTime);
         storeSample(contactTime);
+
     } else if (contactTime == ros::Time(0) ) {
         ROS_FATAL("no contact -> can't store sample");
     } else if (!checkSamples()) {
@@ -252,7 +257,7 @@ bool PlacingManager::collectSample(){
     TORSO CONTROLLER METHODS
 */
 
-void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
+void PlacingManager::moveTorso(float targetQ, float duration, bool absolute, bool async){
     float startQ;
     {   
         std::lock_guard<std::mutex> l(jsLock_);
@@ -280,7 +285,11 @@ void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
     FollowJointTrajectoryGoal torsoGoal;
     torsoGoal.trajectory = jt;
 
-    torsoAc_.sendGoalAndWait(torsoGoal);
+    if (async){
+        torsoAc_.sendGoal(torsoGoal);
+    } else {
+        torsoAc_.sendGoalAndWait(torsoGoal);
+    }
 }
 
 float PlacingManager::lerp(float a, float b, float f) {
