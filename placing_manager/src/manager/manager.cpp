@@ -194,6 +194,9 @@ void PlacingManager::storeSample(ros::Time contactTime){
 
 bool PlacingManager::reorientate(){
     ROS_INFO("planning arm reorientation ...");
+    PlanWristGoal g;
+    g.table_height = tableHeight_+0.1;
+
     wristAc_.sendGoalAndWait(PlanWristGoal());
     auto pwr = wristAc_.getResult();
 
@@ -285,7 +288,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    // reorientate();
+    reorientate();
 
     return true;
 }
