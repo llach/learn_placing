@@ -13,10 +13,6 @@ using namespace trajectory_msgs;
 using namespace placing_manager;
 using namespace controller_manager_msgs;
 
-// TODO store wrist trajectory + meta data 
-// TODO record tf
-// TODO print rosbag info after storing
-
 // Get current date/time, format is YYYY-MM-DD.HH:mm:ss
 const std::string currentDateTime() {
     time_t     now = time(0);
@@ -61,6 +57,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     ROS_INFO("waiting for torso AC ...");
     torsoAc_.waitForServer();
 
+    // for unknown reasons, this doesn't work
     // ROS_INFO("waiting for execution AC ...");
     // executeAc_.waitForServer();
 

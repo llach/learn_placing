@@ -15,7 +15,7 @@ def plan(goal):
     global _as
     print("generating new arm trajectory ...")
     for _ in range(15):
-        tr, failed = ro.plan_random()
+        tr, failed = ro.plan_random(table_height=goal.table_height)
         if not failed: break
     if failed: _as.set_succeeded(PlanWristResult())
 

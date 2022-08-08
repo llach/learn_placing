@@ -168,7 +168,7 @@ class Reorient:
 
         self.marker_pub.publish(ma)
 
-    def plan_random(self, publish_traj=False, check_validity=True):
+    def plan_random(self, publish_traj=False, check_validity=True, table_height=0.0):
         print("getting current state")
 
         self.should_get_js = True
@@ -196,6 +196,12 @@ class Reorient:
         # torso is frist joint, on the real robot we can't use it (otherwise moveit complains about planning groups / controllers)
         traj_points = np.linspace(self.start_state[1:], goal_state[1:], 10)
         traj_times = np.linspace(0, 2, 10)
+
+        gripper_zs = np.array([self.c.fk_for_joint_position([0.0]+list(tp))[0][2,3] for tp in traj_points])
+
+        if not np.all(gripper_zs>table_height):
+            print(f"some points were below table height {gripper_zs>table_height}")
+            return None, True
 
         rss = []
         traj = JointTrajectory()

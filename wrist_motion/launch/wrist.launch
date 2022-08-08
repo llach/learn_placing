@@ -18,6 +18,7 @@
 
     <!-- Broadcast static tf for robot root -->
     <node name="world_foot" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 world base_footprint" />
+    <node name="grasped_object_tf" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 gripper_grasping_frame grasped_object" />
     
       <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
       <param name="/use_gui" value="false"/>

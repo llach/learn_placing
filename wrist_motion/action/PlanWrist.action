@@ -1,3 +1,4 @@
+float32 table_height
 ---
 sensor_msgs/JointState final_arm_state
 moveit_msgs/RobotTrajectory trajectory
