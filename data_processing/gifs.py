@@ -1,5 +1,5 @@
+import os
 import pickle
-import numpy as np
 
 from PIL import Image
 from data_processing import preprocess_myrmex, mm2img, upscale_repeat
@@ -16,10 +16,13 @@ def store_gif(data, side, name, base_path):
     imgs[0].save(f"{base_path}/{name}_{side}.gif", save_all=True, append_images=imgs[1:], duration=100, loop=1)
 
 
-file_name = "touch_test"
-base_path = __file__.replace(__file__.split('/')[-1], '')
-with open(f"{base_path}/{file_name}.pkl", "rb") as f:
-    mm_data = pickle.load(f)
+base_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
+for fi in os.listdir(base_path):
+    if fi[-4:] != ".pkl": continue
+    fino = fi.replace(".pkl", "")
+    
+    with open(f"{base_path}/{fi}", "rb") as f:
+        mm_data = pickle.load(f)
 
-store_gif(mm_data["/tactile_left"], "left", file_name, base_path)
-store_gif(mm_data["/tactile_right"], "right", file_name, base_path)
+    store_gif(mm_data["myrmex_left"], "left", fino, base_path)
+    store_gif(mm_data["myrmex_right"], "right", fino, base_path)
