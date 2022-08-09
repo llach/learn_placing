@@ -31,6 +31,12 @@ public:
         data_.clear();
     }
 
+    void clear(){
+        std::lock_guard<std::mutex> l(m_);
+        times_.clear();
+        data_.clear();
+    }
+
     bool isFresh(const ros::Time &n){
         std::lock_guard<std::mutex> l(m_);
         if (lastTimestamp_ < n) {

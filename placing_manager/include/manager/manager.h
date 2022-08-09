@@ -73,7 +73,7 @@ private:
     float initialTorsoQ_;
     float tableHeight_;
     float currentTorsoQ_ = -1.0;
-    float torsoVel_ = 0.4; // sec/cm
+    float torsoVel_ = 0.35; // sec/cm
 
     ros::NodeHandle n_;
     ros::Rate waitRate_;
@@ -97,6 +97,7 @@ private:
     ros::Time getContactTime();
     void pause();
     void unpause();
+    void clearAll();
     bool reorientate();
     float getTorsoGoal(float &time);
     void storeSample(ros::Time contactTime);

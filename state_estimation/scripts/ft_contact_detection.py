@@ -27,7 +27,7 @@ global variables
 """
 calibration_samples = []
 calibrated = False
-factor = 1.3
+factor = 2.2
 
 means = None
 stds = None

@@ -142,6 +142,16 @@ bool PlacingManager::checkSamples(const ros::Time &n){
     return true;
 }
 
+void PlacingManager::clearAll(){
+    bufferJs.clear();
+    bufferMyLeft.clear();
+    bufferMyRight.clear();
+    bufferFt.clear();
+    bufferTf.clear();
+    bufferContact.clear();
+    bufferObjectState.clear();
+}
+
 ros::Time PlacingManager::getContactTime(){
     {
         std::lock_guard<std::mutex> l(bufferContact.m_);
@@ -225,16 +235,16 @@ float PlacingManager::getTorsoGoal(float &time){
         return -1.0;
     }
     float gripperHeight = t.transform.translation.z;
-    float gripperTableDiff = gripperHeight-(tableHeight_+0.1);
+    float gripperTableDiff = gripperHeight-(tableHeight_+0.07);
 
-    float deltaQ;
+    float desQ;
     {
         std::lock_guard<std::mutex> l(jsLock_);
-        deltaQ = currentTorsoQ_-gripperTableDiff;
+        desQ = currentTorsoQ_-gripperTableDiff;
     }
-    time = (deltaQ*100)*torsoVel_;
-    ROS_INFO("gripper height %f; gripper table diff %f; time %f; deltaQ %f", gripperHeight, gripperTableDiff, time, deltaQ);
-    return deltaQ;
+    time = (gripperTableDiff*100)*torsoVel_;
+    ROS_INFO("gripper height %f; gripper table diff %f; time %f; desQ %f", gripperHeight, gripperTableDiff, time, desQ);
+    return desQ;
 }
     
 bool PlacingManager::collectSample(){
@@ -249,7 +259,9 @@ bool PlacingManager::collectSample(){
         return false;
     }
 
+    clearAll();
     unpause();
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     ROS_INFO("moving torso down towards the table ...");
 
     ros::Time startMoving = ros::Time::now();
@@ -286,7 +298,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    //reorientate();
+    reorientate();
 
     return true;
 }
