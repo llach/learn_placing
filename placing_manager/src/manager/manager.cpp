@@ -164,7 +164,6 @@ void PlacingManager::storeSample(ros::Time contactTime){
     ros::Time toTime = contactTime + dataCutOff_;
 
     std::string file = "/home/llach/placing_data/"+date+".bag";
-    ROS_INFO_STREAM("storing file at " << file);
 
     Bag bag;
     bag.open(file, bagmode::Write);
@@ -190,6 +189,8 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bag.write("bag_times", toTime, s);
 
     bag.close();
+
+    ROS_INFO_STREAM("\033[1;36msampled saved at " << file <<"\033[0m");
 }
 
 bool PlacingManager::reorientate(){
@@ -254,13 +255,14 @@ bool PlacingManager::collectSample(){
     unpause();
     ROS_INFO("moving torso down towards the table ...");
 
-    ros::Time startMoveing = ros::Time::now();
+    ros::Time startMoving = ros::Time::now();
 
     float tTime;
     float tGoal = getTorsoGoal(tTime);
 
     moveTorso(tGoal, tTime);
-    ros::Duration moveDur = ros::Time::now() - startMoveing;
+    ros::Time stopMoving = ros::Time::now();
+    ros::Duration moveDur = stopMoving - startMoving;
 
     // we wait a bit for the data recording the get all the data
     // std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -272,23 +274,25 @@ bool PlacingManager::collectSample(){
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
     ros::Time contactTime = getContactTime();
-    if (contactTime != ros::Time(0) && checkSamples(contactTime)){
+    bool hasSamples = checkSamples(contactTime);
+
+    if (contactTime != ros::Time(0) && hasSamples){
 
         ROS_INFO_STREAM("contact detected at " << contactTime);
         storeSample(contactTime);
 
     } else if (contactTime == ros::Time(0) ) {
-        ROS_FATAL("no contact -> can't store sample");
-    } else if (!checkSamples(contactTime)) {
-        ROS_FATAL("missing samples");
+        ROS_FATAL_STREAM("\033[1;31mno contact -> can't store sample"<<"\033[0m");
+    } else if (!hasSamples) {
+        ROS_FATAL_STREAM("\033[1;31mmissing samples"<<"\033[0m");
     } else {
-        ROS_FATAL("unknown error");
+        ROS_FATAL_STREAM("\033[1;31munknown error"<<"\033[0m");
     }
 
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    reorientate();
+    //reorientate();
 
     return true;
 }
