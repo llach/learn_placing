@@ -20,9 +20,10 @@ int main(int argc, char **argv)
 
     int n;
     while (ros::ok()) {
-        cout << "waiting" << endl;
+        cout << "\nnext? (0=exit;1=flag;2-9=next)" << endl;
         cin >> n;
         if (n==0) return 0;
+        if (n==1) {pm.flagSample();continue;}
         
         bool success = pm.collectSample();
         if (!success) return -1;

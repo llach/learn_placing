@@ -1,8 +1,5 @@
 #include <manager/manager.h>
 
-#include <chrono>
-#include <thread>
-
 using namespace std;
 using namespace rosbag;
 using namespace std_msgs;
@@ -158,12 +155,12 @@ ros::Time PlacingManager::getContactTime(){
 }
 
 void PlacingManager::storeSample(ros::Time contactTime){
-    std::string date = currentDateTime();
+    lastSample_ = currentDateTime();
 
     ros::Time fromTime = contactTime - dataCutOff_;
     ros::Time toTime = contactTime + dataCutOff_;
 
-    std::string file = "/home/llach/placing_data/"+date+".bag";
+    std::string file = basePath_+lastSample_+".bag";
 
     Bag bag;
     bag.open(file, bagmode::Write);
@@ -264,9 +261,6 @@ bool PlacingManager::collectSample(){
     ros::Time stopMoving = ros::Time::now();
     ros::Duration moveDur = stopMoving - startMoving;
 
-    // we wait a bit for the data recording the get all the data
-    // std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
     // pause data recording
     pause();
     nSamples_++;
@@ -295,6 +289,14 @@ bool PlacingManager::collectSample(){
     //reorientate();
 
     return true;
+}
+
+void PlacingManager::flagSample(){
+    ROS_INFO_STREAM("flagging sample " << lastSample_);
+    
+    std::ofstream outfile;
+    outfile.open(basePath_+"flagged.txt", std::ios_base::app);
+    outfile << lastSample_ << "\n"; 
 }
 
 /*

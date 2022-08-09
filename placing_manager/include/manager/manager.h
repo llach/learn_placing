@@ -5,8 +5,11 @@
 
 // std includes
 #include <mutex>
+#include <chrono>
 #include <time.h>
+#include <thread>
 #include <string>
+#include <fstream>
 #include <stdio.h>
 #include <iostream>
 #include <typeindex>
@@ -45,6 +48,7 @@ public:
     PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.75);
 
     bool init(ros::Duration timeout);
+    void flagSample();
     bool collectSample();
     
 private:
@@ -57,6 +61,9 @@ private:
 
     int torsoIdx_ = -1;
     int nSamples_ = 0;
+
+    std::string lastSample_;
+    std::string basePath_ = "/home/llach/placing_data/";
 
     std::string baseFrame_ = "base_footprint";
     std::string torsoJointName_ = "torso_lift_joint";
