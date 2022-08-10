@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import time
 import rospy
 import actionlib
 import numpy as np
@@ -161,6 +162,9 @@ if __name__ == "__main__":
 
         input_or_quit("close?")
         close_gripper()
+        print("waiting 3sec to settle...")
+        time.sleep(3)
+        mmKill()
 
     ################################################
     ################ FT CALIBRATION ################

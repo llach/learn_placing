@@ -242,6 +242,7 @@ class StateEstimator:
 
             otf = TransformStamped()
             otf.header.frame_id = "base_link"
+            otf.header.stamp = rospy.Time.now()
             otf.child_frame_id = "object"
             otf.transform.rotation = Quaternion(*qp)
             otf.transform.translation = Vector3(0,0,0)
