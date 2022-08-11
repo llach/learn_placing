@@ -44,7 +44,7 @@ def msg2os(msg):
         "voffsets": [v2l(v) for v in msg.voffsets]
     }
 
-base_path = f"{os.environ['HOME']}/placing_data/"
+base_path = f"/home/llach/tud_datasets/2022.08.09_first/placing_data/"
 store_base = f"{base_path[:-1]}_pkl/"
 os.makedirs(store_base, exist_ok=True)
 
@@ -54,6 +54,8 @@ with open(f"{base_path}/flagged.txt", "r") as f:
 print(f"{len(flagged)} samples were flagged")
 
 nsamples = 0
+filtered = 0
+
 for fi in os.listdir(base_path):
     if "bag" not in fi or ".py" in fi: continue
     sample_name = fi.replace(".bag", "")
@@ -111,9 +113,14 @@ for fi in os.listdir(base_path):
         if k == "joint_names": continue
         assert len(v[0])==len(v[1]), f"length mismatch for {k}"
 
+    if "object_state" not in topics:
+        print("no object state")
+        filtered += 1
+        continue 
+
     with open(store_path, "wb") as f:
         pickle.dump(msgs, f)
     nsamples += 1
 
-print(f"{nsamples} converted; total {len(flagged)+nsamples}")
+print(f"{nsamples} converted; {len(flagged)} flagged; {filtered} filtered; total {len(flagged)+nsamples+filtered}")
 pass

@@ -1,10 +1,7 @@
 import os
+import pickle
 import numpy as np
-from yaml import load
-
-"""
-TODO what is max, what is min value
-"""
+from datetime import datetime
 
 def remove_outer(data, B=0):
     """
@@ -52,25 +49,19 @@ def upscale_repeat(frames, factor=10):
     return frames.repeat(factor, axis=1).repeat(factor, axis=2)
 
 def load_dataset(folder):
-    ds = {
-        "tactile": [],
-        "obj_vector": [],
-        "angle": [],
-        "ft": []
-    }
+    ds = {}
+
     for fi in os.listdir(folder):
-        if "pkl" not in fi: continue
+        if ".pkl" not in fi: continue
+        fname = fi.replace(".pkl", "")
+        if len(fname)<10:continue
+        
+        stamp = datetime.strptime(fname, "%Y-%m-%d.%H:%M:%S")
         
         pkl = f"{folder}/{fi}"
         with open(pkl, "rb") as f:
             sample = pickle.load(f)
-        
-        ds["tactile"].append(sync_mm_sample(
-            preprocess_myrmex(sample["myrmex_left"]),
-            preprocess_myrmex(sample["myrmex_right"])
-        ))
-    # dimensions: (batch, sensors, sequence, H, W)
-    ds["tactile"] = np.array(ds["tactile"])
+        ds.update({stamp: sample})
     return ds
 
 if __name__ == "__main__":

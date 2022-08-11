@@ -47,10 +47,11 @@
         <remap from="tag_detections" to="/tag_detections_$(arg cam2)" />
         <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
+        <param name="publish_tf" type="bool" value="false" />
         <param name="publish_tag_detections_image" type="bool" value="true" />
     </node>
 
-    <!-- <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam3)" output="screen" >
+    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam3)" output="screen" >
         <param name="camera_name" value="$(arg cam3)" />
         <param name="pixel_format" value="yuyv" />
         <param name="video_device" value="$(arg cam3_video)" />
@@ -63,7 +64,7 @@
         <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam3)" />
 
         <param name="publish_tag_detections_image" type="bool" value="true" />
-    </node> -->
+    </node>
 
 
     <!-- <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  /> -->

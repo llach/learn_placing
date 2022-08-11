@@ -10,9 +10,35 @@ from std_msgs.msg import Float64, String
 from std_srvs.srv import Empty, EmptyResponse
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import TransformStamped, Vector3, Quaternion
-from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse, quaternion_slerp
+from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse, quaternion_slerp, quaternion_about_axis, quaternion_matrix, inverse_matrix, quaternion_from_matrix
 
 from state_estimation.msg import ObjectStateEstimate
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import proj3d
+from matplotlib.patches import FancyArrowPatch
+import numpy as np
+
+class Arrow3D(FancyArrowPatch):
+
+    def __init__(self, base, head, mutation_scale=20, lw=4, arrowstyle="-|>", color="r", **kwargs):
+        FancyArrowPatch.__init__(self, (0, 0), (0, 0), mutation_scale=mutation_scale, lw=lw, arrowstyle=arrowstyle, color=color, **kwargs)
+        self._verts3d = list(zip(base,head))
+
+    def draw(self, renderer):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+        FancyArrowPatch.draw(self, renderer)
+
+
+x_ = [1,0,0]
+y_ = [0,1,0]
+z_ = [0,0,1]
+
+Qx = lambda a: quaternion_about_axis(a, x_)
+Qy = lambda a: quaternion_about_axis(a, y_)
+Qz = lambda a: quaternion_about_axis(a, z_)
 
 def normalize(a, axis=-1, order=2):
     l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
@@ -55,6 +81,13 @@ def mid2axis(mid):
     else:
         return [0,-1,0]
 
+def mid2q(mid):
+    if mid == 9:
+        return Qy(-np.pi/2)
+    elif mid == 8:
+        return Qy(np.pi/2)
+    else:
+        return Qz(-np.pi/2)
 
 class MarkerDetection:
 
@@ -67,9 +100,13 @@ class MarkerDetection:
         self.angle = None
         self.voffset = None
         self.vcurrent = None
+        self.qoffset = None
+        self.qcurrent = None
 
 
 class TagTransformator:
+
+    COMMON_FRAME = "table"
 
     def __init__(self, cam_name, n_samples = 10, common_frame="camera_link", n_calibration_samples = 20):
         self.cam_name = cam_name
@@ -82,75 +119,114 @@ class TagTransformator:
         self.calibration_samples = []
         self.n_calibration_samples = n_calibration_samples
 
+        self.T = None
+        self.stamp = None
+        self.dist = None
         self.qoffset = None
-        self.vstart = None
+        self.qcurrent = None
+        self.voffset = None
+        self.vcurrent = None
+        self.translation = None
 
         self.l = Lock()
+        self.br = tf.TransformBroadcaster()
 
-        self.markers = deque(maxlen=self.n_samples)
         self.tag_sub = rospy.Subscriber(self.tag_topic, AprilTagDetectionArray, self.tag_cb)
 
     def calibrate(self):
+        self.T = None
+        self.stamp = None
+        self.dist = None
         self.qoffset = None
+        self.qcurrent = None
+        self.voffset = None
+        self.vcurrent = None
+        self.toffset = None
+        self.tcurrent = None
+
         self.calibrated = False
         self.should_calibrate = True
         self.calibration_samples = []
 
-        print(f"staring calibration for cam {self.cam_name}")
+        print(f"staring calibration for {self.cam_name}")
 
     def tag_cb(self, am: AprilTagDetectionArray):
         nmarkers = len(am.detections)
-        if nmarkers == 0: 
-            self.l.acquire()
-            self.markers.append(None)
-            self.l.release()
+        if nmarkers == 0:
+            self.stamp  = None
             return
 
-        # assumption: all markers are orientated the same way on the block
-        # -> knowing the offset from one marker-Z will be the same for other markers
-
-        timestamp = am.header.stamp
-        markers = {}
+        qs = {}
+        vs = {}
+        qbase = {}
+        translations = []
         for d in am.detections:
             mid = d.id[0]
-            # if mid == 9 or mid == 8: continue
-            axis = mid2axis(mid)
+            qaxis = mid2q(mid)
 
-            tfs = TransformStamped()
-            tfs.header = am.header
-            tfs.child_frame_id = f"tag_{mid}_{self.cam_name}"
-            tfs.transform.translation = d.pose.pose.pose.position
-            tfs.transform.rotation = d.pose.pose.pose.orientation
+            markerq = q2l(d.pose.pose.pose.orientation)
+            pnormalq = normalize(quaternion_multiply(markerq, qaxis))
 
-            m =  MarkerDetection(mid=mid, timestamp=timestamp, transform=tfs) 
+            qs.update({mid:pnormalq})
+            vs.update({mid:rotate_v([1,0,0], pnormalq)})
+            qbase.update({mid: markerq})
 
-            qcurrent = q2l(tfs.transform.rotation)
-            vcurrent = rotate_v(axis, qcurrent)
+            translations.append(v2l(d.pose.pose.pose.position))
 
             if self.calibrated:
-                rad = np.dot(self.vstart, vcurrent)
+                self.br.sendTransform(
+                            translations[-1], 
+                            markerq, 
+                            rospy.Time.now(),
+                            f"tag_{mid}_{self.cam_name}", 
+                            self.cam_name)
 
-                m.angle = rad
-                m.voffset = self.vstart
-                m.vcurrent = vcurrent
-            
-            if self.should_calibrate:
-                self.calibration_samples.append(vcurrent)
-
-                if len(self.calibration_samples) == self.n_calibration_samples:
-                    self.vstart = normalize(np.mean(self.calibration_samples, axis=0))
-                    self.calibrated = True
-                    print(f"calibration for cam {self.cam_name} done")
-            markers.update({m.mid:m})
-
+        meanq = qavg(list(qs.values()))
+        meant = np.mean(translations, axis=0)
+        vcurrent = rotate_v([1,0,0], meanq)
+        
         self.l.acquire()
-        self.markers.append(markers)
+        if self.should_calibrate:
+            self.calibration_samples.append([meanq, meant])
+
+            if len(self.calibration_samples) == self.n_calibration_samples:
+                self.calibration_samples = np.array(self.calibration_samples)
+
+                self.qoffset = qavg(self.calibration_samples[:,0])
+                self.toffset = np.mean(self.calibration_samples[:,1])
+                self.voffset = vcurrent
+
+                self.T = quaternion_matrix(self.qoffset)
+                self.T[:3,3] = self.toffset
+                self.T = inverse_matrix(self.T)
+
+                self.calibrated = True
+                self.should_calibrate = False
+                print(f"calibration for {self.cam_name} done")
+        
+        if self.calibrated:
+            self.stamp = am.header.stamp
+
+            self.qcurrent = meanq
+            self.tcurrent = meant
+            self.vcurrent = vcurrent
+            self.angle = np.dot(vcurrent, self.voffset)
+            self.dist = np.linalg.norm(self.tcurrent)
+
+            self.br.sendTransform(
+                            self.T[:3,3], 
+                            quaternion_from_matrix(self.T), 
+                            rospy.Time.now(),
+                            self.cam_name, 
+                            self.COMMON_FRAME)
         self.l.release()
 
 class StateEstimator:
 
-    def __init__(self, cams = [], max_age = rospy.Duration(2), n_calibration_samples = 50):
+    def __init__(self, cams = [], max_age = rospy.Duration(2), n_calibration_samples = 50, should_plot=True):
         self.max_age = max_age
+        self.should_plot = should_plot
+
         self.ose_pub = rospy.Publisher("/object_state_estimate", ObjectStateEstimate, queue_size=1)
         self.calib_srv = rospy.Service("/object_state_calibration", Empty, self.calibrate_cb)
 
@@ -162,7 +238,17 @@ class StateEstimator:
         self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
 
-        self.vref = None
+        self.colors = [
+            np.array([217,  93,  57])/255,
+            np.array([239, 203, 104])/255,
+            np.array([180, 159, 204])/255
+        ][:len(self.tts)]
+
+        self.has_plot = False
+
+    def __del__(self):
+        if self.has_plot:
+            plt.close(self.fig)
 
     def calibrate_cb(self, *args, **kwargs):
         print("calibrating SE ...")
@@ -177,56 +263,101 @@ class StateEstimator:
 
     def process(self):
         latest = rospy.Time.now()-self.max_age
-
-        tfs = []
+        calibrated_tts = [tt for tt in self.tts if tt.calibrated]
+        if len(calibrated_tts)==0:
+            # print("warn: no cam calibrated")
+            return
 
         angles = []
+        qoffsets = []
+        qcurrents = []
         voffsets = []
         vcurrents = []
+        toffsets = []
+        tcurrents = []
         cameras = []
 
-        self.vref = None
-
         for tt in self.tts: # loop over M cams ...
+            if tt.stamp is not None and tt.stamp>latest:
+                angles.append(tt.angle)
+                qoffsets.append(tt.qoffset)
+                qcurrents.append(tt.qoffset)
+                voffsets.append(tt.voffset)
+                vcurrents.append(tt.vcurrent)
+                toffsets.append(tt.toffset)
+                tcurrents.append(tt.tcurrent)
 
-            angles.append([])
-            vcurrents.append([])
-            voffsets.append([])
-
-            tt.l.acquire()
-            for m in tt.markers:            # ... and their last N detections ...
-                if m == None: continue      # ... skip non-detections ...
-                for mid, md in m.items():    # ... and each marker per detection
-                    if md.timestamp < latest: continue # ignore old markers
-                    if tt.cam_name not in cameras: cameras.append(tt.cam_name)
-                    # store & publish tf for this marker id if none is present 
-                    if mid not in tfs: 
-                        tfs.append(mid)
-                        self.br.sendTransform(
-                            v2l(md.transform.transform.translation), 
-                            q2l(md.transform.transform.rotation), 
-                            rospy.Time.now(), 
-                            f"tag_{mid}", 
-                            md.transform.header.frame_id)
-                        
-                    # store angle if one was calculated
-                    if md.angle is not None:
-                        angles[-1].append(md.angle)
-                        vcurrents[-1].append(md.vcurrent)
-                        voffsets[-1].append(md.voffset)
-                    
-                        
-            tt.l.release()
-        if np.any([len(a)>0 for a in angles]):
-            mean_angs = [np.mean(a) for a in angles if len(a)>0]
-            final_ang = np.mean(mean_angs)
-        else:
+                cameras.append(tt.cam_name)
+            
+        if len(angles)==0: 
+            print("warn: no detection")
             return
-        
+
+        vdiffs = [list(vo-vc) for vo, vc in zip(voffsets, vcurrents)]
+        qdiffs = [vecs2quat(vo, vc) for vo, vc in zip(voffsets, vcurrents)]
+        vdlens = [np.linalg.norm(vd) for vd in vdiffs]
+        # print(vdiffs)
+        # print(vdlens)
+        # print(angles)
+
+        if self.should_plot:
+
+            """
+            live plotting: https://stackoverflow.com/questions/11874767/how-do-i-plot-in-real-time-in-a-while-loop-using-matplotlib
+            """
+            if not self.has_plot:
+                self.fig = plt.figure(figsize=(9.71, 8.61))
+                self.ax = self.fig.add_subplot(111, projection='3d')
+                
+                plt.show(block=False)
+                plt.draw()
+
+                self.has_plot = True
+            
+            self.ax.clear()
+
+            alim = [-1.2, 1.2]
+            self.ax.set_xlim(alim)
+            self.ax.set_ylim(alim)
+            self.ax.set_zlim(alim)
+            
+            aalph = 0.9
+            self.ax.add_artist(Arrow3D([0,0,0], [1,0,0], color=[1.0, 0.0, 0.0, aalph]))
+            self.ax.add_artist(Arrow3D([0,0,0], [0,1,0], color=[0.0, 1.0, 0.0, aalph]))
+            self.ax.add_artist(Arrow3D([0,0,0], [0,0,1], color=[0.0, 0.0, 1.0, aalph]))
+
+            handles = []
+            for vo, vc, col, tt in zip(voffsets, vcurrents, self.colors, calibrated_tts):
+                self.ax.add_artist(Arrow3D([0,0,0], vo, color=list(col)+[0.7]))
+                handles.append(self.ax.add_artist(Arrow3D([0,0,0], vc, color=list(col)+[1.0], label=f"{tt.cam_name} (d={tt.dist:.2f})"))
+                )
+            
+            handles.append(
+                self.ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label="desired normal"))
+            )
+
+            for qd, tt, cosa in zip(qdiffs, calibrated_tts, angles):
+                v = rotate_v([0,0,-1], qd)
+                handles.append(
+                    self.ax.add_artist(Arrow3D([0,0,0], v, color=[0.0, 1.0, 1.0, 1.0], label=f"{tt.cam_name} normal; cos(a)={cosa:.3f}"))
+                )
+
+            self.ax.legend(handles=handles)
+            
+            try:
+                self.fig.tight_layout()
+                self.fig.canvas.draw()
+                plt.pause(0.05)
+            except:
+                print("plot closed")
+                self.should_plot = False
+
+        return
         ose = ObjectStateEstimate()
 
         vcmeans = [normalize(np.mean(v, axis=0)) for v in vcurrents if len(v)>0]
         voffs = [v[0] for v in voffsets if len(v)>0]
+        
 
         ose.vcurrents = [Vector3(*v) for v in vcmeans]
         ose.voffsets = [Vector3(*v) for v in voffs]
