@@ -131,7 +131,7 @@ if __name__ == "__main__":
     torsoAC.send_goal_and_wait(up_goal)
 
     print("killing head manager ...")
-    rosnode.kill_nodes(["/pal_head_manager"])
+    rosnode.kill_nodes(["/pal_head_manager", "/aruco_single"])
 
     print("moving head ...")
     headAC.send_goal_and_wait(head_goal)

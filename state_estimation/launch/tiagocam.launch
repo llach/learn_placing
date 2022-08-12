@@ -4,4 +4,31 @@
         <param name="pixel_format" value="yuyv" />
         <param name="video_device" value="/dev/video0" />
     </node>
+
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_3" output="screen" >
+    <remap from="image_rect" to="/usb_cam_cam3/image_raw" />
+    <remap from="camera_info" to="/usb_cam_cam3/camera_info" />
+    <remap from="tag_detections" to="/tag_detections_cam3" />
+    <remap from="tag_detections_image" to="/tag_detections_image_cam3" />
+
+    <param name="publish_tf" value="false" />
+    <param name="publish_tag_detections_image" type="bool" value="true" />
+  </node>
+
+    <!--
+    HEAD TAG DETECTION
+    -->  
+  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_head" />
+  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_head" />
+
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_head" output="screen" >
+    <remap from="image_rect" to="/xtion/rgb/image_raw" />
+    <remap from="camera_info" to="/xtion/rgb/camera_info" />
+    <remap from="tag_detections" to="/tag_detections_head" />
+    <remap from="tag_detections_image" to="/tag_detections_image_head" />
+
+    <param name="publish_tf" value="false" />
+    <param name="publish_tag_detections_image" type="bool" value="true" />
+  </node>
+
 </launch>

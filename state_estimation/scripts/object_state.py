@@ -45,6 +45,14 @@ def normalize(a, axis=-1, order=2):
     l2[l2==0] = 1
     return np.squeeze(a / np.expand_dims(l2, axis))
 
+def Tf2T(pos, rot):
+    T = quaternion_matrix(rot)
+    T[:3,3] = pos
+    return T
+
+def T2Tf(T):
+    return T[:3,3], normalize(quaternion_from_matrix(T))
+
 def v2l(v):
     return np.array([v.x, v.y, v.z])
 
@@ -103,15 +111,25 @@ class MarkerDetection:
         self.qoffset = None
         self.qcurrent = None
 
+TABLE_FRAME = "table"
 
 class TagTransformator:
 
-    COMMON_FRAME = "table"
 
-    def __init__(self, cam_name, n_samples = 10, common_frame="camera_link", n_calibration_samples = 20):
+    def __init__(
+        self, 
+        cam_name, 
+        n_samples = 10, 
+        common_frame="camera_link", 
+        n_calibration_samples = 20,
+        publish_marker_tfs = True,
+        publish_object_tf = True
+    ):
         self.cam_name = cam_name
         self.n_samples = n_samples
         self.common_frame = common_frame
+        self.publish_marker_tfs = publish_marker_tfs
+        self.publish_object_tf = publish_object_tf
         self.tag_topic = f"/tag_detections_{cam_name}"
 
         self.calibrated = False
@@ -120,6 +138,7 @@ class TagTransformator:
         self.n_calibration_samples = n_calibration_samples
 
         self.T = None
+        self.Tinv = None
         self.stamp = None
         self.dist = None
         self.qoffset = None
@@ -131,10 +150,11 @@ class TagTransformator:
         self.l = Lock()
         self.br = tf.TransformBroadcaster()
 
-        self.tag_sub = rospy.Subscriber(self.tag_topic, AprilTagDetectionArray, self.tag_cb)
+        self.tag_sub = rospy.Subscriber(self.tag_topic, AprilTagDetectionArray, self.tag_cb, queue_size=1)
 
     def calibrate(self):
         self.T = None
+        self.Tinv = None
         self.stamp = None
         self.dist = None
         self.qoffset = None
@@ -173,7 +193,7 @@ class TagTransformator:
 
             translations.append(v2l(d.pose.pose.pose.position))
 
-            if self.calibrated:
+            if self.calibrated and self.publish_marker_tfs:
                 self.br.sendTransform(
                             translations[-1], 
                             markerq, 
@@ -196,9 +216,10 @@ class TagTransformator:
                 self.toffset = np.mean(self.calibration_samples[:,1])
                 self.voffset = vcurrent
 
+                # this is the camera in table coordinates
                 self.T = quaternion_matrix(self.qoffset)
                 self.T[:3,3] = self.toffset
-                self.T = inverse_matrix(self.T)
+                self.Tinv = inverse_matrix(self.T)
 
                 self.calibrated = True
                 self.should_calibrate = False
@@ -213,17 +234,31 @@ class TagTransformator:
             self.angle = np.dot(vcurrent, self.voffset)
             self.dist = np.linalg.norm(self.tcurrent)
 
-            self.br.sendTransform(
-                            self.T[:3,3], 
-                            quaternion_from_matrix(self.T), 
+            if self.publish_object_tf:
+                self.br.sendTransform(
+                            self.tcurrent, 
+                            self.qcurrent, 
                             rospy.Time.now(),
-                            self.cam_name, 
-                            self.COMMON_FRAME)
+                            f"object_{self.cam_name}", 
+                            self.cam_name)
+
         self.l.release()
+
+    def publish_cam_tf(self):
+        if self.Tinv is None: return
+        self.br.sendTransform(
+                        self.Tinv[:3,3], 
+                        normalize(quaternion_from_matrix(self.Tinv)), 
+                        rospy.Time.now(),
+                        self.cam_name,
+                        TABLE_FRAME
+                    )
 
 class StateEstimator:
 
-    def __init__(self, cams = [], max_age = rospy.Duration(2), n_calibration_samples = 50, should_plot=True):
+    HEAD_CAM_FRAME = 'xtion_rgb_optical_frame'
+
+    def __init__(self, cams = [], max_age = rospy.Duration(2), n_calibration_samples = 50, should_plot=False):
         self.max_age = max_age
         self.should_plot = should_plot
 
@@ -232,11 +267,24 @@ class StateEstimator:
 
         self.tts = []
         for cam in cams:
-            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples))
+            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=False))
+        self.head_tt = TagTransformator("head", n_calibration_samples=n_calibration_samples, publish_marker_tfs=False)
 
         self.calibrated = False
         self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
+
+        for _ in range(5):
+            try:
+                if self.li.canTransform("base_footprint", self.HEAD_CAM_FRAME, rospy.Time(0)): break
+                print("got head transform")
+                break
+            except:
+                pass
+
+        self.Ttable = None
+        self.table_pos = []
+        self.table_rot = []
 
         self.colors = [
             np.array([217,  93,  57])/255,
@@ -250,22 +298,43 @@ class StateEstimator:
         if self.has_plot:
             plt.close(self.fig)
 
+    def calculate_Ttable(self):
+        head2table = self.head_tt.T
+        base2head = Tf2T(*self.li.lookupTransform("base_footprint", self.HEAD_CAM_FRAME, rospy.Time(0)))
+        self.Ttable = base2head@head2table
+        self.table_pos, self.table_rot = T2Tf(self.Ttable)
+        pass
+
     def calibrate_cb(self, *args, **kwargs):
         print("calibrating SE ...")
         for t in self.tts: t.calibrate()
+        self.head_tt.calibrate()
 
         time.sleep(3)
         
         self.calibrated = np.any([tt.calibrated for tt in self.tts])
         print("SE calibration done:", self.calibrated, [tt.cam_name for tt in self.tts], [tt.calibrated for tt in self.tts])
-        
+        if self.head_tt.calibrated:
+            print("head calib successful")
+            self.calculate_Ttable()
+        else:
+            print("!!! HEAD CALIBRATION FAILED !!!")
         return EmptyResponse()
 
     def process(self):
         latest = rospy.Time.now()-self.max_age
         calibrated_tts = [tt for tt in self.tts if tt.calibrated]
+
+        if self.Ttable is not None:
+            self.br.sendTransform(
+                            self.table_pos, 
+                            self.table_rot, 
+                            rospy.Time.now(),
+                            "table",
+                            "base_footprint")
+
         if len(calibrated_tts)==0:
-            # print("warn: no cam calibrated")
+            print("warn: no cam calibrated")
             return
 
         angles = []
@@ -278,6 +347,7 @@ class StateEstimator:
         cameras = []
 
         for tt in self.tts: # loop over M cams ...
+            tt.publish_cam_tf()
             if tt.stamp is not None and tt.stamp>latest:
                 angles.append(tt.angle)
                 qoffsets.append(tt.qoffset)

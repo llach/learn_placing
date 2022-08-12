@@ -73,7 +73,7 @@ class Reorient:
         self.li = TransformListener()
         for _ in range(6):
             try:
-                self.li.waitForTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time.now(), rospy.Duration(3))
+                self.li.waitForTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time(0), rospy.Duration(3))
                 break
             except Exception as e:
                 print(e)

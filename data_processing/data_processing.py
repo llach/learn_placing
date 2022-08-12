@@ -18,7 +18,7 @@ def reshape_mm_vector(data):
     data = np.array(data)
     if len(data.shape)==1: data = np.reshape(data, [1]+list(data.shape))
     N = data.shape[0]
-    return np.reshape(data, (N,16,16))
+    return np.reshape(data, list(data.shape[:-1])+[16,16])
 
 def normalize_mm(data):
     """ converts values from range [0,4095] to [0,1], 1 == maximum force (hence 1-data)
