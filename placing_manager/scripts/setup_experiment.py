@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import time
 import rospy
+import rosnode
 import actionlib
 import numpy as np
 
@@ -83,10 +84,15 @@ if __name__ == "__main__":
     gravityAC = actionlib.SimpleActionClient("/gravity_compensation", EmptyAction)
     mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
     torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+    headAC = actionlib.SimpleActionClient("/head_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 
     up_goal = FollowJointTrajectoryGoal()
     up_goal.trajectory.joint_names = ["torso_lift_joint"]
     up_goal.trajectory.points.append(JointTrajectoryPoint(positions=[0.35], time_from_start=rospy.Duration(3.0)))
+
+    head_goal = FollowJointTrajectoryGoal()
+    head_goal.trajectory.joint_names = ["head_1_joint", "head_2_joint"]
+    head_goal.trajectory.points.append(JointTrajectoryPoint(positions=[0.0, -0.65], time_from_start=rospy.Duration(1.0)))
 
     print("enabling torso controller ...")
     safe_switch("torso_controller", "torso_stop_controller")
@@ -118,8 +124,17 @@ if __name__ == "__main__":
     print("waiting for torso action ... ")
     torsoAC.wait_for_server()
 
-    print("moving torso")
+    print("waiting for head action ... ")
+    headAC.wait_for_server()
+
+    print("moving torso ... ")
     torsoAC.send_goal_and_wait(up_goal)
+
+    print("killing head manager ...")
+    rosnode.kill_nodes(["/pal_head_manager"])
+
+    print("moving head ...")
+    headAC.send_goal_and_wait(head_goal)
 
     print("################ setup done")
 
