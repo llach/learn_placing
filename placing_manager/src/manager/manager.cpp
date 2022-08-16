@@ -43,7 +43,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     ftCalibrationSrv_(n_.serviceClient<std_srvs::Empty>("/table_contact/calibrate")),
     loadControllerSrv_(n_.serviceClient<LoadController>("/controller_manager/load_controller")),
     listControllersSrv_(n_.serviceClient<ListControllers>("/controller_manager/list_controllers")),
-    switchControllerSrv_(n_.serviceClient<SwitchController>("/controller_manager/switch_controller"))
+    switchControllerSrv(n_.serviceClient<SwitchController>("/controller_manager/switch_controller"))
 {
     ROS_INFO("checking torso controller ... ");
     if (!ensureRunningController(torsoStopControllerName_, torsoControllerName_)){
@@ -75,7 +75,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     initialized_ = true;
 }
 
-bool PlacingManager::init(ros::Duration timeout){
+bool PlacingManager::init(ros::Duration timeout, bool initTorso){
    
     ros::Time start = ros::Time::now();
 
@@ -84,12 +84,13 @@ bool PlacingManager::init(ros::Duration timeout){
         if (ros::Time::now() > start+timeout) return false;
     }
 
-    {
-        std::lock_guard<std::mutex> l(jsLock_); 
-        ROS_INFO("moving torso from %f to %f", currentTorsoQ_, initialTorsoQ_);
+    if (initTorso) {
+        {
+            std::lock_guard<std::mutex> l(jsLock_); 
+            ROS_INFO("moving torso from %f to %f", currentTorsoQ_, initialTorsoQ_);
+        }
+        moveTorso(initialTorsoQ_, 1.0, true);
     }
-
-    moveTorso(initialTorsoQ_, 1.0, true);
     return true;
 }
 
@@ -298,7 +299,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    reorientate();
+    // reorientate();
 
     return true;
 }
@@ -312,7 +313,7 @@ void PlacingManager::flagSample(){
 }
 
 /*
-    TORSO CONTROLLER METHODS
+  TORSO CONTROLLER METHODS
 */
 
 void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
@@ -346,6 +347,7 @@ void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
     torsoGoal.trajectory = jt;
 
     torsoAc_.sendGoalAndWait(torsoGoal);
+    ROS_INFO("Action finished: %s",torsoAc_.getState().toString().c_str());
 }
 
 float PlacingManager::lerp(float a, float b, float f) {
@@ -365,8 +367,9 @@ bool PlacingManager::ensureRunningController(std::string name, std::string stop)
         SwitchController sw;
         sw.request.stop_controllers = {stop};
         sw.request.start_controllers = {name};
+        sw.request.strictness = 0;
 
-        switchControllerSrv_.call(sw);
+        switchControllerSrv.call(sw);
         return isControllerRunning(name);
     }
     return true;    
@@ -381,7 +384,6 @@ bool PlacingManager::isControllerRunning(std::string name) {
     }
     return false;
 }
-
 
 /*
     DATA CALLBACKS

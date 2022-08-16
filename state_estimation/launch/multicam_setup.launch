@@ -16,10 +16,8 @@
   <!-- Set parameters -->
   <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_1" />
   <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_2" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_3" />
   <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_1" />
   <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_2" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_3" />
   
   <!--
     TAG DETECTOR 1

@@ -47,10 +47,10 @@ class PlacingManager{
 public:
     PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.75);
 
-    bool init(ros::Duration timeout);
+    bool init(ros::Duration timeout, bool initTorso);
     void flagSample();
     bool collectSample();
-    
+    bool isControllerRunning(std::string name);
 private:
     // parameters
     int nFTRecalibrate_ = 5;
@@ -84,7 +84,6 @@ private:
     ros::ServiceClient ftCalibrationSrv_;
     ros::ServiceClient loadControllerSrv_;
     ros::ServiceClient listControllersSrv_;
-    ros::ServiceClient switchControllerSrv_;
 
     actionlib::SimpleActionClient<wrist_motion::PlanWristAction> wristAc_;
     actionlib::SimpleActionClient<moveit_msgs::ExecuteTrajectoryAction> executeAc_;
@@ -103,7 +102,6 @@ private:
     void storeSample(ros::Time contactTime);
     bool checkSamples(const ros::Time &n);
     bool checkLastTimes(ros::Time n);
-    bool isControllerRunning(std::string name);
     bool ensureRunningController(std::string name, std::string stop);
 
     TopicBuffer<tf2_msgs::TFMessage> bufferTf;
@@ -117,6 +115,8 @@ private:
     std::mutex jsLock_;
     ros::Subscriber jsSub_;
     void jsCB(const sensor_msgs::JointState::ConstPtr& msg);
+public:
+    ros::ServiceClient switchControllerSrv;
 };
 
 } // namespace placing_manager 
