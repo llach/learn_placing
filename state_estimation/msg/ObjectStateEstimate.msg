@@ -1,5 +1,6 @@
 std_msgs/Float64 angle
 std_msgs/Float64[] angles
+std_msgs/Float64[] distances
 std_msgs/String[] cameras
 geometry_msgs/Vector3[] voffsets
 geometry_msgs/Vector3[] vcurrents

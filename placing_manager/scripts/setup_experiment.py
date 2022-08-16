@@ -100,6 +100,24 @@ if __name__ == "__main__":
     print("enabling myrmex controller ...")
     safe_switch("gripper_controller", "myrmex_gripper_controller")
 
+    print("waiting for torso action ... ")
+    torsoAC.wait_for_server()
+
+    print("waiting for head action ... ")
+    headAC.wait_for_server()
+
+    print("moving torso ... ")
+    torsoAC.send_goal_and_wait(up_goal)
+
+    print("killing head manager ...")
+    rosnode.kill_nodes(["/pal_head_manager", "/aruco_single"])
+
+    print("moving head ...")
+    headAC.send_goal_and_wait(head_goal)
+
+
+    
+
     print("waiting for myrmex controller server ...")
     mmAC.wait_for_server()
 
@@ -120,21 +138,6 @@ if __name__ == "__main__":
 
     print("waiting for wrist planner reinit service ...")
     reinitSrv.wait_for_service()
-
-    print("waiting for torso action ... ")
-    torsoAC.wait_for_server()
-
-    print("waiting for head action ... ")
-    headAC.wait_for_server()
-
-    print("moving torso ... ")
-    torsoAC.send_goal_and_wait(up_goal)
-
-    print("killing head manager ...")
-    rosnode.kill_nodes(["/pal_head_manager", "/aruco_single"])
-
-    print("moving head ...")
-    headAC.send_goal_and_wait(head_goal)
 
     print("################ setup done")
 

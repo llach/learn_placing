@@ -183,6 +183,9 @@ class TagTransformator:
         for d in am.detections:
             mid = d.id[0]
             qaxis = mid2q(mid)
+            if self.should_calibrate and mid not in [581, 582]: continue
+            if self.calibrated and mid not in list(range(12)): continue
+            # if mid in [8,9]: continue 
 
             markerq = q2l(d.pose.pose.pose.orientation)
             pnormalq = normalize(quaternion_multiply(markerq, qaxis))
@@ -200,7 +203,9 @@ class TagTransformator:
                             rospy.Time.now(),
                             f"tag_{mid}_{self.cam_name}", 
                             self.cam_name)
-
+        if len(qs)==0:
+            self.stamp=None
+            return
         meanq = qavg(list(qs.values()))
         meant = np.mean(translations, axis=0)
         vcurrent = rotate_v([1,0,0], meanq)
@@ -234,13 +239,20 @@ class TagTransformator:
             self.angle = np.dot(vcurrent, self.voffset)
             self.dist = np.linalg.norm(self.tcurrent)
 
+            T = quaternion_matrix(self.qcurrent)
+            T[:3,3] = self.tcurrent
+            self.Tobj = self.Tinv@T
+            self.tO, self.qO = T2Tf(self.Tobj)
+
             if self.publish_object_tf:
+                
                 self.br.sendTransform(
-                            self.tcurrent, 
-                            self.qcurrent, 
+                            self.tO,
+                            self.qO,
                             rospy.Time.now(),
                             f"object_{self.cam_name}", 
-                            self.cam_name)
+                            # self.cam_name)
+                            "table")
 
         self.l.release()
 
@@ -266,8 +278,8 @@ class StateEstimator:
         self.calib_srv = rospy.Service("/object_state_calibration", Empty, self.calibrate_cb)
 
         self.tts = []
-        for cam in cams:
-            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=False))
+        for cam, pm in zip(cams, [False, False, False]):
+            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=pm))
         self.head_tt = TagTransformator("head", n_calibration_samples=n_calibration_samples, publish_marker_tfs=False)
 
         self.calibrated = False
@@ -334,7 +346,7 @@ class StateEstimator:
                             "base_footprint")
 
         if len(calibrated_tts)==0:
-            print("warn: no cam calibrated")
+            # print("warn: no cam calibrated")
             return
 
         angles = []
@@ -345,6 +357,7 @@ class StateEstimator:
         toffsets = []
         tcurrents = []
         cameras = []
+        qOs = []
 
         for tt in self.tts: # loop over M cams ...
             tt.publish_cam_tf()
@@ -356,6 +369,7 @@ class StateEstimator:
                 vcurrents.append(tt.vcurrent)
                 toffsets.append(tt.toffset)
                 tcurrents.append(tt.tcurrent)
+                qOs.append(tt.qO)
 
                 cameras.append(tt.cam_name)
             
@@ -364,11 +378,9 @@ class StateEstimator:
             return
 
         vdiffs = [list(vo-vc) for vo, vc in zip(voffsets, vcurrents)]
-        qdiffs = [vecs2quat(vo, vc) for vo, vc in zip(voffsets, vcurrents)]
-        vdlens = [np.linalg.norm(vd) for vd in vdiffs]
-        # print(vdiffs)
-        # print(vdlens)
-        # print(angles)
+        qdiffs = [vecs2quat([0,0,-1], rotate_v([1,0,0], q)) for q in qOs]
+        finalq = qavg(qdiffs)
+        final_ang = np.mean(angles)
 
         if self.should_plot:
 
@@ -422,24 +434,18 @@ class StateEstimator:
                 print("plot closed")
                 self.should_plot = False
 
-        return
         ose = ObjectStateEstimate()
 
-        vcmeans = [normalize(np.mean(v, axis=0)) for v in vcurrents if len(v)>0]
-        voffs = [v[0] for v in voffsets if len(v)>0]
-        
-
-        ose.vcurrents = [Vector3(*v) for v in vcmeans]
-        ose.voffsets = [Vector3(*v) for v in voffs]
+        ose.vcurrents = [Vector3(*v) for v in voffsets]
+        ose.voffsets = [Vector3(*v) for v in vcurrents]
 
         ose.angle = Float64(final_ang)
-        ose.angles = [Float64(ma) for ma in mean_angs]
+        ose.angles = [Float64(ma) for ma in angles]
 
         ose.cameras = [String(ca) for ca in cameras]
 
         if len(ose.angles)>0:
-            qps = [vecs2quat(vc, vo) for vc, vo in zip(vcmeans, voffs)]
-            qp = qavg(qps)
+            qp = qavg(qOs)
 
             otf = TransformStamped()
             otf.header.frame_id = "base_link"
@@ -458,7 +464,7 @@ class StateEstimator:
 
             try:
                 (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
-                rotGO = quaternion_multiply(qp, quaternion_inverse(rotG))
+                rotGO = quaternion_multiply(quaternion_inverse(rotG), qp)
                 rotGO = normalize(rotGO)
 
                 self.br.sendTransform(
