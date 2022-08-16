@@ -358,6 +358,7 @@ class StateEstimator:
         tcurrents = []
         cameras = []
         qOs = []
+        dists = []
 
         for tt in self.tts: # loop over M cams ...
             tt.publish_cam_tf()
@@ -370,6 +371,7 @@ class StateEstimator:
                 toffsets.append(tt.toffset)
                 tcurrents.append(tt.tcurrent)
                 qOs.append(tt.qO)
+                dists.append(tt.dist)
 
                 cameras.append(tt.cam_name)
             
@@ -377,7 +379,6 @@ class StateEstimator:
             print("warn: no detection")
             return
 
-        vdiffs = [list(vo-vc) for vo, vc in zip(voffsets, vcurrents)]
         qdiffs = [vecs2quat([0,0,-1], rotate_v([1,0,0], q)) for q in qOs]
         finalq = qavg(qdiffs)
         final_ang = np.mean(angles)
@@ -439,43 +440,47 @@ class StateEstimator:
         ose.vcurrents = [Vector3(*v) for v in voffsets]
         ose.voffsets = [Vector3(*v) for v in vcurrents]
 
+        ose.qoffsets = [Quaternion(*q) for q in qoffsets]
+        ose.qcurrents = [Quaternion(*q) for q in qcurrents]
+
         ose.angle = Float64(final_ang)
         ose.angles = [Float64(ma) for ma in angles]
+        ose.distances = [Float64(d) for d in dists]
 
         ose.cameras = [String(ca) for ca in cameras]
 
-        if len(ose.angles)>0:
-            qp = qavg(qOs)
+        ose.finalq = finalq
+        ose.qOs = [Quaternion(*qO) for qO in qOs]
 
-            otf = TransformStamped()
-            otf.header.frame_id = "base_link"
-            otf.header.stamp = rospy.Time.now()
-            otf.child_frame_id = "object"
-            otf.transform.rotation = Quaternion(*qp)
-            otf.transform.translation = Vector3(0,0,0)
+        otf = TransformStamped()
+        otf.header.frame_id = "base_link"
+        otf.header.stamp = rospy.Time.now()
+        otf.child_frame_id = "object"
+        otf.transform.rotation = Quaternion(*finalq)
+        otf.transform.translation = Vector3(0,0,0)
 
-            ose.transform = otf
+        ose.transform = otf
+        self.br.sendTransform(
+                        v2l(otf.transform.translation), 
+                        q2l(otf.transform.rotation), 
+                        rospy.Time.now(),
+                        "object", 
+                        "base_footprint")
+
+        try:
+            (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
+            rotGO = quaternion_multiply(quaternion_inverse(rotG), finalq)
+            rotGO = normalize(rotGO)
+
             self.br.sendTransform(
-                            v2l(otf.transform.translation), 
-                            q2l(otf.transform.rotation), 
-                            rospy.Time.now(),
-                            "object", 
-                            "base_link")
+                        [0,0,0], 
+                        rotGO,
+                        rospy.Time.now(), 
+                        "grasped_object", 
+                        "gripper_grasping_frame")
 
-            try:
-                (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
-                rotGO = quaternion_multiply(quaternion_inverse(rotG), qp)
-                rotGO = normalize(rotGO)
-
-                self.br.sendTransform(
-                            [0,0,0], 
-                            rotGO,
-                            rospy.Time.now(), 
-                            "grasped_object", 
-                            "gripper_grasping_frame")
-
-            except (tf.LookupException, tf.ConnectivityException):
-                print("unable to find gripper transform!")
+        except (tf.LookupException, tf.ConnectivityException):
+            print("unable to find gripper transform!")
 
         if self.calibrated: self.ose_pub.publish(ose)
 

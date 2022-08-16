@@ -4,6 +4,8 @@ std_msgs/Float64[] distances
 std_msgs/String[] cameras
 geometry_msgs/Vector3[] voffsets
 geometry_msgs/Vector3[] vcurrents
+geometry_msgs/Quaternion finalq
+geometry_msgs/Quaternion[] qOs
 geometry_msgs/Quaternion[] qoffsets
 geometry_msgs/Quaternion[] qcurrents
 geometry_msgs/TransformStamped transform
