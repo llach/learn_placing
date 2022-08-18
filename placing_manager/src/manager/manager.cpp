@@ -198,7 +198,7 @@ void PlacingManager::storeSample(ros::Time contactTime){
 
     bag.close();
 
-    ROS_INFO_STREAM("\033[1;36msampled saved at " << file <<"\033[0m");
+    ROS_INFO_STREAM("\033[1;36msample saved at " << file <<"\033[0m");
 }
 
 bool PlacingManager::reorientate(){
@@ -299,7 +299,7 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    // reorientate();
+    reorientate();
 
     return true;
 }

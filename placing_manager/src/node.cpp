@@ -29,8 +29,10 @@ int main(int argc, char **argv)
         cin >> n;
 
         if (n==0) return 0;
-        if (n==1) {ROS_INFO("\n--- flagging sample ---"); pm->flagSample();}
-        if (n==2) {
+        if (n==1) {
+            ROS_INFO("\n--- flagging sample ---"); 
+            pm->flagSample();
+        } else if (n==2) {
             ROS_INFO("\n+++ disabling arm gravity ... +++");
             EmptyGoal eag;
             gravAc.sendGoal(eag);
@@ -50,11 +52,11 @@ int main(int argc, char **argv)
             ROS_INFO("reinitializing PM ...");
             pm = make_shared<PlacingManager>();
             pm->init(ros::Duration(3), false);
+        } else {
+            std::cout << "calling PM" << std::endl;
+            bool success = pm->collectSample();
+            if (!success) return -1;
         }
-        
-        std::cout << "calling PM" << std::endl;
-        bool success = pm->collectSample();
-        if (!success) return -1;
     }
     return 0;
 }

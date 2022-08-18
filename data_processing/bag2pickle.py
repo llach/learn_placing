@@ -39,12 +39,17 @@ def msg2os(msg):
         "angle": msg.angle.data,
         "angles": [a.data for a in msg.angles],
         "cameras": [c.data for c in msg.cameras],
+        "distances": [d.data for d in msg.distances],
+        "finalq": q2l(msg.finalq),
+        "qOs": [q2l(q) for q in msg.qOs],
+        "qcurrents": [q2l(q) for q in msg.qcurrents],
+        "qoffsets": [q2l(q) for q in msg.qoffsets],
         "transform": tparse(msg.transform),
         "vcurrents": [v2l(v) for v in msg.vcurrents],
         "voffsets": [v2l(v) for v in msg.voffsets]
     }
 
-base_path = f"/home/llach/tud_datasets/2022.08.09_first/placing_data/"
+base_path = f"/home/llach/placing_data/"
 store_base = f"{base_path[:-1]}_pkl/"
 os.makedirs(store_base, exist_ok=True)
 

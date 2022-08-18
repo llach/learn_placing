@@ -82,17 +82,13 @@ def qavg(quats):
     return normalize(q)
 
 def mid2axis(mid):
-    if mid == 9:
-        return [0,0,1]
-    elif mid == 8:
+    if mid in [8, 9]:
         return [0,0,-1]
     else:
         return [0,-1,0]
 
 def mid2q(mid):
-    if mid == 9:
-        return Qy(-np.pi/2)
-    elif mid == 8:
+    if mid in [8, 9]:
         return Qy(np.pi/2)
     else:
         return Qz(-np.pi/2)
@@ -376,7 +372,7 @@ class StateEstimator:
                 cameras.append(tt.cam_name)
             
         if len(angles)==0: 
-            print("warn: no detection")
+            # print("warn: no detection")
             return
 
         qdiffs = [vecs2quat([0,0,-1], rotate_v([1,0,0], q)) for q in qOs]
@@ -449,7 +445,7 @@ class StateEstimator:
 
         ose.cameras = [String(ca) for ca in cameras]
 
-        ose.finalq = finalq
+        ose.finalq = Quaternion(*finalq)
         ose.qOs = [Quaternion(*qO) for qO in qOs]
 
         otf = TransformStamped()

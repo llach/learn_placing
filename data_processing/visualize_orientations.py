@@ -1,11 +1,24 @@
 import numpy as np
 from data_processing import load_dataset
-from tf.transformations import quaternion_conjugate
+from tf.transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_inverse, quaternion_slerp, quaternion_about_axis, quaternion_matrix, inverse_matrix, quaternion_from_matrix
 
 def normalize(a, axis=-1, order=2):
     l2 = np.atleast_1d(np.linalg.norm(a, order, axis))
     l2[l2==0] = 1
     return np.squeeze(a / np.expand_dims(l2, axis))
+
+def rotate_v(v, q):
+    v = list(unit_vector(v))
+    v.append(0.0) # vector as pure quaternion, i.e. normalized and 4D
+    return quaternion_multiply(
+        quaternion_multiply(q, v),
+        quaternion_conjugate(q)
+    )[:3]
+
+def vecs2quat(u, v):
+    theta = np.dot(u,v) + np.sqrt(np.sqrt(np.linalg.norm(u) * np.linalg.norm(v)))
+    q = np.concatenate([np.cross(u,v), [theta]])
+    return normalize(q)
 
 def diff_quat(u, v):
     
@@ -21,11 +34,9 @@ def diff_quat(u, v):
     w = np.sqrt(np.linalg.norm(u)**2 * np.linalg.norm(v)**2) + np.dot(u, v)
     return normalize(np.concatenate([a, [w]], axis=0))
 
-dataset_path = "/home/llach/tud_datasets/2022.08.09_first/placing_data_pkl"
+dataset_path = "/home/llach/tud_datasets/2022.08.17_second/placing_data_pkl"
 ds = load_dataset(dataset_path)
 os = {k: v["object_state"] for k, v in ds.items()}
-
-
 
 
 import matplotlib.pyplot as plt
@@ -45,37 +56,48 @@ class Arrow3D(FancyArrowPatch):
         self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
         FancyArrowPatch.draw(self, renderer)
 
-
+all_colors = [
+    np.array([217,  93,  57])/255,
+    np.array([239, 203, 104])/255,
+    np.array([180, 159, 204])/255
+]
 vecs = []
-for k, v in os.items():
+
+for i, (k, v) in enumerate(os.items()):
+    print(i)
+    fig = plt.figure(figsize=(9.71, 8.61))
+    ax = fig.add_subplot(111, projection='3d')
+    alim = [-1.2, 1.2]
+    ax.set_xlim(alim)
+    ax.set_ylim(alim)
+    ax.set_zlim(alim)
+
+    aalph = 0.9
+    ax.add_artist(Arrow3D([0,0,0], [1,0,0], color=[1.0, 0.0, 0.0, aalph]))
+    ax.add_artist(Arrow3D([0,0,0], [0,1,0], color=[0.0, 1.0, 0.0, aalph]))
+    ax.add_artist(Arrow3D([0,0,0], [0,0,1], color=[0.0, 0.0, 1.0, aalph]))
+
+    handles = []
+    handles.append(
+        ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label="desired normal"))
+    )
     for dp in v[1]:
-        if len(dp["vcurrents"])!=2: continue
+        qdiffs = [vecs2quat([0,0,-1], rotate_v([1,0,0], q)) for q in dp["qOs"]]
         vdiffs = [list(np.array(vo)-np.array(vc)) for vc, vo in zip(dp["vcurrents"], dp["voffsets"])]
         dots = [np.dot(np.array(vo), np.array(vc)) for vc, vo in zip(dp["vcurrents"], dp["voffsets"])]
         quats = [diff_quat(vc, vo) for vc, vo in zip(dp["vcurrents"], dp["voffsets"])]
-        # print("C", dp["vcurrents"])
-        # print("O", dp["voffsets"])
-        # print("D", vdiffs)
-        # print("Q", quats)
-        # print("A", dp["angles"])
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        for qd, cam, cosa in zip(qdiffs, dp["cameras"], dp["angles"]):
+            v = rotate_v([0,0,-1], qd)
+            handles.append(
+                ax.add_artist(Arrow3D([0,0,0], v, color=[0.0, 1.0, 1.0, 1.0], label=f"{cam} normal; cos(a)={cosa:.3f}"))
+            )
 
-        ax.add_artist(Arrow3D([0,0,0], dp["vcurrents"][0], color=(0.0,0.5,0.5,0.5)))
-        ax.add_artist(Arrow3D([0,0,0], dp["vcurrents"][1], color=(0.0,0.0,0.5,0.5)))
-
-        ax.add_artist(Arrow3D([0,0,0], dp["voffsets"][0], color=(0.0,0.5,0.5,1.0)))
-        ax.add_artist(Arrow3D([0,0,0], dp["voffsets"][1], color=(0.0,0.0,0.5,1.0)))
-
-        ax.add_artist(Arrow3D([0,0,0], vdiffs[0], color=(0.5,0.5,0.5,1.0)))
-        ax.add_artist(Arrow3D([0,0,0], vdiffs[1], color=(0.5,0.0,0.5,1.0)))
-
-        ax.set_xlim([-1, 1])
-        ax.set_ylim([-1, 1])
-        ax.set_zlim([-1, 1])
-        plt.show()
-        break
-
+    # ax.legend(handles=handles)
+        
+    fig.tight_layout()
+    fig.canvas.draw()
+    plt.show()
+    
     print("\n\n")
 pass
