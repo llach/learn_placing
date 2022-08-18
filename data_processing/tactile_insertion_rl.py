@@ -77,7 +77,7 @@ class TactileInsertionRLNet(nn.Module):
 
     def forward(self, x: Tensor):
         """
-        xs has dimensions: (batch, sensors, channels, H, W)
+        xs has dimensions: (batch, sensors, sequence, H, W)
         * we input the sequence of tactile images in the channels dimension
         * we have to pass each sensor sequence to their respective CNN-RNN pre-processors
         -> select xs[:,S,:], where S is the sensors index in {0,1}
