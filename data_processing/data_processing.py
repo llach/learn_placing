@@ -56,7 +56,7 @@ def load_dataset(folder):
         fname = fi.replace(".pkl", "")
         if len(fname)<10:continue
         
-        stamp = datetime.strptime(fname, "%Y-%m-%d.%H:%M:%S")
+        stamp = datetime.strptime(fname, "%Y-%m-%d.%H_%M_%S")
         
         pkl = f"{folder}/{fi}"
         with open(pkl, "rb") as f:
