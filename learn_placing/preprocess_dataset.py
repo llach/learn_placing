@@ -79,19 +79,13 @@ for i, (t, sample) in enumerate(os.items()):
     finalq = qO2qdiff(qavg(all_quaternions))
     finalv = v_from_qdiff(finalq)
 
-    # get rotation as polar coordinates starting from [0,0,-1]
-    theta = np.dot([0,-1], [finalv[0], finalv[2]])
-    phi = np.dot([0,-1], [-finalv[1], finalv[2]])
-
-    print(theta, phi)
-
-    # ap = AxesPlot()
-    # ap.plot_v(finalv)
-    # ap.show()
+    # TODO get rotation as polar coordinates starting from [0,0,-1]
+    angle = np.dot(finalv, [0,0,-1])
 
     labels |= {
         t: {
             "quat": finalq,
-            "vec": finalv
+            "vec": finalv,
+            "angle": angle
         }
     }
