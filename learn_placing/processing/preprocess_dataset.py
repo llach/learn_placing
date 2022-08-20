@@ -1,10 +1,11 @@
-import os 
+import os
+import pickle
 
 import numpy as np
 from datetime import timedelta
 
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg
+from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex
 
 
 """ PARAMETERS
@@ -12,8 +13,11 @@ from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff
 ZETA = timedelta(milliseconds=100)
 MAX_DEV = 0.005
 MIN_N = 10 # per camera
+M = 50  # myrmex lookback
 
-dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_second"
+data_root = f"{os.environ['HOME']}/tud_datasets"
+dataset_path = f"{data_root}/placing_data_pkl_second"
+dataset_file = f"{data_root}/second.pkl"
 
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
@@ -89,3 +93,22 @@ for i, (t, sample) in enumerate(os.items()):
             "angle": angle
         }
     }
+
+inputs = {}
+for i, (t, sample) in enumerate(ds.items()):
+    if t not in labels:
+        print(f"skipping myrmex sample {i}")
+    
+    le = preprocess_myrmex(sample["tactile_left"][1])
+    ri = preprocess_myrmex(sample["tactile_right"][1])
+
+     # cut to same length (we determined that in `myrmez_lookback.py`)
+    ri = ri[-M:]
+    le = le[-M:]
+
+    inp = np.stack([le, ri])
+
+    inputs |= {t: inp}
+
+with open(dataset_file, "wb") as f:
+    pickle.dump({"labels": labels, "inputs": inputs}, f)

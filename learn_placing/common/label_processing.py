@@ -1,6 +1,6 @@
 import numpy as np
 
-from transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp
+from .transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp
 
 def cam2col(cam):
     all_colors = [
