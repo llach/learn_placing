@@ -1,7 +1,4 @@
-import os
-import pickle
 import numpy as np
-from datetime import datetime
 
 def remove_outer(data, B=0):
     """
@@ -47,42 +44,3 @@ def mm2img(data, cidx=2):
 
 def upscale_repeat(frames, factor=10):
     return frames.repeat(factor, axis=1).repeat(factor, axis=2)
-
-def load_dataset(folder):
-    ds = {}
-
-    for fi in os.listdir(folder):
-        if ".pkl" not in fi: continue
-        fname = fi.replace(".pkl", "")
-        if len(fname)<10:continue
-        
-        stamp = datetime.strptime(fname, "%Y-%m-%d.%H_%M_%S")
-        
-        pkl = f"{folder}/{fi}"
-        with open(pkl, "rb") as f:
-            sample = pickle.load(f)
-        ds.update({stamp: sample})
-    return ds
-
-if __name__ == "__main__":
-    import torch
-    import pickle
-    
-    from torch.utils.tensorboard import SummaryWriter
-
-    from tactile_insertion_rl import TactileInsertionRLNet
-
-    base_path = f"{__file__.replace(__file__.split('/')[-1], '')}"
-    ds = load_dataset(f"{base_path}/test_samples")
-
-    net = TactileInsertionRLNet()
-    res = net(ds["tactile"])
-    print(res.shape)
-
-    # summary(net, input_size=(2, 40, 16, 16))
-    
-    # sw = SummaryWriter()
-    # sw.add_graph(net, torch.randn((30, 2, 40, 16, 16)))
-    # sw.close()
-    
-    pass

@@ -154,3 +154,27 @@ class TactileInsertionRLNet(nn.Module):
             batch_first=True
         )
         return nn.Sequential(OrderedDict(layers)), rnn
+
+if __name__ == "__main__":
+    import torch
+
+    from learn_placing.common import load_dataset
+    
+    from torch.utils.tensorboard import SummaryWriter
+
+    from learn_placing.training import TactileInsertionRLNet
+
+    base_path = f"{__file__.replace(__file__.split('/')[-1], '')}"
+    ds = load_dataset(f"{base_path}/test_samples")
+
+    net = TactileInsertionRLNet()
+    res = net(ds["tactile"])
+    print(res.shape)
+
+    # summary(net, input_size=(2, 40, 16, 16))
+    
+    # sw = SummaryWriter()
+    # sw.add_graph(net, torch.randn((30, 2, 40, 16, 16)))
+    # sw.close()
+    
+    pass

@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 from PIL import Image
-from data_processing import preprocess_myrmex, mm2img, upscale_repeat, load_dataset
+from learn_placing.common.data import load_dataset, preprocess_myrmex, mm2img, upscale_repeat
 
 def store_mm_sample_gif(data_left, data_right, name, store_path, M=50):
     print(f"creating {name}")

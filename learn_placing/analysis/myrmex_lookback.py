@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from data_processing import preprocess_myrmex, load_dataset
+from learn_placing.common import load_dataset, preprocess_myrmex
 
 dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_second"
 # sample timestamp -> sample

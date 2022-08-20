@@ -1,5 +1,5 @@
 import numpy as np
-from data_processing import load_dataset, preprocess_myrmex
+from learn_placing.common import load_dataset, preprocess_myrmex
 
 def build_train_data(ds, Tn=40):
     # this label generation is not in its final state. missing:

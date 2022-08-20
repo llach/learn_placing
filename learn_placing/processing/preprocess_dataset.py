@@ -1,10 +1,10 @@
 import os 
 
 import numpy as np
-from vecplot import AxesPlot
 from datetime import timedelta
-from preprocessing import cam_stats, qO2qdiff, v_from_qdiff, qavg
-from data_processing import load_dataset
+
+from learn_placing.common.vecplot import AxesPlot
+from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg
 
 
 """ PARAMETERS

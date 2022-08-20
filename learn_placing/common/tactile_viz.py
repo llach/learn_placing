@@ -4,7 +4,7 @@ from cv_bridge import CvBridge
 from tactile_msgs.msg import TactileState
 from sensor_msgs.msg import Image
 
-from data_processing import preprocess_myrmex, mm2img, upscale_repeat
+from learn_placing.common import preprocess_myrmex, mm2img, upscale_repeat
 
 def pub_tactile_img(msg, pub):
     global bridge

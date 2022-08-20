@@ -1,9 +1,7 @@
 import os 
 import numpy as np
 
-from preprocessing import *
-from data_processing import load_dataset
-
+from learn_placing.common import load_dataset
 
 """
 samples second dataset:
@@ -15,23 +13,7 @@ dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_second"
 ds = load_dataset(dataset_path)
 os = {k: v["object_state"] for k, v in ds.items()}
 
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D, proj3d
-from matplotlib.patches import FancyArrowPatch
 import numpy as np
-
-class Arrow3D(FancyArrowPatch):
-
-    def __init__(self, base, head, mutation_scale=20, lw=3, arrowstyle="-|>", color="r", **kwargs):
-        FancyArrowPatch.__init__(self, (0, 0), (0, 0), mutation_scale=mutation_scale, lw=lw, arrowstyle=arrowstyle, color=color, **kwargs)
-        self._verts3d = list(zip(base,head))
-
-    def draw(self, renderer):
-        xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
-        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
 
 vecs = []
 
