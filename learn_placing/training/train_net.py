@@ -35,16 +35,15 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
         running_loss += loss.item()
         with torch.no_grad():
             test_loss = 0
-            test_batches = 0
+
             for tdata in test_l:
                 tinputs, tlabels = tdata
                 toutputs = net(tinputs)
 
                 loss = criterion(toutputs, tlabels)
                 test_loss += loss.item()
-                test_batches += 1
 
-        print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.3f} | test loss: {test_loss / test_batches:.3f}')
+        print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.3f} | test loss: {test_loss / len(test_l):.3f}')
         running_loss = 0.0
 
 print('training done!')
