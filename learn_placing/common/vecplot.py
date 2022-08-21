@@ -43,6 +43,13 @@ class AxesPlot:
         h = self.ax.add_artist(Arrow3D(start, vec, color=color, label=label))
         if legend: self.handles.append(h)
 
+    def plot_points(self, points, *args, **kwargs):
+        h = self.ax.scatter(points[:,0], points[:,1], points[:,2], *args, **kwargs)
+        if "label" in kwargs: self.handles.append(h)
+
+    def title(self, t):
+        self.fig.suptitle(t)
+
     def show(self):
         self.ax.legend(handles=self.handles)
             

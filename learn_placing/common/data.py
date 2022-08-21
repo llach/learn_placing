@@ -18,3 +18,7 @@ def load_dataset(folder):
             sample = pickle.load(f)
         ds.update({stamp: sample})
     return ds
+
+def load_dataset_file(fname):
+    with open(fname, "rb") as f:
+        return pickle.load(f)
