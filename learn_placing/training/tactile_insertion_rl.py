@@ -43,7 +43,7 @@ class TactileInsertionRLNet(nn.Module):
         rnn_neurons = 128,
         rnn_layers = 2,
         fc_neurons = [128, 64],
-        output_size = 3
+        output_size = 2
         ) -> None:
         super().__init__()
 
@@ -108,12 +108,11 @@ class TactileInsertionRLNet(nn.Module):
         
         rnnout1, (_, _) = self.rnn1(cnnout1, None)
         rnnout2, (_, _) = self.rnn2(cnnout2, None)
-        return self.mlp(
+        return torch.squeeze(self.mlp(
             torch.cat([
                 rnnout1[:,-1,:], 
                 rnnout2[:,-1,:]
-            ], axis=1)
-        )
+            ], axis=1)))
 
     def _conv_pre(self, name):
         layers = []
