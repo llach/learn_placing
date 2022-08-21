@@ -98,6 +98,7 @@ inputs = {}
 for i, (t, sample) in enumerate(ds.items()):
     if t not in labels:
         print(f"skipping myrmex sample {i}")
+        continue
     
     le = preprocess_myrmex(sample["tactile_left"][1])
     ri = preprocess_myrmex(sample["tactile_right"][1])
