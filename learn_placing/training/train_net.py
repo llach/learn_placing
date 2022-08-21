@@ -17,8 +17,6 @@ optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, 
 
 # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 for epoch in range(N_episodes):  # loop over the dataset multiple times
-
-    running_loss = 0.0
     for i, data in enumerate(train_l, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
@@ -33,7 +31,7 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
         optimizer.step()
 
         # print statistics
-        running_loss += loss.item()
+        train_loss = loss.item()
         with torch.no_grad():
             test_loss = 0
 
@@ -43,9 +41,9 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
 
                 loss = criterion(toutputs, tlabels)
                 test_loss += loss.item()
+            test_loss /= len(test_l)
 
-        print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.3f} | test loss: {test_loss / len(test_l):.3f}')
-        running_loss = 0.0
+        print(f'[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.3f} | test loss: {test_loss:.3f}')
 
 print('training done!')
 pass
