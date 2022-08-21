@@ -15,6 +15,7 @@ net = TactileInsertionRLNet(output_size=1)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
+# code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 for epoch in range(N_episodes):  # loop over the dataset multiple times
 
     running_loss = 0.0
