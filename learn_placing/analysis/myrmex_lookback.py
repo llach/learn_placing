@@ -7,6 +7,8 @@ dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_second"
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
 
+this_path = __file__.replace(__file__.split('/')[-1], '')
+plot_path = f"{this_path}/../plots/"
 store_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
 
 Ns = []
@@ -39,16 +41,19 @@ std = np.std(series, axis=0)
 
 import matplotlib.pyplot as plt
 
+plt.figure(figsize=(8.71, 6.61))
 xs = np.arange(M)-M
 
-for ys in series:
-    plt.plot(xs, ys)
-plt.title("mean sensor activation over sample time")
+# for ys in series:
+#     plt.plot(xs, ys)
+# plt.ylabel("Average Sensor Activation (mean over cells)")
 
-# plt.plot(xs, means)
-# plt.fill_between(xs, means-std, means+std, alpha=0.4)
-# plt.title("mean sensor activation over sample time (averaged over dataset)")
+plt.plot(xs, means)
+plt.fill_between(xs, means-std, means+std, alpha=0.4)
+plt.ylabel("Average Sensor Activation in Dataset")
 
-
+plt.axvline(-50)
+plt.title("Sensor Activation")
+plt.xlabel("time steps until sequence end")
 plt.tight_layout()
 plt.show()
