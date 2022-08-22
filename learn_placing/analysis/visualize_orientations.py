@@ -1,7 +1,8 @@
 import os 
 import numpy as np
 
-from learn_placing.common import load_dataset
+from learn_placing.common import load_dataset, cam_stats, vecs2quat, rotate_v, cam2col
+from learn_placing.common.vecplot import AxesPlot
 
 """
 samples second dataset:
@@ -26,9 +27,10 @@ for i, (k, v) in enumerate(os.items()):
     # print(i)
     # if i not in unclean: continue
     # if i not in [15, 16, 27, 28, 44, 66, 69, 80, 95, 107, 43, 108]: continue
-    # if i not in [15, 16, 27, 28, 44, 66, 69, 80, 95, 107]: continue
-    # if i not in [43, 108]: continue
-    angles, stats = angle_dict(v[1])
+    # if i not in [15, 16]: continue
+    if i not in [43, 108]: continue
+
+    angles, stats, dists = cam_stats(v[1])
 
     ignored_cams = []
     for cam, sts in stats.items():
@@ -40,27 +42,10 @@ for i, (k, v) in enumerate(os.items()):
     # if len(ignored_cams) != len(angles): continue
     if len(ignored_cams) == len(angles): 
         print(f"bad sample {i}")
-    else:
-        continue
+    # else:
+    #     continue
 
-    if should_plot:
-        fig = plt.figure(figsize=(9.71, 8.61))
-        ax = fig.add_subplot(111, projection='3d')
-        alim = [-1.2, 1.2]
-        ax.set_xlim(alim)
-        ax.set_ylim(alim)
-        ax.set_zlim(alim)
-
-        aalph = 0.9
-        ax.add_artist(Arrow3D([0,0,0], [1,0,0], color=[1.0, 0.0, 0.0, aalph]))
-        ax.add_artist(Arrow3D([0,0,0], [0,1,0], color=[0.0, 1.0, 0.0, aalph]))
-        ax.add_artist(Arrow3D([0,0,0], [0,0,1], color=[0.0, 0.0, 1.0, aalph]))
-
-        handles = []
-        handles.append(
-            ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label=f"desired normal; {i}"))
-        )
-
+    axp = AxesPlot()
     # over sequence samples
     plotted_cams = []
     for j, dp in enumerate(v[1]):
@@ -70,17 +55,11 @@ for i, (k, v) in enumerate(os.items()):
         for k, qd, cam, dist in zip(range(len(qdiffs)), qdiffs, dp["cameras"], dp["distances"]):
             vec = rotate_v([0,0,-1], qd)
             cosa = np.dot(vec, [0,0,-1])
-            if should_plot:# and cam not in ignored_cams:
-                h = ax.add_artist(Arrow3D([0,0,0], vec, color=list(cam2col(cam))+[1.0], label=f"{cam}; cos(a)={stats[cam][1]:.3f}; dist={dist:.3f}; dev={stats[cam][-1]:.5f};len={stats[cam][0]}"))
-                if cam not in plotted_cams: 
-                    handles.append(h)
-                    plotted_cams.append(cam)
+            legend = cam not in plotted_cams
+            axp.plot_v(vec, color=cam2col(cam), label=f"{cam}; cos(a)={cosa:.4f}; dist={dist:.2f}; len={stats[cam][0]}; std={stats[cam][2]:.3f}", legend=legend)
+            if legend: plotted_cams.append(cam)
 
-    if should_plot:
-        ax.legend(handles=handles)
-            
-        fig.tight_layout()
-        fig.canvas.draw()
-        plt.show()
+    axp.title(f"Cuboid Dataset Sample No. {i+1}")
+    axp.show()
 print(sorted(set(tbc)))
 pass
