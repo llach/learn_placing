@@ -16,8 +16,10 @@ MIN_N = 10 # per camera
 M = 50  # myrmex lookback
 
 data_root = f"{os.environ['HOME']}/tud_datasets"
-dataset_path = f"{data_root}/placing_data_pkl_second"
-dataset_file = f"{data_root}/second.pkl"
+# dataset_path = f"{data_root}/placing_data_pkl_second"
+# dataset_file = f"{data_root}/second.pkl"
+dataset_path = f"{data_root}/placing_data_pkl_third"
+dataset_file = f"{data_root}/third.pkl"
 
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)

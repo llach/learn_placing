@@ -1703,3 +1703,11 @@ def _import_module(module_name, warn=True, prefix='_py_', ignore='_'):
                     warnings.warn("No Python implementation of " + attr)
             globals()[attr] = getattr(module, attr)
         return True
+
+x_ = [1,0,0]
+y_ = [0,1,0]
+z_ = [0,0,1]
+
+Qx = lambda a: quaternion_about_axis(a, x_)
+Qy = lambda a: quaternion_about_axis(a, y_)
+Qz = lambda a: quaternion_about_axis(a, z_)

@@ -55,3 +55,8 @@ To do so, we can take a look at the mean sensor activation (i.e. averaged over a
 
 Here, we just choose a looback window (50 samples) that includes all deviations, including some samples that measure the object without contact.
 This can be seen by the vertical blue line in the plots.
+
+### First Trainings
+
+* 80/20 train test split on cuboid dataset
+

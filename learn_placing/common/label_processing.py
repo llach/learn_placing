@@ -1,6 +1,6 @@
 import numpy as np
 
-from .transformations import unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp
+from .transformations import Qx, Qz, unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp
 
 def cam2col(cam):
     all_colors = [
@@ -82,3 +82,24 @@ def cam_stats(seq):
 
     return angles, stats, dists
 
+def vec2polar(v):
+    """
+    cos(theta): angle between placing normal [0,0,-1] and v (in the -Y,Z plane)
+    cos(phi)  : angle between X axis and v (in the X,Y plane)
+    q         : quaternion that performs both rotations in order
+
+    NOTE: when applying q to [0,0,-1], the resulting vector u might have a dot product != 1 (more like 0.995)
+    """
+
+    v = normalize(v)
+    # since the y axis is left-pointing, we don't need to negate the sign here
+    # the x axis is "swapped" to our in this representation
+    cos_th = np.dot(normalize([v[1], v[2]]), [0,-1])
+    cos_phi = np.dot(normalize([v[0], v[1]]), [0,1])
+
+    q = normalize(quaternion_multiply(
+            Qz(np.arccos(cos_phi)),
+            Qx(np.arccos(cos_th)),
+    ))
+    
+    return cos_th, cos_phi, q
