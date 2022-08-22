@@ -9,8 +9,8 @@ from tactile_insertion_rl import TactileInsertionRLNet
 """
 N_episodes = 1
 
-train_l, test_l = get_dataset_loaders("second")
-train_cyl, test_cyl = get_dataset_loaders("third")
+train_l, test_l = get_dataset_loaders("second", train_ratio=0.8)
+train_cyl, test_cyl = get_dataset_loaders("third", train_ratio=1.0)
 
 net = TactileInsertionRLNet(output_size=1)
 criterion = nn.MSELoss()
@@ -54,13 +54,13 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
         with torch.no_grad():
             cyl_loss = 0
 
-            for cdata in test_cyl:
+            for cdata in train_cyl:
                 cinputs, clabels = cdata
                 toutputs = net(cinputs)
 
                 closs = criterion(toutputs, clabels)
                 cyl_loss += closs.item()
-            cyl_loss /= len(test_cyl)
+            cyl_loss /= len(train_cyl)
             cyl_losses.append(cyl_loss)
 
         print(f'[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.3f} | test loss: {test_loss:.3f} | cyl loss: {cyl_loss:.3f}')
