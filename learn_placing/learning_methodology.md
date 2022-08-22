@@ -1,10 +1,21 @@
-# Learning Methodology
+# Learning Methodology <!-- omit in toc -->
+
+- [Data Pre-Processing](#data-pre-processing)
+  - [Object State Estimations](#object-state-estimations)
+  - [Myrmex Processing](#myrmex-processing)
+- [Network Trainings](#network-trainings)
+  - [Training I: cos($\alpha$) as target](#training-i-cosalpha-as-target)
+- [Next Steps](#next-steps)
 
 ## Data Pre-Processing
 
 Before training, we analyze myrmex (input) data and labels. 
 The goal is to filter out false label detections and to determine how to equalize myrmex data in terms of sequence length.
+First, we visualize all rotation samples to get an idea of how much of the space we've covered during data collection (cuboid set).
+From visual inspection, it seems like one quadrant is underrepresented.
+It will be interesting to test the network's performance on samples collected in that region.
 
+![data samples distribution](./plots/data_dist.png)
 
 ### Object State Estimations
 
@@ -45,6 +56,25 @@ From the cuboid dataset, we reject only 2 out of 203 samples, the one we saw abo
 ![plot bad 1](./plots/bad_1.png) | ![plot bad 2](.plot/../plots/bad_2.png)
 -|-
 
+**Conversion into Lables**
+
+*Option I: Dot Product*
+The dot product between placing normal and object normal is a first, simple label to test network architectures and training setups in general.
+However, the value is ambiguous (vectors on a circle with same radius around the placing normal have the same dot product with the placing normal).
+
+*Option II: Polar Coordinates*
+Spherical coordinates give us the angle for both rotation required. 
+Better use those, since from the angles we can reconstruct the full rotation.
+
+To get polar coordinates (the two angles), we calculate the angle $\theta$ between the table's normal and the placing face's normal in the -Y/Z plane and the angle $\phi$ between the Y-axis and the placing face normal in the X/Z plane.
+Rotating by $\theta$ about the X-axis and then by $\phi$ about the Z-axis (stationary base frame axes), we arrive at the object's orientation.
+
+![polar coordinate conversion](./plots/polar_coords.png)
+
+Here, $\mathbf v$ is the label and $\mathbf u$ the result of rotating $-Z$ as described above. 
+The vectors don't match exactly, and $v \dot u = 0.995$.
+Not sure if this is sufficient or not.
+
 ### Myrmex Processing
 
 The myremx data needs to be of equal sequence length (at least right and left tactile sequences of the same sample).
@@ -53,10 +83,45 @@ To do so, we can take a look at the mean sensor activation (i.e. averaged over a
 ![mm sequences](./plots/mm_lookback.png) | ![mm sequences mean](./plots/mm_lookback_avg.png)
 -|-
 
-Here, we just choose a looback window (50 samples) that includes all deviations, including some samples that measure the object without contact.
+Here, we just choose a look back window (50 samples) that includes all deviations, including some samples that measure the object without contact.
 This can be seen by the vertical blue line in the plots.
 
-### First Trainings
+A visualization of an example sequence looks like this:
 
-* 80/20 train test split on cuboid dataset
+![mm gif](.plots/../plots/myrmex.gif)
 
+## Network Trainings
+
+### Training I: cos($\alpha$) as target
+
+* 80/20 train-test split on cuboid dataset
+* TactileInsertionNet
+* 1 episode (= 20 batches)
+* MSE Loss
+* label were dot product pf $-Z$ and object's placing face normal
+* batch size of 8
+* also test performance on the cylinder set to test for generalization
+
+![first training with dot product training curve](./plots/training_dot.png)
+
+## Next Steps
+
+**Network Evaluation**
+
+* training with polar coordinates as targets
+* visualization of predictions (plot vectors)
+* network test on robot (get sample, predict, plot)
+
+**Paper**
+
+* make overleaf template
+* start with introduction
+* related work section 
+  * search for more placing literature
+  * add insertion net etc.
+* describe experiment setup
+
+**Experiments**
+
+* RL setup 
+* more objects? test objects (real life)?

@@ -10,7 +10,7 @@ from tactile_insertion_rl import TactileInsertionRLNet
 N_episodes = 1
 
 train_l, test_l = get_dataset_loaders("second", train_ratio=0.8)
-train_cyl, test_cyl = get_dataset_loaders("third", train_ratio=1.0)
+train_cyl, test_cyl = get_dataset_loaders("third", train_ratio=0.5)
 
 net = TactileInsertionRLNet(output_size=1)
 criterion = nn.MSELoss()
@@ -56,9 +56,9 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
 
             for cdata in train_cyl:
                 cinputs, clabels = cdata
-                toutputs = net(cinputs)
+                coutputs = net(cinputs)
 
-                closs = criterion(toutputs, clabels)
+                closs = criterion(coutputs, clabels)
                 cyl_loss += closs.item()
             cyl_loss /= len(train_cyl)
             cyl_losses.append(cyl_loss)
