@@ -7,11 +7,9 @@ from learn_placing.common.data import load_dataset_file
 def get_dataset_loaders(name, train_ratio=0.8, batch_size=8, shuffle=True):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
-
-    print("WARNING labels are still angles, should be polar coordinates!")
     
     X = [v for _, v in ds["inputs"].items()]
-    Y = [d["angle"] for d in list(ds["labels"].values())]
+    Y = [d["polar"] for d in list(ds["labels"].values())]
 
     N_train = int(len(X)*train_ratio)
     N_test = len(X)-N_train

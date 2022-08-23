@@ -1711,3 +1711,7 @@ z_ = [0,0,1]
 Qx = lambda a: quaternion_about_axis(a, x_)
 Qy = lambda a: quaternion_about_axis(a, y_)
 Qz = lambda a: quaternion_about_axis(a, z_)
+
+Rx = lambda a: rotation_matrix(a, x_)
+Ry = lambda a: rotation_matrix(a, y_)
+Rz = lambda a: rotation_matrix(a, z_)

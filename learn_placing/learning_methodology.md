@@ -5,6 +5,7 @@
   - [Myrmex Processing](#myrmex-processing)
 - [Network Trainings](#network-trainings)
   - [Training I: cos($\alpha$) as target](#training-i-cosalpha-as-target)
+  - [Training II: Polar Coordinates as Targets](#training-ii-polar-coordinates-as-targets)
 - [Next Steps](#next-steps)
 
 ## Data Pre-Processing
@@ -103,6 +104,14 @@ A visualization of an example sequence looks like this:
 * also test performance on the cylinder set to test for generalization
 
 ![first training with dot product training curve](./plots/training_dot.png)
+
+### Training II: Polar Coordinates as Targets
+
+Same setup as in the first experiment, but this time with $cos(\theta)$ and $cos(\phi)$ as targets.
+Performance across test and cylinder test set is similar to first training.
+The overall loss is higher though.
+
+![second training with polar coordinates curve](./plots/polar_training.png)
 
 ## Next Steps
 

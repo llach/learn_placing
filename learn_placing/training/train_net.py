@@ -12,7 +12,7 @@ N_episodes = 1
 train_l, test_l = get_dataset_loaders("second", train_ratio=0.8)
 train_cyl, test_cyl = get_dataset_loaders("third", train_ratio=0.5)
 
-net = TactileInsertionRLNet(output_size=1)
+net = TactileInsertionRLNet(output_size=2)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
@@ -76,8 +76,8 @@ plt.plot(xs, test_losses, label="test loss")
 plt.plot(xs, cyl_losses, label="cylinder test loss")
 
 plt.xlabel("Batches")
-plt.ylabel("MSE Loss (angle)")
-plt.title("Training Results (dot product) on Cubiod Dataset (Tactile Insertion Net)")
+plt.ylabel("mean-squared error")
+plt.title("Training Results (polar) on Cubiod Dataset (Tactile Insertion Net)")
 
 plt.legend()
 plt.tight_layout()

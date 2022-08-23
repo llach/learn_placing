@@ -5,7 +5,7 @@ import numpy as np
 from datetime import timedelta
 
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex
+from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, vec2polar
 
 
 """ PARAMETERS
@@ -16,10 +16,10 @@ MIN_N = 10 # per camera
 M = 50  # myrmex lookback
 
 data_root = f"{os.environ['HOME']}/tud_datasets"
-# dataset_path = f"{data_root}/placing_data_pkl_second"
-# dataset_file = f"{data_root}/second.pkl"
-dataset_path = f"{data_root}/placing_data_pkl_third"
-dataset_file = f"{data_root}/third.pkl"
+dataset_path = f"{data_root}/placing_data_pkl_second"
+dataset_file = f"{data_root}/second.pkl"
+# dataset_path = f"{data_root}/placing_data_pkl_third"
+# dataset_file = f"{data_root}/third.pkl"
 
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
@@ -85,14 +85,15 @@ for i, (t, sample) in enumerate(os.items()):
     finalq = qO2qdiff(qavg(all_quaternions))
     finalv = v_from_qdiff(finalq)
 
-    # TODO get rotation as polar coordinates starting from [0,0,-1]
     angle = np.dot(finalv, [0,0,-1])
+    cos_th, cos_phi, _ = vec2polar(finalv)
 
     labels |= {
         t: {
             "quat": finalq,
             "vec": finalv,
-            "angle": angle
+            "angle": angle,
+            "polar": [cos_th, cos_phi]
         }
     }
 
