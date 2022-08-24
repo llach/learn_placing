@@ -1715,3 +1715,8 @@ Qz = lambda a: quaternion_about_axis(a, z_)
 Rx = lambda a: rotation_matrix(a, x_)
 Ry = lambda a: rotation_matrix(a, y_)
 Rz = lambda a: rotation_matrix(a, z_)
+
+def make_T(trans, rot):
+    T = quaternion_matrix(rot)
+    T[0:3, 3] = trans
+    return T

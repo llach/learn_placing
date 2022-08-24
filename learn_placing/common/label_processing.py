@@ -1,6 +1,6 @@
 import numpy as np
 
-from .transformations import Qx, Qz, unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp
+from .transformations import Qx, Qz, unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_slerp, make_T
 
 def cam2col(cam):
     all_colors = [
@@ -70,15 +70,15 @@ def cam_stats(seq):
             v = v_from_qdiff(qd)
             cosa = np.dot(v, [0,0,-1])
 
-            if cam not in angles: angles |= {cam: []}
+            if cam not in angles: angles.update({cam: []})
             angles[cam].append(cosa)
 
-            if cam not in dists: dists |= {cam: dist}
+            if cam not in dists: dists.update({cam: dist})
 
     
     stats = {}
     for cam, angs in angles.items():
-        stats |= {cam: [len(angs), np.mean(angs), np.std(angs)]}
+        stats.update({cam: [len(angs), np.mean(angs), np.std(angs)]})
 
     return angles, stats, dists
 
@@ -103,3 +103,43 @@ def vec2polar(v):
     ))
     
     return cos_th, cos_phi, q
+
+def get_T(tfs, target, source):
+    for t in tfs:
+        if t["parent_frame"]==source and t["child_frame"]==target:
+            return make_T(t["translation"], t["rotation"])
+    return -1
+
+def extract_gripper_T(tfs):
+    world2obj = []
+    grip2obj = []
+
+    T = None
+    for t in tfs:
+        if len(t)>4 and T is None:
+                Ts = [
+                    make_T([0.000, 0.000, 0.099], [0.000, 0.000, 0.000, 1.000]), # footprint -> base
+                    make_T([-0.062, 0.000, 0.193], [0.000, 0.000, 0.000, 1.000]), # base -> torso fixed
+                    get_T(t, "torso_lift_link", "torso_fixed_link"),
+                    get_T(t, "arm_1_link", "torso_lift_link"),
+                    get_T(t, "arm_2_link", "arm_1_link"),
+                    get_T(t, "arm_3_link", "arm_2_link"),
+                    get_T(t, "arm_4_link", "arm_3_link"),
+                    get_T(t, "arm_5_link", "arm_4_link"),
+                    get_T(t, "arm_6_link", "arm_5_link"),
+                    get_T(t, "arm_7_link", "arm_6_link"),
+                    make_T([-0.000, 0.000, 0.077], [-0.707, 0.707, -0.000, -0.000]), # arm 7 -> gripper
+                    make_T([0.000, 0.000, -0.120],  [-0.500, 0.500, 0.500, 0.500]) # gripper -> grasping frame
+                ]
+
+                T = np.eye(4)
+                for TT in Ts:
+                    T = T@TT
+                continue
+        for tr in t:
+            if tr["child_frame"] == "object" and tr["parent_frame"] == "base_footprint":
+                world2obj.append(tr["rotation"])
+            elif tr["child_frame"] == "grasped_object" and tr["parent_frame"] == "gripper_grasping_frame":
+                grip2obj.append(tr["rotation"])
+        
+    return T, world2obj, grip2obj

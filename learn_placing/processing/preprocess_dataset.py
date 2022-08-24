@@ -3,9 +3,11 @@ import pickle
 
 import numpy as np
 from datetime import timedelta
+from learn_placing.common.label_processing import normalize, rotate_v
 
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, vec2polar
+from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_multiply, quaternion_inverse
+from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
 
 
 """ PARAMETERS
@@ -40,7 +42,7 @@ for k, v in ds.items():
         if t < last_time: 
             o_filtered[0].append(t)
             o_filtered[1].append(state)
-    os |= {k: o_filtered}
+    os.update({k: o_filtered})
 
 min_lens=100
 
@@ -85,17 +87,49 @@ for i, (t, sample) in enumerate(os.items()):
     finalq = qO2qdiff(qavg(all_quaternions))
     finalv = v_from_qdiff(finalq)
 
-    angle = np.dot(finalv, [0,0,-1])
-    cos_th, cos_phi, _ = vec2polar(finalv)
+    # extract gripper transforms
+    tfs = ds[t]["tf"][1]
+    T, world2obj, grip2obj = extract_gripper_T(tfs)
 
-    labels |= {
+    # world -> gripper
+    qWG = quaternion_from_matrix(T)
+    qWG = normalize(qWG)
+
+    # gripper -> object
+    qGO = quaternion_multiply(quaternion_inverse(qWG), finalq)
+    qGO = normalize(qGO)
+
+    # axp = AxesPlot()
+
+    # published gripper to object transform VS the one we calculated based on tf msgs
+    # axp.plot_v(rotate_v([0,0,-1], grip2obj[0]), color="grey", label="published tf")
+    # axp.plot_v(rotate_v([0,0,-1], qGO), color="black", label="calculated tf")
+    # axp.title("gripper -> object TF")
+
+    # calculated object tf after filtering noisy camera measurements vs the one recorded during sample collection.
+    # might be off a little bit since the publised tf can be noisy, but not too much off across samples
+    # axp.plot_v(rotate_v([0,0,-1], world2obj[0]), color="grey", label="published tf")
+    # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="calculated tf")
+    # axp.title("world -> object TF")
+
+    # make sure the FK + gripper -> object transform matches the finalq we calculate based on measurements
+    # axp.plot_v(rotate_v([0,0,-1], quaternion_multiply(qWG, qGO)), color="grey", label="complete tf")
+    # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="finalq")
+    # axp.title("world -> object Quat.Mult.")
+
+    # axp.show()
+
+    angle = np.dot(finalv, [0,0,-1])
+
+    labels.update({
         t: {
-            "quat": finalq,
+            "world2object": finalq,
+            "world2gripper": qWG,
+            "gripper2object": qGO,
             "vec": finalv,
             "angle": angle,
-            "polar": [cos_th, cos_phi]
         }
-    }
+    })
 
 inputs = {}
 for i, (t, sample) in enumerate(ds.items()):
