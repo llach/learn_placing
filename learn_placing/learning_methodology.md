@@ -6,6 +6,12 @@
 - [Network Trainings](#network-trainings)
   - [Training I: cos($\alpha$) as target](#training-i-cosalpha-as-target)
   - [Training II: Polar Coordinates as Targets](#training-ii-polar-coordinates-as-targets)
+- [Loss and Input/Output Representation](#loss-and-inputoutput-representation)
+  - [On the Continuity of Rotation Representations in Neural Networks (Zhou et.al.)](#on-the-continuity-of-rotation-representations-in-neural-networks-zhou-etal)
+  - [6DRepNet](#6drepnet)
+  - [PoseCNN](#posecnn)
+  - [DeepIM](#deepim)
+  - [Takeaways](#takeaways)
 - [Next Steps](#next-steps)
 
 ## Data Pre-Processing
@@ -112,6 +118,62 @@ Performance across test and cylinder test set is similar to first training.
 The overall loss is higher though.
 
 ![second training with polar coordinates curve](./plots/polar_training.png)
+
+## Loss and Input/Output Representation
+
+### On the Continuity of Rotation Representations in Neural Networks (Zhou et.al.)
+
+[Paper](https://openaccess.thecvf.com/content_CVPR_2019/papers/Zhou_On_the_Continuity_of_Rotation_Representations_in_Neural_Networks_CVPR_2019_paper.pdf)
+[Code](https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/tools.py)
+
+[Linear output](https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/model.py#L64) layer for most representations; `tanh` only for euler
+
+[quaternions are normalized though](https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/tools.py#L111) 
+
+### 6DRepNet
+
+[Paper](https://arxiv.org/pdf/2202.12555.pdf)
+[Website](https://pythonawesome.com/official-pytorch-implementation-of-6drepnet-6d-rotation-representation-for-unconstrained-head-pose-estimation/)
+[Code](https://github.com/thohemp/6DRepNet)
+
+Activation Fn: [linear](https://github.com/thohemp/6DRepNet/blob/master/model.py#L48)
+
+Loss: [6D Rotation Loss](https://github.com/thohemp/6DRepNet/blob/master/loss.py#L12) from Zhou et.al.
+
+### PoseCNN
+
+[Paper](https://arxiv.org/pdf/1711.00199.pdf)
+[Website](https://rse-lab.cs.washington.edu/projects/posecnn/) 
+[Code](https://github.com/NVlabs/PoseCNN-PyTorch)
+
+Ouput encoding: quaternion
+
+Activation Fn: [linear](https://github.com/NVlabs/PoseCNN-PyTorch/blob/main/lib/networks/PoseCNN.py#L139), then [normalize](https://github.com/NVlabs/PoseCNN-PyTorch/blob/main/lib/networks/PoseCNN.py#L221)
+
+Pose Loss: $\frac{1}{2 |M|} \sum_{\mathbf x \in M} ||R(\mathbf{\tilde{q}}) \mathbf x - R(\mathbf q) \mathbf x ||^2$ 
+
+### DeepIM
+
+[Paper](https://openaccess.thecvf.com/content_ECCV_2018/papers/Yi_Li_DeepIM_Deep_Iterative_ECCV_2018_paper.pdf)
+[Website](https://rse-lab.cs.washington.edu/projects/deepim/)
+[Code](https://github.com/liyi14/mx-DeepIM); [Code2](https://github.com/NVlabs/DeepIM-PyTorch)
+
+Ouput encoding: quaternion
+Activation Fn: [linear](https://github.com/NVlabs/DeepIM-PyTorch/blob/master/lib/networks/FlowNetS.py#L140) and [normalize](https://github.com/NVlabs/DeepIM-PyTorch/blob/master/lib/networks/FlowNetS.py#L181)
+
+Point Matching Loss: $\frac{1}{n} \sum_{i = 1}^n L1( (Rx_i + t) - (\hat Rx_i + \hat t) )$
+
+
+### Takeaways
+
+Two possible loss functions:
+1. (-1,4) linear output -> normalize -> `matrix_from_quaternion` -> PoseCNN or DeepIM style matrix loss
+2. (-1,6) linear output -> `compute_rotation_matrix_from_ortho6d` -> geodesic loss from Zhou et.al.
+
+Helpful Code:
+* [Zhou's Repo](https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/tools.py)
+* [PyTorch3D](https://github.com/facebookresearch/pytorch3d/blob/main/pytorch3d/transforms/so3.py) for conversions etc.
+
 
 ## Next Steps
 
