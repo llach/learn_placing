@@ -73,6 +73,7 @@ class TactileInsertionRLNet(nn.Module):
             nn.Linear(self.fc_neurons[0], self.fc_neurons[1]),
             nn.ReLU(),
             nn.Linear(self.fc_neurons[1], self.output_size),
+            nn.Tanh()
         )
 
     def forward(self, x: Tensor):
@@ -108,11 +109,11 @@ class TactileInsertionRLNet(nn.Module):
         
         rnnout1, (_, _) = self.rnn1(cnnout1, None)
         rnnout2, (_, _) = self.rnn2(cnnout2, None)
-        return torch.squeeze(self.mlp(
+        return self.mlp(
             torch.cat([
                 rnnout1[:,-1,:], 
                 rnnout2[:,-1,:]
-            ], axis=1)))
+            ], axis=1))
 
     def _conv_pre(self, name):
         layers = []

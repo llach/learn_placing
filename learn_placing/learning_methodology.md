@@ -49,7 +49,7 @@ Both sequences are not reliable, hence we need to filter such samples.
 
 We arrive at the following filter rules to reject camera sequences if, ...
 
-*  ... they have less than $N_min$ (10) samples
+*  ... they have less than $N_{min}$ (10) samples
 *  ... their standard deviation is above $\sigma_{min}$ (0.005)
 
 From the cuboid dataset, we reject only 2 out of 203 samples, the one we saw above and one where all cameras only measured 9 object states.
@@ -73,7 +73,7 @@ Rotating by $\theta$ about the X-axis and then by $\phi$ about the Z-axis (stati
 ![polar coordinate conversion](./plots/polar_coords.png)
 
 Here, $\mathbf v$ is the label and $\mathbf u$ the result of rotating $-Z$ as described above. 
-The vectors don't match exactly, and $v \dot u = 0.995$.
+The vectors don't match exactly, and $v \cdot u = 0.995$.
 Not sure if this is sufficient or not.
 
 ### Myrmex Processing
@@ -117,8 +117,16 @@ The overall loss is higher though.
 
 **Network Evaluation**
 
-* training with polar coordinates as targets
-* visualization of predictions (plot vectors)
+* get desired rotation in SO(3) as matrix
+  * which loss? 
+  * how many output parameters?
+  * get gripper orientation
+* input data
+  * sensor data + gripper orientation R 
+  * sensor data only
+* output data formats
+  * orientation in world frame
+  * orientation in gripper frame
 * network test on robot (get sample, predict, plot)
 
 **Paper**
