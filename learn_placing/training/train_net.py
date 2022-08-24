@@ -17,10 +17,14 @@ train_cyl, test_cyl = get_dataset_loaders("third", train_ratio=0.5)
 
 net = TactileInsertionRLNet(
     output_size = 4,
-    conv_output = 256,
-    rnn_neurons = 256,
-    rnn_layers = 3,
-    fc_neurons = [256, 256, 128],
+    kernel_sizes = [(3,3), (3,3)],
+    cnn_out_channels = [32, 64],
+    conv_stride = (2,2),
+    conv_padding = (0,0),
+    conv_output = 64,
+    rnn_neurons = 64,
+    rnn_layers = 2,
+    fc_neurons = [32, 16],
 )
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
