@@ -5,22 +5,33 @@ import torch.nn as nn
 import torch.optim as optim
 from learn_placing.common.label_processing import rotate_v, normalize
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.training.utils import qloss, OutRepr, InRot
+from learn_placing.training.utils import qloss, RotRepr, InRot, DatasetName
 
 from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices
 from tactile_insertion_rl import TactileInsertionRLNet
 
 """ PARAMETERS
 """
-N_episodes = 30
-out_repr = OutRepr.sincos
-target_type = InRot.gripper_angle
+dsname = DatasetName.cuboid
+with_gripper_tf = True
+N_episodes = 3
+out_repr = RotRepr.ortho6d
+gripper_repr = RotRepr.quat
+target_type = InRot.w2o
 
-train_l, test_l = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
+train_cub, test_cub = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
 train_cyl, test_cyl = get_dataset_loaders("third", target_type=target_type, out_repr=out_repr, train_ratio=0.5)
+
+if dsname == DatasetName.cuboid:
+    train_l = train_cub
+    test_l = test_cub
+elif dsname == DatasetName.cylinder:
+    train_l = train_cyl
+    test_l = test_cyl
 
 net = TactileInsertionRLNet(
     output_type = out_repr,
+    with_gripper = with_gripper_tf,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
@@ -32,12 +43,12 @@ net = TactileInsertionRLNet(
 )
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
-if out_repr == OutRepr.quat:
+if out_repr == RotRepr.quat:
     # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
     criterion = qloss
-elif out_repr == OutRepr.ortho6d:
+elif out_repr == RotRepr.ortho6d:
     criterion = compute_geodesic_distance_from_two_matrices
-elif out_repr == OutRepr.sincos:
+elif out_repr == RotRepr.sincos:
     criterion = nn.MSELoss()
 
 train_losses = []
@@ -48,13 +59,13 @@ cyl_losses = []
 for epoch in range(N_episodes):  # loop over the dataset multiple times
     for i, data in enumerate(train_l, 0):
         # get the inputs; data is a list of [inputs, labels]
-        inputs, labels = data
+        inputs, grip, labels = data
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = net(inputs)
+        outputs = net(inputs, grip)
         loss = torch.mean(criterion(outputs, labels))
         loss.backward()
         optimizer.step()
@@ -66,8 +77,8 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
             test_loss = 0
 
             for tdata in test_l:
-                tinputs, tlabels = tdata
-                toutputs = net(tinputs)
+                tinputs, tgrip, tlabels = tdata
+                toutputs = net(tinputs, tgrip)
 
                 tloss = torch.mean(criterion(toutputs, tlabels))
                 test_loss += tloss.item()
@@ -79,7 +90,7 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
         #     cyl_loss = 0
 
         #     for cdata in train_cyl:
-        #         cinputs, clabels = cdata
+        #         cinputs, cgrip, clabels = cdata
         #         coutputs = net(cinputs)
 
         #         closs = criterion(coutputs, clabels)
@@ -91,7 +102,7 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
 
 # for tdata in test_l:
 #     with torch.no_grad():
-#         tinputs, tlabels = tdata
+#         tinputs, tgrip, tlabels = tdata
 #         toutputs = net(tinputs)
 
 #         loss = criterion(toutputs, tlabels)
@@ -120,16 +131,16 @@ plt.plot(xs, train_losses, label="training loss")
 plt.plot(xs, test_losses, label="test loss")
 # plt.plot(xs, cyl_losses, label="cylinder test loss")
 
-if out_repr == OutRepr.ortho6d:
+if out_repr == RotRepr.ortho6d:
     plt.ylim([0.0,np.pi])
     plt.ylabel("geodesic error in [0,PI]")
-elif out_repr == OutRepr.quat:
+elif out_repr == RotRepr.quat:
     plt.ylim([0.0,1.0])
     plt.ylabel("quaternion loss")
 
 plt.xlabel("Batches")
 
-plt.title(f"Cuboid Set; out_repr={out_repr}; target={target_type}")
+plt.title(f"dsname={dsname}; out_repr={out_repr}; target={target_type}; gripper_tf={with_gripper_tf}")
 
 plt.legend()
 plt.tight_layout()

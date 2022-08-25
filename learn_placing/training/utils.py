@@ -7,7 +7,11 @@ from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader
 from learn_placing.common.data import load_dataset_file
 
-class OutRepr(str, Enum):
+class DatasetName(str, Enum):
+    cuboid="Cuboid"
+    cylinder="Cylinder"
+
+class RotRepr(str, Enum):
     ortho6d="ortho6d"
     quat="quat"
     sincos="sincos"
@@ -18,22 +22,24 @@ class InRot(str, Enum):
     g2o = "gripper2object"
     gripper_angle = "gripper_angle"
 
-def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=OutRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
+def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
     
     X = [v for _, v in ds["inputs"].items()]
     Y = [d[target_type] for d in list(ds["labels"].values())]
-    if out_repr==OutRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
+    GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
+    if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
 
     N_train = int(len(X)*train_ratio)
     N_test = len(X)-N_train
 
     X = torch.Tensor(np.array(X))
     Y = torch.Tensor(np.array(Y))
-    if out_repr==OutRepr.ortho6d: Y = compute_rotation_matrix_from_quaternion(Y)
+    GR = torch.Tensor(np.array(GR))
+    if out_repr==RotRepr.ortho6d: Y = compute_rotation_matrix_from_quaternion(Y)
     
-    tds = TensorDataset(X, Y)
+    tds = TensorDataset(X, GR, Y)
 
     train, test = torch.utils.data.random_split(
         tds, 
