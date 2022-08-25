@@ -17,7 +17,7 @@ def sample_random_orientation():
 
     return tf.quaternion_matrix(tf.quaternion_multiply(Qzt, Qyp))
 
-N=2000
+N=5000
 points = np.array([sample_random_orientation()[:3,:3]@[0,0,-1] for _ in range(N)])
 
 v = [0,-1,0]
@@ -47,9 +47,9 @@ norm_metric = metric / np.pi
 cm = plt.get_cmap("copper")
 colors = cm(norm_metric)
 
-threshold = 1.0
-colors = colors[np.where(norm_metric<threshold)]
-points = points[np.where(norm_metric<threshold)]
+threshold = 0.2
+colors = colors[np.where(metric<threshold)]
+points = points[np.where(metric<threshold)]
 
 axp = AxesPlot()
 axp.plot_points(points, c=colors)

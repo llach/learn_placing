@@ -6,6 +6,7 @@
 - [Network Trainings](#network-trainings)
   - [Training I: cos($\alpha$) as target](#training-i-cosalpha-as-target)
   - [Training II: Polar Coordinates as Targets](#training-ii-polar-coordinates-as-targets)
+  - [Training III: 6D Continuous Rotation Representation](#training-iii-6d-continuous-rotation-representation)
 - [Loss and Input/Output Representation](#loss-and-inputoutput-representation)
   - [On the Continuity of Rotation Representations in Neural Networks (Zhou et.al.)](#on-the-continuity-of-rotation-representations-in-neural-networks-zhou-etal)
   - [6DRepNet](#6drepnet)
@@ -118,6 +119,14 @@ Performance across test and cylinder test set is similar to first training.
 The overall loss is higher though.
 
 ![second training with polar coordinates curve](./plots/polar_training.png)
+
+### Training III: 6D Continuous Rotation Representation
+
+* 10 episodes
+* output representation and loss from Zhou et.al. / 6DRepNet
+* loss is in [0,PI]
+
+![third training](./plots/6d_training.png)
 
 ## Loss and Input/Output Representation
 
