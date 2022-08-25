@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from torch import Tensor
 from collections import OrderedDict
-from learn_placing.training.utils import compute_rotation_matrix_from_ortho6d
+from learn_placing.training.utils import compute_rotation_matrix_from_ortho6d, OutRepr
 
 def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilation=(1,1)):
     if len(in_shape)==2:
@@ -44,7 +44,7 @@ class TactileInsertionRLNet(nn.Module):
         rnn_neurons = 128,
         rnn_layers = 2,
         fc_neurons = [128, 64],
-        output_type = "ortho6d"
+        output_type = OutRepr.ortho6d
         ) -> None:
         super().__init__()
 
@@ -59,12 +59,14 @@ class TactileInsertionRLNet(nn.Module):
         self.fc_neurons = fc_neurons
         self.output_type = output_type
 
-        assert output_type in ["quat", "ortho6d"], f"unknown output type {output_type}"
+        assert output_type in ["quat", "ortho6d", "sincos"], f"unknown output type {output_type}"
 
-        if self.output_type == "quat":
+        if self.output_type == OutRepr.quat:
             self.output_size = 4
-        elif self.output_type == "ortho6d":
+        elif self.output_type == OutRepr.ortho6d:
             self.output_size = 6
+        elif self.output_type == OutRepr.sincos:
+            self.output_size = 2
 
         # input channels are whatever comes out of the previous layer.
         # first time it's the number of image dimensions
@@ -122,7 +124,8 @@ class TactileInsertionRLNet(nn.Module):
                 rnnout2[:,-1,:]
             ], axis=1))
 
-        if self.output_type == "ortho6d": mlpout = compute_rotation_matrix_from_ortho6d(mlpout)
+        if self.output_type == OutRepr.ortho6d: mlpout = compute_rotation_matrix_from_ortho6d(mlpout)
+        elif self.output_type == OutRepr.sincos: mlpout = torch.tanh(mlpout)
 
         return mlpout
 

@@ -4,8 +4,8 @@ import rospy
 
 import numpy as np
 
-from learn_placing.common import load_dataset,load_dataset_file, extract_gripper_T
-from learn_placing.common.transformations import quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T
+from learn_placing.common import load_dataset,load_dataset_file, extract_gripper_T, normalize
+from learn_placing.common.transformations import quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T, quaternion_matrix, Rz, Rx
 
 def broadcast(trans, rot, target, source):
     global br
@@ -52,36 +52,60 @@ dataset_file = f"{data_root}/second.pkl"
 ds = load_dataset(dataset_path)
 os = load_dataset_file(dataset_file)
 
-rospy.init_node("tf_rebroadcast")
-r = rospy.Rate(5)
-br = tf.TransformBroadcaster()
 for i, (stamp, label) in enumerate(os["labels"].items()):
     if i != 2: continue
     tfs = ds[stamp]["tf"][1]
 
-    footprint2object = []
-    gripper2object = []
-    T, world2obj, grip2obj = extract_gripper_T(tfs)
+    T, w2o, g2o = extract_gripper_T(tfs)
+    Rwo = quaternion_matrix(w2o[0])
+    Rgo = quaternion_matrix(g2o[0])
+    Rwg = T
 
-    for t in tfs:
-        for tr in t:
-            if tr["child_frame"] == "object" and tr["parent_frame"] == "base_footprint":
-                footprint2object.append(tr["rotation"])
-            elif tr["child_frame"] == "grasped_object" and tr["parent_frame"] == "gripper_grasping_frame":
-                gripper2object.append(tr["rotation"])
+    xO = Rgo@[1,0,0,1]
+    yO = Rgo@[0,1,0,1]
+    zO = Rgo@[0,0,1,1]
 
-    print(T[:3,3])
-    print(quaternion_from_matrix(T))
+    xNorm = normalize([xO[0], xO[2]])
+    zNorm = normalize([zO[2], -zO[0]])
 
-    qG = quaternion_multiply(quaternion_inverse(quaternion_from_matrix(T)), footprint2object[0])
+    Zgo = Rgo@[0,0,1,1]
+    ZgoNorm = normalize([Zgo[2], -Zgo[0]])
+    gripper_angle = np.arctan2(ZgoNorm[1], ZgoNorm[0])
+    print(gripper_angle)
+    print(np.arctan2(xNorm[1], xNorm[0]), np.arctan2(zNorm[1], zNorm[0]))
 
+    ytheta = np.arctan2(-yO[0], yO[1])
+    Rgc1 = Rgo@Rz(-ytheta)
+    print(ytheta)
+
+    yC1 = Rgc1@[0,1,0,1]
+    yphi = np.arctan2(yC1[2], yC1[1])
+    Rgc2 = Rgc1@Rx(-yphi)
+    print(yphi)
+
+    xC = Rgc2@[1,0,0,1]
+    yC = Rgc2@[0,1,0,1]
+    zC = Rgc2@[0,0,1,1]
+
+    print(np.arctan2(xC[2], xC[0]), np.arctan2(-zC[0], zC[2]))
+
+    rospy.init_node("tf_rebroadcast")
+    r = rospy.Rate(5)
+    br = tf.TransformBroadcaster()
     while not rospy.is_shutdown():
         for t in tfs:
             statics()
 
             broadcast(
                 [0,0,0],
-                qG,
+                quaternion_from_matrix(Rgc2),
+                "grasped_correct",
+                "gripper_grasping_frame"
+            )
+
+            broadcast(
+                [0,0,0],
+                g2o[0],
                 "grasped_new",
                 "gripper_grasping_frame"
             )

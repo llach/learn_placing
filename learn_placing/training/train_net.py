@@ -1,22 +1,26 @@
+import os
 import torch
 import numpy as np
+import torch.nn as nn
 import torch.optim as optim
 from learn_placing.common.label_processing import rotate_v, normalize
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.training.utils import qloss
+from learn_placing.training.utils import qloss, OutRepr, InRot
 
 from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices
 from tactile_insertion_rl import TactileInsertionRLNet
 
 """ PARAMETERS
 """
-N_episodes = 10
+N_episodes = 30
+out_repr = OutRepr.sincos
+target_type = InRot.gripper_angle
 
-train_l, test_l = get_dataset_loaders("second", target_type="gripper2object", matrix=True, train_ratio=0.8)
-train_cyl, test_cyl = get_dataset_loaders("third", target_type="gripper2object", matrix=True, train_ratio=0.5)
+train_l, test_l = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
+train_cyl, test_cyl = get_dataset_loaders("third", target_type=target_type, out_repr=out_repr, train_ratio=0.5)
 
 net = TactileInsertionRLNet(
-    output_type = "ortho6d",
+    output_type = out_repr,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
@@ -28,10 +32,13 @@ net = TactileInsertionRLNet(
 )
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
-# criterion = nn.MSELoss()
-# criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
-# criterion = qloss
-criterion = compute_geodesic_distance_from_two_matrices
+if out_repr == OutRepr.quat:
+    # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
+    criterion = qloss
+elif out_repr == OutRepr.ortho6d:
+    criterion = compute_geodesic_distance_from_two_matrices
+elif out_repr == OutRepr.sincos:
+    criterion = nn.MSELoss()
 
 train_losses = []
 test_losses = []
@@ -91,8 +98,14 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
 
 #         for out, lbl, lo in zip(toutputs.numpy(), tlabels.numpy(), loss.numpy()):
 #             axp = AxesPlot()
-#             ov = rotate_v([0,0,-1], normalize(out))
-#             lv = rotate_v([0,0,-1], lbl)
+
+#             if out_repr == OutRepr.quat:
+#                 ov = rotate_v([0,0,-1], normalize(out))
+#                 lv = rotate_v([0,0,-1], lbl)
+#             elif out_repr == OutRepr.ortho6d:
+#                 ov = out@[0,0,-1]
+#                 lv = lbl@[0,0,-1]
+
 #             axp.plot_v(ov, label=f"out {np.squeeze(lo):.5f}", color="black")
 #             axp.plot_v(lv, label="lbl", color="grey")
 #             axp.show()
@@ -107,13 +120,20 @@ plt.plot(xs, train_losses, label="training loss")
 plt.plot(xs, test_losses, label="test loss")
 # plt.plot(xs, cyl_losses, label="cylinder test loss")
 
+if out_repr == OutRepr.ortho6d:
+    plt.ylim([0.0,np.pi])
+    plt.ylabel("geodesic error in [0,PI]")
+elif out_repr == OutRepr.quat:
+    plt.ylim([0.0,1.0])
+    plt.ylabel("quaternion loss")
+
 plt.xlabel("Batches")
-plt.ylabel("geodesic error in [0,PI]")
-plt.title("Training Results (6D) on Cubiod Dataset (Tactile Insertion Net)")
+
+plt.title(f"Cuboid Set; out_repr={out_repr}; target={target_type}")
 
 plt.legend()
 plt.tight_layout()
+plt.savefig(f"{os.environ['HOME']}/tud_datasets/Neps{N_episodes}_{out_repr}_{target_type}.png")
 plt.show()
 
 print('training done!')
-pass

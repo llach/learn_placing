@@ -6,8 +6,9 @@ from datetime import timedelta
 from learn_placing.common.label_processing import normalize, rotate_v
 
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_multiply, quaternion_inverse
+from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
+from learn_placing.training.utils import InRot
 
 
 """ PARAMETERS
@@ -99,6 +100,11 @@ for i, (t, sample) in enumerate(os.items()):
     qGO = quaternion_multiply(quaternion_inverse(qWG), finalq)
     qGO = normalize(qGO)
 
+    Rgo = quaternion_matrix(qGO)
+    Zgo = Rgo@[0,0,1,1]
+    ZgoNorm = normalize([Zgo[2], -Zgo[0]])
+    gripper_angle = np.arctan2(ZgoNorm[1], ZgoNorm[0])
+
     # axp = AxesPlot()
 
     # published gripper to object transform VS the one we calculated based on tf msgs
@@ -123,9 +129,10 @@ for i, (t, sample) in enumerate(os.items()):
 
     labels.update({
         t: {
-            "world2object": finalq,
-            "world2gripper": qWG,
-            "gripper2object": qGO,
+            InRot.w2o: finalq,
+            InRot.w2g: qWG,
+            InRot.g2o: qGO,
+            InRot.gripper_angle: gripper_angle,
             "vec": finalv,
             "angle": angle,
         }
@@ -146,7 +153,7 @@ for i, (t, sample) in enumerate(ds.items()):
 
     inp = np.stack([le, ri])
 
-    inputs |= {t: inp}
+    inputs.update({t: inp})
 
 with open(dataset_file, "wb") as f:
     pickle.dump({"labels": labels, "inputs": inputs}, f)
