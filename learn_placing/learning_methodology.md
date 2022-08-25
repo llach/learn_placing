@@ -158,7 +158,7 @@ Pose Loss: $\frac{1}{2 |M|} \sum_{\mathbf x \in M} ||R(\mathbf{\tilde{q}}) \math
 [Website](https://rse-lab.cs.washington.edu/projects/deepim/)
 [Code](https://github.com/liyi14/mx-DeepIM); [Code2](https://github.com/NVlabs/DeepIM-PyTorch)
 
-Ouput encoding: quaternion
+Output encoding: quaternion
 Activation Fn: [linear](https://github.com/NVlabs/DeepIM-PyTorch/blob/master/lib/networks/FlowNetS.py#L140) and [normalize](https://github.com/NVlabs/DeepIM-PyTorch/blob/master/lib/networks/FlowNetS.py#L181)
 
 Point Matching Loss: $\frac{1}{n} \sum_{i = 1}^n L1( (Rx_i + t) - (\hat Rx_i + \hat t) )$

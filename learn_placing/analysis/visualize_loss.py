@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import learn_placing.common.transformations as tf
 
-from learn_placing.training.utils import qloss
+from learn_placing.training.utils import compute_geodesic_distance_from_two_matrices, compute_rotation_matrix_from_quaternion, wrap_torch_fn
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.label_processing import vecs2quat
 
@@ -17,7 +17,8 @@ def sample_random_orientation():
 
     return tf.quaternion_matrix(tf.quaternion_multiply(Qzt, Qyp))
 
-points = np.array([sample_random_orientation()[:3,:3]@[0,0,-1] for _ in range(1000)])
+N=2000
+points = np.array([sample_random_orientation()[:3,:3]@[0,0,-1] for _ in range(N)])
 
 v = [0,-1,0]
 
@@ -29,15 +30,19 @@ def qloss_np(q1,q2):
 # norm_metric = 1-(metric+1)/2
 
 # quaternion loss
-qsample = vecs2quat([0,0,-1], v)
-norm_metric = np.array([qloss_np(qsample, vecs2quat([0,0,-1], u)) for u in points])
+# qsample = vecs2quat([0,0,-1], v)
+# norm_metric = np.array([qloss_np(qsample, vecs2quat([0,0,-1], u)) for u in points])
 
-# quaternion loss torch version
-# norm_metric = np.squeeze(qloss(
-#     torch.Tensor([vecs2quat([0,0,-1], u) for u in points]),
-#     torch.Tensor(np.repeat([qsample], points.shape[0], axis=0))
-# ).numpy())
+# geodesic matrix loss
+qsample = np.repeat([vecs2quat([0,0,-1], v)], N, axis=0)
+Rsample = wrap_torch_fn(compute_rotation_matrix_from_quaternion, qsample)
+Rout = wrap_torch_fn(
+    compute_rotation_matrix_from_quaternion, 
+    np.array([vecs2quat([0,0,-1], u) for u in points])
+)
 
+metric = wrap_torch_fn(compute_geodesic_distance_from_two_matrices, Rsample, Rout)
+norm_metric = metric / np.pi
 
 cm = plt.get_cmap("copper")
 colors = cm(norm_metric)
