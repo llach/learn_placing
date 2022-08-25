@@ -5,7 +5,7 @@ import rospy
 import numpy as np
 
 from learn_placing.common import load_dataset,load_dataset_file, extract_gripper_T, normalize
-from learn_placing.common.transformations import quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T, quaternion_matrix, Rz, Rx
+from learn_placing.common.transformations import inverse_matrix, quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T, quaternion_matrix, Rz, Rx
 
 def broadcast(trans, rot, target, source):
     global br
@@ -89,12 +89,21 @@ for i, (stamp, label) in enumerate(os["labels"].items()):
 
     print(np.arctan2(xC[2], xC[0]), np.arctan2(-zC[0], zC[2]))
 
+    Rgw = inverse_matrix(T)
+
     rospy.init_node("tf_rebroadcast")
     r = rospy.Rate(5)
     br = tf.TransformBroadcaster()
     while not rospy.is_shutdown():
         for t in tfs:
             statics()
+
+            broadcast(
+                [0,0,0],
+                quaternion_from_matrix(Rgw),
+                "gripper_world",
+                "gripper_grasping_frame"
+            )
 
             broadcast(
                 [0,0,0],
