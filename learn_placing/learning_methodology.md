@@ -122,13 +122,13 @@ The overall loss is higher though.
 
 ### Training III: 6D Continuous Rotation Representation
 
-* 10 episodes
+* 50 episodes
 * targets: gripper -> object 
 * output representation and loss from Zhou et.al. / 6DRepNet
 * loss is in [0,PI]
 
-![third training](./plots/Neps50_ortho6d_gripper2object.png) | ![plot](./plots/Neps50_ortho6d_world2object.png)
--|-
+![third training](./plots/Neps50_ortho6d_gripper2object.png) | ![plot](./plots/Neps50_ortho6d_world2object.png) | ![with gripper](./plots/Neps50_ortho6d_world2object_gripper-True.png)
+-|-|-
 
 ## Loss and Input/Output Representation
 
