@@ -44,7 +44,7 @@ def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, trai
     train, test = torch.utils.data.random_split(
         tds, 
         [N_train, N_test], 
-        generator=torch.Generator().manual_seed(42)
+        # generator=torch.Generator().manual_seed(42)
     )
 
     train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)

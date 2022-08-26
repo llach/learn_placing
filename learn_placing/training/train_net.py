@@ -20,7 +20,7 @@ N_episodes = 50
 out_repr = RotRepr.ortho6d
 gripper_repr = RotRepr.quat
 target_type = InRot.w2o
-validate = True
+validate = False
 
 train_start = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
 

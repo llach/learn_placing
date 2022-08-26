@@ -7,6 +7,8 @@
   - [Training I: cos($\alpha$) as target](#training-i-cosalpha-as-target)
   - [Training II: Polar Coordinates as Targets](#training-ii-polar-coordinates-as-targets)
   - [Training III: 6D Continuous Rotation Representation](#training-iii-6d-continuous-rotation-representation)
+  - [Training IV: Gripper Angle](#training-iv-gripper-angle)
+  - [Training V: Gripper Transform as Input](#training-v-gripper-transform-as-input)
 - [Loss and Input/Output Representation](#loss-and-inputoutput-representation)
   - [On the Continuity of Rotation Representations in Neural Networks (Zhou et.al.)](#on-the-continuity-of-rotation-representations-in-neural-networks-zhou-etal)
   - [6DRepNet](#6drepnet)
@@ -123,12 +125,26 @@ The overall loss is higher though.
 ### Training III: 6D Continuous Rotation Representation
 
 * 50 episodes
-* targets: gripper -> object 
+* targets: gripper -> object and world -> object
 * output representation and loss from Zhou et.al. / 6DRepNet
 * loss is in [0,PI]
 
-![third training](./plots/Neps50_ortho6d_gripper2object.png) | ![plot](./plots/Neps50_ortho6d_world2object.png) | ![with gripper](./plots/Neps50_ortho6d_world2object_gripper-True.png)
--|-|-
+![third training](./plots/Neps50_ortho6d_gripper2object.png) | ![plot](./plots/Neps50_ortho6d_world2object.png)
+-|-
+
+### Training IV: Gripper Angle 
+
+* angle $\theta$ (from `atan2`) between gripper's Z-axis and object's Z-axis in gripper frame
+* outputs are `tanh` -> [sin$\theta$, cos$\theta$]
+
+![with gripper](./plots/Neps30_sincos_gripper_angle.png)
+
+### Training V: Gripper Transform as Input 
+
+* world->gripper rotation as quaternion concatenated to RNN outputs
+* outputs and loss from Zhou et.al.
+
+![gripper trafo](./plots/Neps50_ortho6d_world2object_gripper-True.png)
 
 ## Loss and Input/Output Representation
 
