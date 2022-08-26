@@ -5,7 +5,7 @@ import rospy
 import numpy as np
 
 from learn_placing.common import load_dataset,load_dataset_file, extract_gripper_T, normalize
-from learn_placing.common.transformations import inverse_matrix, quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T, quaternion_matrix, Rz, Rx
+from learn_placing.common.transformations import euler_from_matrix, euler_from_quaternion, inverse_matrix, quaternion_from_matrix, quaternion_inverse, quaternion_multiply, make_T, quaternion_matrix, Rz, Rx
 
 def broadcast(trans, rot, target, source):
     global br
@@ -64,6 +64,8 @@ for i, (stamp, label) in enumerate(os["labels"].items()):
     xO = Rgo@[1,0,0,1]
     yO = Rgo@[0,1,0,1]
     zO = Rgo@[0,0,1,1]
+
+    eulers = euler_from_matrix(Rgo, "syxz")
 
     xNorm = normalize([xO[0], xO[2]])
     zNorm = normalize([zO[2], -zO[0]])

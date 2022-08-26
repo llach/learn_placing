@@ -5,38 +5,40 @@ import torch.nn as nn
 import torch.optim as optim
 
 from datetime import datetime
-from learn_placing.common.label_processing import rotate_v, normalize
-from learn_placing.common.vecplot import AxesPlot
-from learn_placing.training.utils import qloss, RotRepr, InRot, DatasetName, test_net
+from learn_placing.training.utils import qloss, RotRepr, InRot, DatasetName, test_net, AttrDict
 
 from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices
 from tactile_insertion_rl import TactileInsertionRLNet
 
 """ PARAMETERS
 """
-dsname = DatasetName.cylinder
-with_gripper_tf = True
-N_episodes = 50
-out_repr = RotRepr.ortho6d
-gripper_repr = RotRepr.quat
-target_type = InRot.w2o
-validate = False
+a = AttrDict(
+    dsname = DatasetName.cuboid,
+    with_gripper_tf = False,
+    gripper_repr = RotRepr.quat,
+    N_episodes = 5,
+    out_repr = RotRepr.sincos,
+    target_type = InRot.gripper_angle_x,
+    validate = False,
+    store_training = True,
+    start_time = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
+)
 
-train_start = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
+trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time}"
 
-train_cub, test_cub = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
-train_cyl, test_cyl = get_dataset_loaders("third", target_type=target_type, out_repr=out_repr, train_ratio=0.5)
+train_cub, test_cub = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
+train_cyl, test_cyl = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
 
-if dsname == DatasetName.cuboid:
-    train_l, test_l = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
-    val_l, _ = get_dataset_loaders("third", target_type=target_type, out_repr=out_repr, train_ratio=0.5)
-elif dsname == DatasetName.cylinder:
-    train_l, test_l = get_dataset_loaders("third", target_type=target_type, out_repr=out_repr, train_ratio=0.8)
-    val_l, _ = get_dataset_loaders("second", target_type=target_type, out_repr=out_repr, train_ratio=0.5)
+if a.dsname == DatasetName.cuboid:
+    train_l, test_l = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
+    val_l, _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+elif a.dsname == DatasetName.cylinder:
+    train_l, test_l = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
+    val_l, _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
 
 net = TactileInsertionRLNet(
-    output_type = out_repr,
-    with_gripper = with_gripper_tf,
+    output_type = a.out_repr,
+    with_gripper = a.with_gripper_tf,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
@@ -48,12 +50,12 @@ net = TactileInsertionRLNet(
 )
 optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
-if out_repr == RotRepr.quat:
+if a.out_repr == RotRepr.quat:
     # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
     criterion = qloss
-elif out_repr == RotRepr.ortho6d:
+elif a.out_repr == RotRepr.ortho6d:
     criterion = compute_geodesic_distance_from_two_matrices
-elif out_repr == RotRepr.sincos:
+elif a.out_repr == RotRepr.sincos:
     criterion = nn.MSELoss()
 
 train_losses = []
@@ -61,7 +63,7 @@ test_losses = []
 val_losses = []
 
 # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-for epoch in range(N_episodes):  # loop over the dataset multiple times
+for epoch in range(a.N_episodes):  # loop over the dataset multiple times
     for i, data in enumerate(train_l, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, grip, labels = data
@@ -79,20 +81,23 @@ for epoch in range(N_episodes):  # loop over the dataset multiple times
         train_loss = loss.item()
         train_losses.append(train_loss)
 
-        _, _, test_loss = test_net(net, criterion, test_l)
+        test_out, test_lbl, test_loss = test_net(net, criterion, test_l)
         test_loss = np.mean(test_loss)
         test_losses.append(test_loss)
 
-        if validate:
+        if a.validate:
             _, _, val_loss = test_net(net, criterion, val_l)
             val_loss = np.mean(val_loss)
             val_losses.append(val_loss)
 
         print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
-        if validate:
+        if a.validate:
             print(f" | val loss: {val_loss:.3f}", end="")
         print()
 
+
+# from learn_placing.common.label_processing import rotate_v, normalize
+# from learn_placing.common.vecplot import AxesPlot
 
 # plotting to verify network works
 # foutputs, flabels, floss = test_net(net, criterion, test_l)
@@ -118,22 +123,22 @@ plt.figure(figsize=(8.71, 6.61))
 xs = np.arange(len(test_losses)).astype(int)+1
 plt.plot(xs, train_losses, label="training loss")
 plt.plot(xs, test_losses, label="test loss")
-if validate: plt.plot(xs, val_losses, label="validation loss")
+if a.validate: plt.plot(xs, val_losses, label="validation loss")
 
-if out_repr == RotRepr.ortho6d:
+if a.out_repr == RotRepr.ortho6d:
     plt.ylim([0.0,np.pi])
     plt.ylabel("geodesic error in [0,PI]")
-elif out_repr == RotRepr.quat:
+elif a.out_repr == RotRepr.quat:
     plt.ylim([0.0,1.0])
     plt.ylabel("quaternion loss")
 
 plt.xlabel("Batches")
 
-plt.title(f"dsname={dsname}; out_repr={out_repr}; target={target_type}; gripper_tf={with_gripper_tf}")
+plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}")
 
 plt.legend()
 plt.tight_layout()
-plt.savefig(f"{os.environ['HOME']}/tud_datasets/{dsname}_Neps{N_episodes}_{out_repr}_{target_type}_gripper-{with_gripper_tf}_{train_start}.png")
+plt.savefig(f"{os.environ['HOME']}/tud_datasets/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.train_start}.png")
 plt.show()
 
 print('training done!')

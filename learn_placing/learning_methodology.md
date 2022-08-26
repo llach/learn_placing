@@ -135,7 +135,8 @@ The overall loss is higher though.
 ### Training IV: Gripper Angle 
 
 * angle $\theta$ (from `atan2`) between gripper's Z-axis and object's Z-axis in gripper frame
-* outputs are `tanh` -> [sin$\theta$, cos$\theta$]
+* outputs are `tanh` -> [sin$\theta$, cos$\theta$]; loss is MSE
+* * **bad**, outputs collapse to the same values
 
 ![with gripper](./plots/Neps30_sincos_gripper_angle.png)
 
@@ -143,6 +144,7 @@ The overall loss is higher though.
 
 * world->gripper rotation as quaternion concatenated to RNN outputs
 * outputs and loss from Zhou et.al.
+
 
 ![gripper trafo](./plots/Neps50_ortho6d_world2object_gripper-True.png)
 

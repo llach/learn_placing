@@ -7,6 +7,11 @@ from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader
 from learn_placing.common.data import load_dataset_file
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
 class DatasetName(str, Enum):
     cuboid="Cuboid"
     cylinder="Cylinder"
@@ -21,6 +26,7 @@ class InRot(str, Enum):
     w2g = "world2gripper"
     g2o = "gripper2object"
     gripper_angle = "gripper_angle"
+    gripper_angle_x = "gripper_angle_x"
 
 def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
@@ -63,7 +69,7 @@ def test_net(net, crit, dataset):
             outs = net(inputs, grip)
             loss_t = crit(outs, lbls)
 
-            losses.append(loss_t.numpy())
+            losses.append([loss_t.numpy()])
             outputs.append(outs.numpy())
             labels.append(lbls.numpy())
     return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0)

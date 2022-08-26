@@ -18,11 +18,11 @@ MAX_DEV = 0.005
 MIN_N = 10 # per camera
 M = 50  # myrmex lookback
 
+# dsname = "second"
+dsname = "third"
 data_root = f"{os.environ['HOME']}/tud_datasets"
-dataset_path = f"{data_root}/placing_data_pkl_second"
-dataset_file = f"{data_root}/second.pkl"
-# dataset_path = f"{data_root}/placing_data_pkl_third"
-# dataset_file = f"{data_root}/third.pkl"
+dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
+dataset_file = f"{data_root}/{dsname}.pkl"
 
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
@@ -101,9 +101,14 @@ for i, (t, sample) in enumerate(os.items()):
     qGO = normalize(qGO)
 
     Rgo = quaternion_matrix(qGO)
+
     Zgo = Rgo@[0,0,1,1]
     ZgoNorm = normalize([Zgo[2], -Zgo[0]])
     gripper_angle = np.arctan2(ZgoNorm[1], ZgoNorm[0])
+
+    Xgo = Rgo@[0,0,1,1]
+    XgoNorm = normalize([Xgo[2], -Xgo[0]])
+    gripper_angle_x = np.arctan2(XgoNorm[1], XgoNorm[0])
 
     # axp = AxesPlot()
 
@@ -133,6 +138,7 @@ for i, (t, sample) in enumerate(os.items()):
             InRot.w2g: qWG,
             InRot.g2o: qGO,
             InRot.gripper_angle: gripper_angle,
+            InRot.gripper_angle_x: gripper_angle_x,
             "vec": finalv,
             "angle": angle,
         }
