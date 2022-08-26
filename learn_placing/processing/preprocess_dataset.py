@@ -139,21 +139,31 @@ for i, (t, sample) in enumerate(os.items()):
     })
 
 inputs = {}
+static_inputs = {}
 for i, (t, sample) in enumerate(ds.items()):
     if t not in labels:
         print(f"skipping myrmex sample {i}")
         continue
     
-    le = preprocess_myrmex(sample["tactile_left"][1])
-    ri = preprocess_myrmex(sample["tactile_right"][1])
+    ler = preprocess_myrmex(sample["tactile_left"][1])
+    rir = preprocess_myrmex(sample["tactile_right"][1])
 
-     # cut to same length (we determined that in `myrmez_lookback.py`)
-    ri = ri[-M:]
-    le = le[-M:]
+    # cut to same length (we determined that in `myrmez_lookback.py`)
+    ri = rir[-M:]
+    le = ler[-M:]
+
+    ri_static = rir[-2*M:-M]
+    le_static = ler[-2*M:-M]
 
     inp = np.stack([le, ri])
+    inp_static = np.stack([le_static, ri_static])
 
     inputs.update({t: inp})
+    static_inputs.update({t: inp_static})
 
 with open(dataset_file, "wb") as f:
-    pickle.dump({"labels": labels, "inputs": inputs}, f)
+    pickle.dump({
+        "labels": labels, 
+        "inputs": inputs,
+        "static_inputs": static_inputs
+    }, f)
