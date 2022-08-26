@@ -14,7 +14,7 @@ from tactile_insertion_rl import TactileInsertionRLNet
 
 """ PARAMETERS
 """
-dsname = DatasetName.cuboid
+dsname = DatasetName.cylinder
 with_gripper_tf = True
 N_episodes = 50
 out_repr = RotRepr.ortho6d

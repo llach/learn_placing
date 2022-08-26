@@ -146,6 +146,9 @@ The overall loss is higher though.
 
 ![gripper trafo](./plots/Neps50_ortho6d_world2object_gripper-True.png)
 
+![gripper cuboid](./plots/Cuboid_Neps50_ortho6d_world2object_gripper-True_2022.08.26_10:11:30.png) | ![gripper cylinder](./plots/Cylinder_Neps50_ortho6d_world2object_gripper-True_2022.08.26_10:21:32.png)
+-|-
+
 ## Loss and Input/Output Representation
 
 ### On the Continuity of Rotation Representations in Neural Networks (Zhou et.al.)
