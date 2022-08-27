@@ -77,7 +77,7 @@ def test_net(model, crit, dataset):
             outputs.append(outs.numpy())
             labels.append(lbls.numpy())
     model.train()
-    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0)
+    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=1)
 
 def wrap_torch_fn(fn, *args, **kwargs):
     """ receives torch function and args as np array,
