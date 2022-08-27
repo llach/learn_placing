@@ -120,6 +120,7 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         if a.validate:
             print(f" | val loss: {val_loss:.3f}", end="")
         print()
+torch.save(model.state_dict, f"{trial_path}/weights/final.pth")
 
 # from learn_placing.common.label_processing import rotate_v, normalize
 # from learn_placing.common.vecplot import AxesPlot
@@ -152,8 +153,8 @@ plt.figure(figsize=(8.71, 6.61))
 lastN = int(len(train_losses)*0.05)
 
 xs = np.arange(len(test_losses)).astype(int)+1
-plt.plot(xs, train_losses, label=f"training loss - {np.mean(train_losses[-lastN:])}")
-plt.plot(xs, test_losses, label=f"test loss - {np.mean(test_losses[-lastN:])}")
+plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:])}")
+plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:])}")
 if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
 
 if a.out_repr == RotRepr.ortho6d:
