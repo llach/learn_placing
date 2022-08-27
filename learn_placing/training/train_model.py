@@ -18,14 +18,15 @@ from tactile_insertion_rl import TactileInsertionRLNet
 """
 a = AttrDict(
     dsname = DatasetName.cuboid,
-    with_gripper_tf = False,
+    with_gripper_tf = True,
     gripper_repr = RotRepr.quat,
-    N_episodes = 1,
-    out_repr = RotRepr.sincos,
-    target_type = InRot.gripper_angle,
+    N_episodes = 50,
+    out_repr = RotRepr.ortho6d,
+    target_type = InRot.w2o,
     validate = False,
     store_training = True,
-    start_time = datetime.now().strftime(datefmt)
+    start_time = datetime.now().strftime(datefmt),
+    save_freq = 0.1
 )
 a.__setattr__("netp", AttrDict(
     output_type = a.out_repr,
@@ -49,6 +50,7 @@ a.__setattr__("adamp", AttrDict(
 
 trial_path = f"{training_path}/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}/"
 os.makedirs(trial_path, exist_ok=True)
+os.makedirs(f"{trial_path}/weights", exist_ok=True)
 
 if a.dsname == DatasetName.cuboid:
     (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
@@ -79,6 +81,8 @@ test_losses = []
 val_losses = []
 
 # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
+nbatch = 0
+save_batches = int(a.N_episodes*len(train_l)*a.save_freq)
 for epoch in range(a.N_episodes):  # loop over the dataset multiple times
     for i, data in enumerate(train_l, 0):
         # get the inputs; data is a list of [inputs, labels]
@@ -106,6 +110,11 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
 
             val_loss = np.mean(val_loss)
             val_losses.append(val_loss)
+
+        # store model weights
+        if nbatch % save_batches == save_batches-1:
+            torch.save(model.state_dict, f"{trial_path}/weights/batch_{nbatch}.pth")
+        nbatch += 1
 
         print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
         if a.validate:
