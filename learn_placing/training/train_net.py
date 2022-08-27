@@ -18,11 +18,23 @@ a = AttrDict(
     gripper_repr = RotRepr.quat,
     N_episodes = 5,
     out_repr = RotRepr.sincos,
-    target_type = InRot.gripper_angle_x,
+    target_type = InRot.gripper_angle,
     validate = False,
     store_training = True,
     start_time = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
 )
+a.__setattr__("netp", AttrDict(
+    output_type = a.out_repr,
+    with_gripper = a.with_gripper_tf,
+    kernel_sizes = [(3,3), (3,3)],
+    cnn_out_channels = [32, 64],
+    conv_stride = (2,2),
+    conv_padding = (0,0),
+    conv_output = 64,
+    rnn_neurons = 64,
+    rnn_layers = 2,
+    fc_neurons = [32, 16],
+))
 
 trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time}"
 
@@ -36,19 +48,8 @@ elif a.dsname == DatasetName.cylinder:
     train_l, test_l = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
     val_l, _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
 
-net = TactileInsertionRLNet(
-    output_type = a.out_repr,
-    with_gripper = a.with_gripper_tf,
-    kernel_sizes = [(3,3), (3,3)],
-    cnn_out_channels = [32, 64],
-    conv_stride = (2,2),
-    conv_padding = (0,0),
-    conv_output = 64,
-    rnn_neurons = 64,
-    rnn_layers = 2,
-    fc_neurons = [32, 16],
-)
-optimizer = optim.Adam(net.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
+model = TactileInsertionRLNet(**a.netp)
+optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
 
 if a.out_repr == RotRepr.quat:
     # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
@@ -72,7 +73,7 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = net(inputs, grip)
+        outputs = model(inputs, grip)
         loss = torch.mean(criterion(outputs, labels))
         loss.backward()
         optimizer.step()
@@ -81,12 +82,13 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         train_loss = loss.item()
         train_losses.append(train_loss)
 
-        test_out, test_lbl, test_loss = test_net(net, criterion, test_l)
+        test_out, test_lbl, test_loss = test_net(model, criterion, test_l)
         test_loss = np.mean(test_loss)
         test_losses.append(test_loss)
 
         if a.validate:
-            _, _, val_loss = test_net(net, criterion, val_l)
+            _, _, val_loss = test_net(model, criterion, val_l)
+
             val_loss = np.mean(val_loss)
             val_losses.append(val_loss)
 
@@ -95,6 +97,10 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
             print(f" | val loss: {val_loss:.3f}", end="")
         print()
 
+# Print model's state_dict
+print("Model's state_dict:")
+for param_tensor in model.state_dict():
+    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
 
 # from learn_placing.common.label_processing import rotate_v, normalize
 # from learn_placing.common.vecplot import AxesPlot

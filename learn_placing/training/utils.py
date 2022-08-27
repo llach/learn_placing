@@ -58,20 +58,22 @@ def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, trai
 
     return train_l, test_l
 
-def test_net(net, crit, dataset):
+def test_net(model, crit, dataset):
     losses = []
     outputs = []
     labels = []
 
+    model.eval()
     with torch.no_grad():
         for data in dataset:
             inputs, grip, lbls = data
-            outs = net(inputs, grip)
+            outs = model(inputs, grip)
             loss_t = crit(outs, lbls)
 
             losses.append([loss_t.numpy()])
             outputs.append(outs.numpy())
             labels.append(lbls.numpy())
+    model.train()
     return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0)
 
 def wrap_torch_fn(fn, *args, **kwargs):
