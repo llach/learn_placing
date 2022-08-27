@@ -98,7 +98,7 @@ This can be seen by the vertical blue line in the plots.
 
 A visualization of an example sequence looks like this:
 
-![mm gif](.plots/../plots/myrmex.gif)
+![mm gif](./plots/myrmex.gif)
 
 ## Network Trainings
 

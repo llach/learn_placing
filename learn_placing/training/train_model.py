@@ -9,6 +9,7 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 
 from datetime import datetime
+from learn_placing.training.utils import rep2loss
 
 from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices, qloss, RotRepr, InRot, DatasetName, test_net, AttrDict
 from learn_placing import datefmt, training_path
@@ -35,10 +36,10 @@ a.__setattr__("netp", AttrDict(
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
     conv_padding = (0,0),
-    conv_output = 64,
-    rnn_neurons = 64,
+    conv_output = 128,
+    rnn_neurons = 128,
     rnn_layers = 2,
-    fc_neurons = [32, 16],
+    fc_neurons = [64, 32],
 ))
 a.__setattr__("adamp", AttrDict(
     lr=1e-3, 
@@ -61,6 +62,7 @@ elif a.dsname == DatasetName.cylinder:
 
 a.__setattr__("train_indices", train_ind)
 a.__setattr__("test_indices", test_ind)
+a.__setattr__("val_indices", val_ind)
 
 with open(f"{trial_path}parameters.json", "w") as f:
     json.dump(a, f, indent=2)
@@ -68,13 +70,7 @@ with open(f"{trial_path}parameters.json", "w") as f:
 model = TactileInsertionRLNet(**a.netp)
 optimizer = optim.Adam(model.parameters(), **a.adamp)
 
-if a.out_repr == RotRepr.quat:
-    # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
-    criterion = qloss
-elif a.out_repr == RotRepr.ortho6d:
-    criterion = compute_geodesic_distance_from_two_matrices
-elif a.out_repr == RotRepr.sincos:
-    criterion = nn.MSELoss()
+criterion = rep2loss(a.out_repr)
 
 train_losses = []
 test_losses = []
@@ -113,33 +109,14 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
 
         # store model weights
         if nbatch % save_batches == save_batches-1:
-            torch.save(model.state_dict, f"{trial_path}/weights/batch_{nbatch}.pth")
+            torch.save(model.state_dict(), f"{trial_path}/weights/batch_{nbatch}.pth")
         nbatch += 1
 
         print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
         if a.validate:
             print(f" | val loss: {val_loss:.3f}", end="")
         print()
-torch.save(model.state_dict, f"{trial_path}/weights/final.pth")
-
-# from learn_placing.common.label_processing import rotate_v, normalize
-# from learn_placing.common.vecplot import AxesPlot
-
-# plotting to verify network works
-# foutputs, flabels, floss = test_net(net, criterion, test_l)
-# for out, lbl, lo in zip(foutputs, flabels, floss):
-#     axp = AxesPlot()
-
-#     if out_repr == RotRepr.quat:
-#         ov = rotate_v([0,0,-1], normalize(out))
-#         lv = rotate_v([0,0,-1], lbl)
-#     elif out_repr == RotRepr.ortho6d:
-#         ov = out@[0,0,-1]
-#         lv = lbl@[0,0,-1]
-
-#     axp.plot_v(ov, label=f"out {lo:.5f}", color="black")
-#     axp.plot_v(lv, label="lbl", color="grey")
-#     axp.show()
+torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
 with open(f"{trial_path}/losses.pkl", "wb") as f:
     pickle.dump({

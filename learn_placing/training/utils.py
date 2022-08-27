@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import numpy as np
 import torch.nn as nn
@@ -28,7 +29,31 @@ class InRot(str, Enum):
     gripper_angle = "gripper_angle"
     gripper_angle_x = "gripper_angle_x"
 
-def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
+def load_train_params(trial_path):
+    with open(f"{trial_path}/parameters.json", "r") as f:
+        params = json.loads(f.read())
+    params = AttrDict(**params)
+    params.netp = AttrDict(**params.netp)
+    params.adamp = AttrDict(**params.adamp)
+    return params
+
+def get_dataset(dsname, a, indices=None):
+    if indices is not None:
+        tt_indices = indices[:2]
+        val_indices = [indices[2], []]
+    else:
+        tt_indices=None
+        val_indices=None
+    if a.dsname == DatasetName.cuboid:
+        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices)
+        (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices)
+    elif a.dsname == DatasetName.cylinder:
+        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices)
+        (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices)
+    return (train_l, train_ind), (test_l, test_ind), (val_l, val_ind)
+
+
+def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
     
@@ -47,19 +72,33 @@ def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, trai
     
     tds = TensorDataset(X, GR, Y)
 
-    train, test = torch.utils.data.random_split(
-        tds, 
-        [N_train, N_test], 
-        # generator=torch.Generator().manual_seed(42)
-    )
-
-    train_inds = train.indices
-    test_inds = test.indices
+    if indices is None or indices == []:
+        train, test = torch.utils.data.random_split(
+            tds, 
+            [N_train, N_test], 
+            # generator=torch.Generator().manual_seed(42)
+        )
+        train_inds = train.indices
+        test_inds = test.indices
+    else:
+        train_inds = indices[0]
+        test_inds = indices[1]
+        train = TensorDataset(*tds[train_inds])
+        test = TensorDataset(*tds[test_inds])
 
     train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
     return (train_l, train_inds), (test_l, test_inds)
+
+def rep2loss(rep):
+    if rep == RotRepr.quat:
+        # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
+        return qloss
+    elif rep == RotRepr.ortho6d:
+        return compute_geodesic_distance_from_two_matrices
+    elif rep == RotRepr.sincos:
+        return nn.MSELoss()
 
 def test_net(model, crit, dataset):
     losses = []
