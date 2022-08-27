@@ -1,13 +1,17 @@
 import os
+import json
 import torch
+import pickle
+
 import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+import matplotlib.pyplot as plt
 
 from datetime import datetime
-from learn_placing.training.utils import qloss, RotRepr, InRot, DatasetName, test_net, AttrDict
 
-from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices
+from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices, qloss, RotRepr, InRot, DatasetName, test_net, AttrDict
+from learn_placing import datefmt, training_path
 from tactile_insertion_rl import TactileInsertionRLNet
 
 """ PARAMETERS
@@ -16,12 +20,12 @@ a = AttrDict(
     dsname = DatasetName.cuboid,
     with_gripper_tf = False,
     gripper_repr = RotRepr.quat,
-    N_episodes = 5,
+    N_episodes = 1,
     out_repr = RotRepr.sincos,
     target_type = InRot.gripper_angle,
     validate = False,
     store_training = True,
-    start_time = datetime.now().strftime("%Y.%m.%d_%H:%M:%S")
+    start_time = datetime.now().strftime(datefmt)
 )
 a.__setattr__("netp", AttrDict(
     output_type = a.out_repr,
@@ -35,21 +39,32 @@ a.__setattr__("netp", AttrDict(
     rnn_layers = 2,
     fc_neurons = [32, 16],
 ))
+a.__setattr__("adamp", AttrDict(
+    lr=1e-3, 
+    betas=(0.9, 0.999), 
+    eps=1e-8, 
+    weight_decay=0, 
+    amsgrad=False
+))
 
-trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time}"
-
-train_cub, test_cub = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
-train_cyl, test_cyl = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+trial_path = f"{training_path}/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}/"
+os.makedirs(trial_path, exist_ok=True)
 
 if a.dsname == DatasetName.cuboid:
-    train_l, test_l = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
-    val_l, _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
+    (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
 elif a.dsname == DatasetName.cylinder:
-    train_l, test_l = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
-    val_l, _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
+    (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+
+a.__setattr__("train_indices", train_ind)
+a.__setattr__("test_indices", test_ind)
+
+with open(f"{trial_path}parameters.json", "w") as f:
+    json.dump(a, f, indent=2)
 
 model = TactileInsertionRLNet(**a.netp)
-optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0, amsgrad=False)
+optimizer = optim.Adam(model.parameters(), **a.adamp)
 
 if a.out_repr == RotRepr.quat:
     # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
@@ -97,11 +112,6 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
             print(f" | val loss: {val_loss:.3f}", end="")
         print()
 
-# Print model's state_dict
-print("Model's state_dict:")
-for param_tensor in model.state_dict():
-    print(param_tensor, "\t", model.state_dict()[param_tensor].size())
-
 # from learn_placing.common.label_processing import rotate_v, normalize
 # from learn_placing.common.vecplot import AxesPlot
 
@@ -121,15 +131,21 @@ for param_tensor in model.state_dict():
 #     axp.plot_v(lv, label="lbl", color="grey")
 #     axp.show()
 
-import numpy as np
-import matplotlib.pyplot as plt
+with open(f"{trial_path}/losses.pkl", "wb") as f:
+    pickle.dump({
+        "train": train_losses,
+        "test": test_losses,
+        "validation": val_losses
+    }, f)
 
 plt.figure(figsize=(8.71, 6.61))
 
+lastN = int(len(train_losses)*0.05)
+
 xs = np.arange(len(test_losses)).astype(int)+1
-plt.plot(xs, train_losses, label="training loss")
-plt.plot(xs, test_losses, label="test loss")
-if a.validate: plt.plot(xs, val_losses, label="validation loss")
+plt.plot(xs, train_losses, label=f"training loss - {np.mean(train_losses[-lastN:])}")
+plt.plot(xs, test_losses, label=f"test loss - {np.mean(test_losses[-lastN:])}")
+if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
 
 if a.out_repr == RotRepr.ortho6d:
     plt.ylim([0.0,np.pi])
@@ -144,7 +160,7 @@ plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gr
 
 plt.legend()
 plt.tight_layout()
-plt.savefig(f"{os.environ['HOME']}/tud_datasets/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.train_start}.png")
-plt.show()
+plt.savefig(f"{trial_path}/learning_curve.png")
+plt.clf()
 
 print('training done!')

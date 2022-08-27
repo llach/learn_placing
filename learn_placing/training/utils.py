@@ -53,10 +53,13 @@ def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, trai
         # generator=torch.Generator().manual_seed(42)
     )
 
+    train_inds = train.indices
+    test_inds = test.indices
+
     train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
-    return train_l, test_l
+    return (train_l, train_inds), (test_l, test_inds)
 
 def test_net(model, crit, dataset):
     losses = []
