@@ -97,12 +97,12 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         train_loss = loss.item()
         train_losses.append(train_loss)
 
-        test_out, test_lbl, test_loss = test_net(model, criterion, test_l)
+        test_out, test_lbl, test_loss, _ = test_net(model, criterion, test_l)
         test_loss = np.mean(test_loss)
         test_losses.append(test_loss)
 
         if a.validate:
-            _, _, val_loss = test_net(model, criterion, val_l)
+            _, _, val_loss, _ = test_net(model, criterion, val_l)
 
             val_loss = np.mean(val_loss)
             val_losses.append(val_loss)

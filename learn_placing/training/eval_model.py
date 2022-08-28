@@ -27,10 +27,11 @@ criterion = rep2loss(a.out_repr)
 
 (train_l, train_ind), (test_l, test_ind), _ = get_dataset(a.dsname, a, indices=[a.train_indices, a.test_indices, a.val_indices])
 
-foutputs, flabels, floss = test_net(model, criterion, test_l)
-for out, lbl, lo in zip(foutputs, flabels, np.squeeze(floss)):
+outputs, labels, loss, grips = test_net(model, criterion, test_l)
+for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
     axp = AxesPlot()
 
+    gv = rotate_v([0,0,-1], grip)
     if a.out_repr == RotRepr.quat:
         ov = rotate_v([0,0,-1], normalize(out))
         lv = rotate_v([0,0,-1], lbl)
@@ -38,6 +39,8 @@ for out, lbl, lo in zip(foutputs, flabels, np.squeeze(floss)):
         ov = out@[0,0,-1]
         lv = lbl@[0,0,-1]
 
+    axp.plot_v(gv, label=f"gripper rot", color="yellow")
     axp.plot_v(ov, label=f"out {lo:.5f}", color="black")
     axp.plot_v(lv, label="lbl", color="grey")
+    axp.title(f"Test Sample {i+1}")
     axp.show()

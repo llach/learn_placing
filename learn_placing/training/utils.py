@@ -104,6 +104,7 @@ def test_net(model, crit, dataset):
     losses = []
     outputs = []
     labels = []
+    grip_rots = []
 
     model.eval()
     with torch.no_grad():
@@ -115,8 +116,9 @@ def test_net(model, crit, dataset):
             losses.append([loss_t.numpy()])
             outputs.append(outs.numpy())
             labels.append(lbls.numpy())
+            grip_rots.append(grip.numpy())
     model.train()
-    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=1)
+    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=1), np.concatenate(grip_rots, axis=0)
 
 def wrap_torch_fn(fn, *args, **kwargs):
     """ receives torch function and args as np array,

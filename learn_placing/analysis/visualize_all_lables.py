@@ -4,7 +4,7 @@ import numpy as np
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.vecplot import AxesPlot
 
-dsname = "second"
+dsname = "third"
 dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{dsname}.pkl"
 ds = load_dataset_file(dataset_file_path)
 
