@@ -18,8 +18,8 @@ MAX_DEV = 0.005
 MIN_N = 10 # per camera
 M = 50  # myrmex lookback
 
-# dsname = "second"
-dsname = "third"
+dsname = "second"
+# dsname = "third"
 data_root = f"{os.environ['HOME']}/tud_datasets"
 dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
 dataset_file = f"{data_root}/{dsname}.pkl"

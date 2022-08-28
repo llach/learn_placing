@@ -29,15 +29,24 @@ class InRot(str, Enum):
     gripper_angle = "gripper_angle"
     gripper_angle_x = "gripper_angle_x"
 
+class InData(str, Enum):
+    with_tap = "inputs"
+    static = "static_inputs"
+
 def load_train_params(trial_path):
     with open(f"{trial_path}/parameters.json", "r") as f:
         params = json.loads(f.read())
     params = AttrDict(**params)
     params.netp = AttrDict(**params.netp)
     params.adamp = AttrDict(**params.adamp)
+
+    try:
+        params.val_indices
+    except:
+        params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, indices=None):
+def get_dataset(dsname, a,indices=None):
     if indices is not None:
         tt_indices = indices[:2]
         val_indices = [indices[2], []]
@@ -45,19 +54,19 @@ def get_dataset(dsname, a, indices=None):
         tt_indices=None
         val_indices=None
     if a.dsname == DatasetName.cuboid:
-        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices)
-        (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices)
+        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
+        (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices, input_data=a.input_data)
     elif a.dsname == DatasetName.cylinder:
-        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices)
-        (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices)
+        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
+        (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices, input_data=a.input_data)
     return (train_l, train_ind), (test_l, test_ind), (val_l, val_ind)
 
 
-def get_dataset_loaders(name, target_type=InRot.w2o, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
+def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
     
-    X = [v for _, v in ds["inputs"].items()]
+    X = [v for _, v in ds[input_data].items()]
     Y = [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)

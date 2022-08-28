@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from learn_placing.training.utils import rep2loss
 
-from utils import get_dataset_loaders, compute_geodesic_distance_from_two_matrices, qloss, RotRepr, InRot, DatasetName, test_net, AttrDict
+from utils import get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
 from learn_placing import datefmt, training_path
 from tactile_insertion_rl import TactileInsertionRLNet
 
@@ -27,6 +27,7 @@ a = AttrDict(
     validate = False,
     store_training = True,
     start_time = datetime.now().strftime(datefmt),
+    input_data = InData.static,
     save_freq = 0.1
 )
 a.__setattr__("netp", AttrDict(
@@ -53,12 +54,7 @@ trial_path = f"{training_path}/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.tar
 os.makedirs(trial_path, exist_ok=True)
 os.makedirs(f"{trial_path}/weights", exist_ok=True)
 
-if a.dsname == DatasetName.cuboid:
-    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
-    (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
-elif a.dsname == DatasetName.cylinder:
-    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8)
-    (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5)
+(train_l, train_ind), (test_l, test_ind), (val_l, val_ind) = get_dataset(a.dsname, a)
 
 a.__setattr__("train_indices", train_ind)
 a.__setattr__("test_indices", test_ind)
@@ -143,7 +139,7 @@ elif a.out_repr == RotRepr.quat:
 
 plt.xlabel("Batches")
 
-plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}")
+plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}; input={a.input_data}")
 
 plt.legend()
 plt.tight_layout()

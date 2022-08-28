@@ -14,11 +14,6 @@ trial_weights = f"{trial_path}/weights/final.pth"
 
 a = load_train_params(trial_path)
 
-try:
-    a.val_indices
-except:
-    a.__setattr__("val_indices", [])
-
 model = TactileInsertionRLNet(**a.netp)
 checkp = torch.load(trial_weights)
 model.load_state_dict(checkp)
