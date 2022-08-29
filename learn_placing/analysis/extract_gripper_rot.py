@@ -79,6 +79,15 @@ for i, (stamp, label) in enumerate(os["labels"].items()):
     RwCleanX = Rwg@RcleanX
     RwCleanZ = Rwg@RcleanZ
 
+    Rgw = inverse_matrix(Rwg)
+
+    Zgw = Rgw[:3,:3]@[0,0,1]
+    Zgc = RcleanX@[0,0,1,1]
+
+    local_angle = np.arccos(np.dot(Zgw, Zgc[:3]))
+    print(local_angle)
+    print()
+
     # eulers = euler_from_matrix(Rgo, "syxz")
 
     # xNorm = normalize([xO[0], xO[2]])
@@ -117,9 +126,6 @@ for i, (stamp, label) in enumerate(os["labels"].items()):
     # zExp = Rexp2@[0,0,1,1]
 
     # print(np.arctan2(xExp[2], xExp[0]), np.arctan2(-zExp[0], zExp[2]))
-
-
-    Rgw = inverse_matrix(T)
 
     rospy.init_node("tf_rebroadcast")
     r = rospy.Rate(5)
@@ -175,6 +181,12 @@ for i, (stamp, label) in enumerate(os["labels"].items()):
                 quaternion_from_matrix(RwCleanZ),
                 "world_clean_Z",
                 "base_footprint"
+            )
+            broadcast(
+                [0,0,0],
+                quaternion_from_matrix(Rgw),
+                "grasped_world",
+                "gripper_grasping_frame"
             )
             for tr in t:
                 broadcast(

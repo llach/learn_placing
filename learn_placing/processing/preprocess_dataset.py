@@ -6,7 +6,7 @@ from datetime import timedelta
 from learn_placing.common.label_processing import normalize, rotate_v
 
 from learn_placing.common.vecplot import AxesPlot
-from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, Ry
+from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, inverse_matrix, Ry
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
 from learn_placing.training.utils import InRot
 
@@ -118,6 +118,13 @@ for dsname in dsnames:
         RwCleanX = Rwg@RcleanX
         RwCleanZ = Rwg@RcleanZ
 
+        Rgw = inverse_matrix(Rwg)
+
+        Zgw = Rgw[:3,:3]@[0,0,1]
+        Zgc = RcleanX@[0,0,1,1]
+
+        local_dotp = np.arccos(np.dot(Zgw, Zgc[:3]))
+
         # axp = AxesPlot()
 
         # published gripper to object transform VS the one we calculated based on tf msgs
@@ -149,6 +156,7 @@ for dsname in dsnames:
                 InRot.g2o: qGO,
                 InRot.gripper_angle: gripper_angle,
                 InRot.gripper_angle_x: gripper_angle_x,
+                InRot.local_dotp: local_dotp,
                 "vec": finalv,
                 "angle": angle,
             }

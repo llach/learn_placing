@@ -19,11 +19,11 @@ from tactile_insertion_rl import TactileInsertionRLNet
 """
 a = AttrDict(
     dsname = DatasetName.cuboid,
-    out_repr = RotRepr.ortho6d,
-    target_type = InRot.w2cleanX,
-    input_data = InData.with_tap,
-    with_gripper_tf = True,
-    N_episodes = 50,
+    out_repr = RotRepr.sincos,
+    target_type = InRot.local_dotp,
+    input_data = InData.static,
+    with_gripper_tf = False,
+    N_episodes = 10,
     validate = False,
     store_training = True,
     gripper_repr = RotRepr.quat,
@@ -129,8 +129,8 @@ plt.figure(figsize=(8.71, 6.61))
 lastN = int(len(train_losses)*0.05)
 
 xs = np.arange(len(test_losses)).astype(int)+1
-plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:])}")
-plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:])}")
+plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:]):.5f}")
+plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:]):.5f}")
 if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
 
 if a.out_repr == RotRepr.ortho6d:

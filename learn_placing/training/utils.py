@@ -30,6 +30,7 @@ class InRot(str, Enum):
     gripper_angle_x = "gripper_angle_x"
     w2cleanX = "world2object_cleanX"
     w2cleanZ = "world2object_cleanZ"
+    local_dotp = "local_dotproduct"
 
 class InData(str, Enum):
     with_tap = "inputs"
@@ -129,7 +130,7 @@ def test_net(model, crit, dataset):
             labels.append(lbls.numpy())
             grip_rots.append(grip.numpy())
     model.train()
-    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=1), np.concatenate(grip_rots, axis=0)
+    return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0), np.concatenate(grip_rots, axis=0)
 
 def wrap_torch_fn(fn, *args, **kwargs):
     """ receives torch function and args as np array,
