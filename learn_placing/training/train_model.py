@@ -19,21 +19,21 @@ from tactile_insertion_rl import TactileInsertionRLNet
 """
 a = AttrDict(
     dsname = DatasetName.cuboid,
-    with_gripper_tf = True,
-    gripper_repr = RotRepr.quat,
-    N_episodes = 50,
     out_repr = RotRepr.ortho6d,
-    target_type = InRot.w2o,
+    target_type = InRot.w2cleanX,
+    input_data = InData.with_tap,
+    with_gripper_tf = True,
+    N_episodes = 50,
     validate = False,
     store_training = True,
+    gripper_repr = RotRepr.quat,
     start_time = datetime.now().strftime(datefmt),
-    input_data = InData.static,
     save_freq = 0.1
 )
 a.__setattr__("netp", AttrDict(
     output_type = a.out_repr,
     with_gripper = a.with_gripper_tf,
-    only_gripper = True,
+    only_gripper = False,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),

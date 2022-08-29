@@ -78,7 +78,7 @@ class TactileInsertionRLNet(nn.Module):
             self.gripper_input_size = 4
 
         # if there's no additional gripper input, set it additional dim to 0
-        if not self.with_gripper: self.gripper_input_size = 0
+        if not self.with_gripper and not self.only_gripper: self.gripper_input_size = 0
 
         if not self.only_gripper:
             # input channels are whatever comes out of the previous layer.
