@@ -28,6 +28,8 @@ class InRot(str, Enum):
     g2o = "gripper2object"
     gripper_angle = "gripper_angle"
     gripper_angle_x = "gripper_angle_x"
+    w2cleanX = "world2object_cleanX"
+    w2cleanZ = "world2object_cleanZ"
 
 class InData(str, Enum):
     with_tap = "inputs"
