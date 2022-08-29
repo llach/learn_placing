@@ -12,11 +12,12 @@ from tactile_insertion_rl import TactileInsertionRLNet
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_gripper-True_2022.08.28_15-19-06" # gripper-only
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-False_2022.08.29_14-59-28" # cleanX, static input
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-False_2022.08.29_15-22-16" # cleanX, with tap
-trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-True_2022.08.29_16-10-11" #  cleanX, with tap, with gripper tf
-trial_name = "Cuboid_Neps10_sincos_local_dotproduct_gripper-False_2022.08.29_18-44-52"
+# trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-True_2022.08.29_16-10-11" #  cleanX, with tap, with gripper tf
+trial_name = "Cuboid_Neps50_sincos_local_dotproduct_gripper-False_2022.08.29_19-38-50" # world->object in gripper, WITH tap
+# trial_name = "Cuboid_Neps50_sincos_local_dotproduct_gripper-False_2022.08.29_19-46-11" # world->object in gripper, STATIC
 
 trial_path = f"{training_path}/{trial_name}"
-trial_weights = f"{trial_path}/weights/final.pth"
+trial_weights = f"{trial_path}/weights/batch_499.pth"
 
 a = load_train_params(trial_path)
 
@@ -33,7 +34,7 @@ if a.out_repr == RotRepr.sincos:
     import matplotlib.pyplot as plt
 
     for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
-        plt.scatter(*out, label=f"prediction | {np.sum(lo):.5f}", color="black") # TODO use sum or mean here?
+        plt.scatter(*out, label=f"prediction | {lo:.5f}", color="black") # TODO use sum or mean here?
         plt.scatter(*lbl, label="label", color="grey")
 
         plt.xlim([-1.05, 1.05])

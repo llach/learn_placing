@@ -3,6 +3,7 @@ import json
 import torch
 import numpy as np
 import torch.nn as nn
+import torch.nn.functional as F
 
 from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader
@@ -110,7 +111,7 @@ def rep2loss(rep):
     elif rep == RotRepr.ortho6d:
         return compute_geodesic_distance_from_two_matrices
     elif rep == RotRepr.sincos:
-        return nn.MSELoss(reduction='none')
+        return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
 
 def test_net(model, crit, dataset):
     losses = []
