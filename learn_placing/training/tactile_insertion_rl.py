@@ -45,6 +45,7 @@ class TactileInsertionRLNet(nn.Module):
         rnn_layers = 2,
         fc_neurons = [128, 64],
         with_gripper = False,
+        only_gripper = False,
         gripper_rot_type = RotRepr.quat,
         output_type = RotRepr.ortho6d
         ) -> None:
@@ -61,6 +62,7 @@ class TactileInsertionRLNet(nn.Module):
         self.fc_neurons = fc_neurons
         self.output_type = output_type
         self.with_gripper = with_gripper
+        self.only_gripper = only_gripper
         self.gripper_rot_type = gripper_rot_type
 
         assert output_type in ["quat", "ortho6d", "sincos"], f"unknown output type {output_type}"
@@ -78,16 +80,20 @@ class TactileInsertionRLNet(nn.Module):
         # if there's no additional gripper input, set it additional dim to 0
         if not self.with_gripper: self.gripper_input_size = 0
 
-        # input channels are whatever comes out of the previous layer.
-        # first time it's the number of image dimensions
-        self.cnn_in_channels = [1] + self.cnn_out_channels[:-1]
+        if not self.only_gripper:
+            # input channels are whatever comes out of the previous layer.
+            # first time it's the number of image dimensions
+            self.cnn_in_channels = [1] + self.cnn_out_channels[:-1]
 
-        # one conv for left, one for right sensor sequences
-        self.conv1, self.rnn1 = self._conv_pre("left")
-        self.conv2, self.rnn2 = self._conv_pre("right")
+            # one conv for left, one for right sensor sequences
+            self.conv1, self.rnn1 = self._conv_pre("left")
+            self.conv2, self.rnn2 = self._conv_pre("right")
 
-        # MLP marrying the two preprocessed input sequences
-        self.mlpindim = 2*self.rnn_neurons+self.gripper_input_size
+            # MLP marrying the two preprocessed input sequences
+            self.mlpindim = 2*self.rnn_neurons+self.gripper_input_size
+        else:
+            self.mlpindim = self.gripper_input_size
+
         self.mlp = nn.Sequential(
             nn.Linear(self.mlpindim, self.fc_neurons[0]),
             nn.ReLU(),
@@ -106,37 +112,40 @@ class TactileInsertionRLNet(nn.Module):
         """
         if not isinstance(x, Tensor): x = torch.Tensor(x)
 
-        cnnout1 = []
-        cnnout2 = []
-        for s in range(x.shape[2]): # loop over sequence frames
+        if not self.only_gripper:
+            cnnout1 = []
+            cnnout2 = []
+            for s in range(x.shape[2]): # loop over sequence frames
+                """
+                xs[:,0,s,:] is of shape (batch, H, W). the channel dimension is lost after we select it with `s`.
+                however, we need to have the channel dimension for the conv layers (even though it will be of dimensionality one).
+                -> we unsqueeze, yielding (batch, channel, H, W) with channel=1.
+                """
+                cnnout1.append(self.conv1(torch.unsqueeze(x[:,0,s,:], 1)))
+                cnnout2.append(self.conv2(torch.unsqueeze(x[:,1,s,:], 1)))
             """
-            xs[:,0,s,:] is of shape (batch, H, W). the channel dimension is lost after we select it with `s`.
-            however, we need to have the channel dimension for the conv layers (even though it will be of dimensionality one).
-            -> we unsqueeze, yielding (batch, channel, H, W) with channel=1.
+            * CNN output is a list of length SEQUENCE, each element with size (batch, self.conv_output).
+            * stack makes this (sequence, batch, conv_out)
+            * transpose swaps the first dimensions, arriving at a batch-first configuration: (batch, sequence, conv_out)
+
+            fun fact: we only need to transpose here to be batch-frist conform, a mode that we explicitly need to set when creating the LSTM.
+            the default mode is sequence-first, which would save us two transpose operations, but break consistency with other layers
             """
-            cnnout1.append(self.conv1(torch.unsqueeze(x[:,0,s,:], 1)))
-            cnnout2.append(self.conv2(torch.unsqueeze(x[:,1,s,:], 1)))
-        """
-        * CNN output is a list of length SEQUENCE, each element with size (batch, self.conv_output).
-        * stack makes this (sequence, batch, conv_out)
-        * transpose swaps the first dimensions, arriving at a batch-first configuration: (batch, sequence, conv_out)
+            cnnout1 = torch.stack(cnnout1).transpose_(0,1)
+            cnnout2 = torch.stack(cnnout2).transpose_(0,1)
+            
+            rnnout1, (_, _) = self.rnn1(cnnout1, None)
+            rnnout2, (_, _) = self.rnn2(cnnout2, None)
 
-        fun fact: we only need to transpose here to be batch-frist conform, a mode that we explicitly need to set when creating the LSTM.
-        the default mode is sequence-first, which would save us two transpose operations, but break consistency with other layers
-        """
-        cnnout1 = torch.stack(cnnout1).transpose_(0,1)
-        cnnout2 = torch.stack(cnnout2).transpose_(0,1)
-        
-        rnnout1, (_, _) = self.rnn1(cnnout1, None)
-        rnnout2, (_, _) = self.rnn2(cnnout2, None)
+            mlpin = torch.cat([
+                rnnout1[:,-1,:], 
+                rnnout2[:,-1,:]
+            ], axis=1)
 
-        mlpin = torch.cat([
-            rnnout1[:,-1,:], 
-            rnnout2[:,-1,:]
-        ], axis=1)
-
-        if self.with_gripper:
-            mlpin = torch.cat([mlpin, gr], axis=1)
+            if self.with_gripper:
+                mlpin = torch.cat([mlpin, gr], axis=1)
+        else: # -> self.only_gripper == True
+            mlpin = gr
 
         mlpout = self.mlp(mlpin)
 

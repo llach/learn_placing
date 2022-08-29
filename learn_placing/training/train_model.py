@@ -33,6 +33,7 @@ a = AttrDict(
 a.__setattr__("netp", AttrDict(
     output_type = a.out_repr,
     with_gripper = a.with_gripper_tf,
+    only_gripper = True,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
@@ -50,7 +51,9 @@ a.__setattr__("adamp", AttrDict(
     amsgrad=False
 ))
 
-trial_path = f"{training_path}/{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}/"
+trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}"
+trial_path = f"{training_path}/{trial_name}/"
+
 os.makedirs(trial_path, exist_ok=True)
 os.makedirs(f"{trial_path}/weights", exist_ok=True)
 
@@ -147,3 +150,4 @@ plt.savefig(f"{trial_path}/learning_curve.png")
 plt.clf()
 
 print('training done!')
+print(trial_name)
