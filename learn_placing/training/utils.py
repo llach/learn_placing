@@ -110,7 +110,7 @@ def rep2loss(rep):
     elif rep == RotRepr.ortho6d:
         return compute_geodesic_distance_from_two_matrices
     elif rep == RotRepr.sincos:
-        return nn.MSELoss()
+        return nn.MSELoss(reduction='none')
 
 def test_net(model, crit, dataset):
     losses = []
@@ -125,7 +125,7 @@ def test_net(model, crit, dataset):
             outs = model(inputs, grip)
             loss_t = crit(outs, lbls)
 
-            losses.append([loss_t.numpy()])
+            losses.append(loss_t.numpy())
             outputs.append(outs.numpy())
             labels.append(lbls.numpy())
             grip_rots.append(grip.numpy())

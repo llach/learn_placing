@@ -13,6 +13,7 @@ from tactile_insertion_rl import TactileInsertionRLNet
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-False_2022.08.29_14-59-28" # cleanX, static input
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-False_2022.08.29_15-22-16" # cleanX, with tap
 trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-True_2022.08.29_16-10-11" #  cleanX, with tap, with gripper tf
+trial_name = "Cuboid_Neps10_sincos_local_dotproduct_gripper-False_2022.08.29_18-44-52"
 
 trial_path = f"{training_path}/{trial_name}"
 trial_weights = f"{trial_path}/weights/final.pth"
@@ -28,6 +29,24 @@ criterion = rep2loss(a.out_repr)
 (train_l, train_ind), (test_l, test_ind), _ = get_dataset(a.dsname, a, indices=[a.train_indices, a.test_indices, a.val_indices])
 
 outputs, labels, loss, grips = test_net(model, criterion, test_l)
+if a.out_repr == RotRepr.sincos:
+    import matplotlib.pyplot as plt
+
+    for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
+        plt.scatter(*out, label=f"prediction | {np.sum(lo):.5f}", color="black") # TODO use sum or mean here?
+        plt.scatter(*lbl, label="label", color="grey")
+
+        plt.xlim([-1.05, 1.05])
+        plt.ylim([-1.05, 1.05])
+
+        plt.title("Predicted Object to World Angle in Gripper Frame")
+        plt.xlabel("cos(theta)")
+        plt.ylabel("sin(theta)")
+
+        plt.legend(loc="lower left")
+        plt.show()
+    exit(0)
+
 for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
     axp = AxesPlot()
 
@@ -40,7 +59,7 @@ for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.sq
         lv = lbl@[0,0,-1]
 
     axp.plot_v(gv, label=f"gripper rot", color="yellow")
-    axp.plot_v(ov, label=f"out {lo:.5f}", color="black")
-    axp.plot_v(lv, label="lbl", color="grey")
+    axp.plot_v(ov, label=f"prediction | {lo:.5f}", color="black")
+    axp.plot_v(lv, label="label", color="grey")
     axp.title(f"Test Sample {i+1}")
     axp.show()
