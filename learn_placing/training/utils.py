@@ -17,6 +17,15 @@ class AttrDict(dict):
 class DatasetName(str, Enum):
     cuboid="Cuboid"
     cylinder="Cylinder"
+    object_var="ObjectVar"
+    gripper_var="GripperVar"
+
+ds2name = {
+    DatasetName.cuboid: "second",
+    DatasetName.cylinder: "third",
+    DatasetName.object_var: "four",
+    DatasetName.gripper_var: "five"
+}
 
 class RotRepr(str, Enum):
     ortho6d="ortho6d"
@@ -53,17 +62,10 @@ def load_train_params(trial_path):
 def get_dataset(dsname, a,indices=None):
     if indices is not None:
         tt_indices = indices[:2]
-        val_indices = [indices[2], []]
     else:
         tt_indices=None
-        val_indices=None
-    if a.dsname == DatasetName.cuboid:
-        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
-        (val_l, val_ind), _ = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices, input_data=a.input_data)
-    elif a.dsname == DatasetName.cylinder:
-        (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders("third", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
-        (val_l, val_ind), _ = get_dataset_loaders("second", target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.5, indices=val_indices, input_data=a.input_data)
-    return (train_l, train_ind), (test_l, test_ind), (val_l, val_ind)
+    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders(ds2name[dsname], target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
+    return (train_l, train_ind), (test_l, test_ind)
 
 
 def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
@@ -133,11 +135,16 @@ def test_net(model, crit, dataset):
     model.train()
     return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0), np.concatenate(grip_rots, axis=0)
 
+def bdot(v1, v2):
+    batch = v1.shape[0]
+    vdim = v1.shape[1]
+    return torch.bmm(v1.view([batch,1,vdim]),v2.view([batch,vdim,1])).squeeze()
+
 def wrap_torch_fn(fn, *args, **kwargs):
     """ receives torch function and args as np array,
         calls function with arrays as tensors and returns numpy array
     """
-    args = [torch.Tensor(a) for a in args]
+    args = [torch.Tensor(np.array(a)) for a in args]
     return fn(*args, **kwargs).numpy()
 
 # https://math.stackexchange.com/questions/90081/quaternion-distance
@@ -170,6 +177,17 @@ def compute_geodesic_distance_from_two_matrices(m1, m2, eps=1e-7):
     cos = (  m[:,0,0] + m[:,1,1] + m[:,2,2] - 1 )/2        
     theta = torch.acos(torch.clamp(cos, -1+eps, 1-eps))
         
+    return theta
+
+def point_loss(m1, m2, eps=1e-7):
+    batch = m1.shape[0]
+
+    vs = torch.Tensor([0,0,-1,1]).repeat(batch,1).unsqueeze(2)
+    v1 = torch.bmm(m1, vs)
+    v2 = torch.bmm(m2, vs)
+
+    cos = bdot(v1, v2)
+    theta = torch.acos(torch.clamp(cos, -1+eps, 1-eps))
     return theta
 
 # batch*n

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from learn_placing.common import load_dataset_file
 from learn_placing.training.utils import InRot
 
-name="second"
+name="four"
 dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
 ds = load_dataset_file(dataset_file_path)
 
@@ -27,10 +27,10 @@ print("dot", mind, maxd, np.rad2deg(mind), np.rad2deg(maxd),  np.rad2deg(maxd)-n
 
 z_angles = np.array([[np.cos(za), np.sin(za)] for za in z_angles])
 x_angles = np.array([[np.cos(xa), np.sin(xa)] for xa in x_angles])
-dot_angles = np.array([[-np.cos(xa), -np.sin(xa)] for xa in local_dot])
+dot_angles = np.array([[np.cos(xa), np.sin(xa)] for xa in local_dot])
 
-plt.scatter(z_angles[:,0], z_angles[:,1], color="blue", label="z axis angular difference")
-plt.scatter(x_angles[:,0], x_angles[:,1], color="red", label="x axis angular difference")
+# plt.scatter(z_angles[:,0], z_angles[:,1], color="blue", label="z axis angular difference")
+# plt.scatter(x_angles[:,0], x_angles[:,1], color="red", label="x axis angular difference")
 plt.scatter(dot_angles[:,0], dot_angles[:,1], color="green", label="gripper-local dot product")
 
 plt.xlim([-1.05, 1.05])

@@ -18,12 +18,12 @@ from tactile_insertion_rl import TactileInsertionRLNet
 """ PARAMETERS
 """
 a = AttrDict(
-    dsname = DatasetName.cuboid,
-    out_repr = RotRepr.sincos,
-    target_type = InRot.local_dotp,
-    input_data = InData.static,
+    dsname = DatasetName.gripper_var,
+    out_repr = RotRepr.ortho6d,
+    target_type = InRot.w2o,
+    input_data = InData.with_tap,
     with_gripper_tf = False,
-    N_episodes = 50,
+    N_episodes = 10,
     validate = False,
     store_training = True,
     gripper_repr = RotRepr.quat,
@@ -57,11 +57,11 @@ trial_path = f"{training_path}/{trial_name}/"
 os.makedirs(trial_path, exist_ok=True)
 os.makedirs(f"{trial_path}/weights", exist_ok=True)
 
-(train_l, train_ind), (test_l, test_ind), (val_l, val_ind) = get_dataset(a.dsname, a)
+(train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
 
 a.__setattr__("train_indices", train_ind)
 a.__setattr__("test_indices", test_ind)
-a.__setattr__("val_indices", val_ind)
+# a.__setattr__("val_indices", val_ind)
 
 with open(f"{trial_path}parameters.json", "w") as f:
     json.dump(a, f, indent=2)
