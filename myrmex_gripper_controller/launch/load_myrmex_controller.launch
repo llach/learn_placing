@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
     <arg name="start_controller" default="false" />
+    <arg name="dual" default="true" />
 
-    <rosparam command="load" file="$(find myrmex_gripper_controller)/config/myrmex_gripper_controller.yaml" />
+    <group unless="$(arg dual)">
+        <rosparam command="load" file="$(find myrmex_gripper_controller)/config/myrmex_gripper_controller.yaml" />
+    </group>
+    <group if="$(arg dual)">
+        <rosparam command="load" file="$(find myrmex_gripper_controller)/config/myrmex_gripper_left_controller.yaml" />
+    </group>
 
     <group if="$(arg start_controller)">
         <node name="$(anon start_mm)" pkg="myrmex_gripper_controller" type="start_mm.py" output="screen" />

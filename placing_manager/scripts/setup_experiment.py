@@ -31,7 +31,9 @@ def input_or_quit(text):
 
 ridx, lidx = 8, 7
 rpos, lpos = None, None
-rname, lname = 'gripper_right_finger_joint', 'gripper_left_finger_joint'
+
+
+rname, lname = 'gripper_left_right_finger_joint', 'gripper_left_left_finger_joint'
 
 N_SECS = 1.2
 N_POINTS = 5
@@ -39,28 +41,14 @@ JT_MIN = 0.0
 JT_MAX = 0.045
 JOINT_NAMES = [rname, lname]
 
-def js_cb(msg):
-    global ridx, lidx, rpos, lpos
-    rpos, lpos = msg.position[ridx], msg.position[lidx]
 
 def send_trajectory(to):
-    global mmAC, N_POINTS, N_SECS
-    r = rospy.Rate(10)
-
-    while(rpos == None or lpos == None):
-        print("we don't have poses yet")
-        r.sleep()
-    
-    lpoints = np.linspace(lpos, to, N_POINTS)
-    rpoints = np.linspace(rpos, to, N_POINTS)
-    times = np.linspace(0, N_SECS, N_POINTS)
-    times[0] += 0.01
+    global mmAC
 
     jt = JointTrajectory()
     jt.joint_names = JOINT_NAMES
+    jt.points.append(JointTrajectoryPoint(positions=[to, to], time_from_start=rospy.Time(1.5)))
 
-    for rp, lp, t in zip(rpoints, lpoints, times):
-        jt.points.append(JointTrajectoryPoint(positions=[rp, lp], time_from_start=rospy.Time(t)))
     mmAC.send_goal(FollowJointTrajectoryGoal(trajectory=jt))
 
 def open_gripper(): send_trajectory(JT_MAX)
@@ -72,8 +60,6 @@ if __name__ == "__main__":
     ################################################
     ############## ROS COMMUNICATION ###############
     ################################################
-
-    rospy.Subscriber("/joint_states", JointState, js_cb)
 
     mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
     mmCalib = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Trigger)
@@ -92,13 +78,13 @@ if __name__ == "__main__":
 
     head_goal = FollowJointTrajectoryGoal()
     head_goal.trajectory.joint_names = ["head_1_joint", "head_2_joint"]
-    head_goal.trajectory.points.append(JointTrajectoryPoint(positions=[0.0, -0.65], time_from_start=rospy.Duration(1.0)))
+    head_goal.trajectory.points.append(JointTrajectoryPoint(positions=[1.22, -0.65], time_from_start=rospy.Duration(1.0)))
 
     print("enabling torso controller ...")
     safe_switch("torso_controller", "torso_stop_controller")
 
     print("enabling myrmex controller ...")
-    safe_switch("gripper_controller", "myrmex_gripper_controller")
+    safe_switch("gripper_left_controller", "myrmex_gripper_controller")
 
     print("waiting for torso action ... ")
     torsoAC.wait_for_server()
@@ -110,13 +96,10 @@ if __name__ == "__main__":
     torsoAC.send_goal_and_wait(up_goal)
 
     print("killing head manager ...")
-    rosnode.kill_nodes(["/pal_head_manager", "/aruco_single"])
+    rosnode.kill_nodes(["/pal_head_manager", "/aruco_single", "/gripper_right_grasping"])
 
     print("moving head ...")
     headAC.send_goal_and_wait(head_goal)
-
-
-    
 
     print("waiting for myrmex controller server ...")
     mmAC.wait_for_server()
@@ -136,8 +119,8 @@ if __name__ == "__main__":
     print("waiting for ft calibration service ...")
     ftCalib.wait_for_service()
 
-    print("waiting for wrist planner reinit service ...")
-    reinitSrv.wait_for_service()
+    # print("waiting for wrist planner reinit service ...")
+    # reinitSrv.wait_for_service()
 
     print("################ setup done")
 
@@ -159,8 +142,8 @@ if __name__ == "__main__":
         input_or_quit("done?")
         gravityAC.cancel_all_goals()
 
-        print("reiniting reorient")
-        reinitSrv()
+        # print("reiniting reorient")
+        # reinitSrv()
 
     ################################################
     ########### SETUP MYRMEX CONTROLLER ############
@@ -182,7 +165,7 @@ if __name__ == "__main__":
         close_gripper()
         print("waiting 3sec to settle...")
         time.sleep(3)
-        mmKill()
+        # mmKill()
 
     ################################################
     ################ FT CALIBRATION ################

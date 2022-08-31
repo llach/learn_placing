@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import rospy
+import rosparam
 import numpy as np
 
 from collections import deque
@@ -11,7 +12,11 @@ from geometry_msgs.msg import WrenchStamped, Vector3
 """
 Topics & Parameters
 """
-FT_TOPIC = "/wrist_ft"
+if rosparam.get_param("/pal_robot_info/type") == "tiago_dual":
+    FT_TOPIC = "/wrist_left_ft"
+else:
+    FT_TOPIC = "/wrist_ft"
+
 BASE_TOPIC = "/table_contact"
 CON_TOPIC = BASE_TOPIC+"/in_contact"
 CON_TS_TOPIC = BASE_TOPIC+"/contact_timestamp"
@@ -27,7 +32,7 @@ global variables
 """
 calibration_samples = []
 calibrated = False
-factor = 2.2
+factor = 1.2
 
 means = None
 stds = None

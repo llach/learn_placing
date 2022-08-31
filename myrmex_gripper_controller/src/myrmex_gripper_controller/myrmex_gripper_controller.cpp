@@ -46,7 +46,7 @@ bool MyrmexGripperController::init(hardware_interface::PositionJointInterface* h
                                    ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) {
     name_ = "TORSTOPC";
     ROS_INFO_NAMED(name_, "Initializing MyrmexGripperController ...");
-    bool ret = 0;
+    bool ret = false;
     try {
         ret = JointTrajectoryController::init(hw, root_nh, controller_nh);
     } catch(std::runtime_error& e) {

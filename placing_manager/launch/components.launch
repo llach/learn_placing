@@ -4,7 +4,7 @@
      <include file="$(find state_estimation)/launch/multicam_setup.launch" />
 
     <node pkg="state_estimation" type="object_state.py" name="state_estimation"  output="screen" />
-    <node pkg="wrist_motion"     type="reorient_ac.py" name="wrist_motion"  output="screen" />
+    <!-- <node pkg="wrist_motion"     type="reorient_ac.py" name="wrist_motion"  output="screen" /> -->
 
   <!-- Run Rviz -->
   <group if="$(arg rviz)">

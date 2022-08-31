@@ -45,7 +45,7 @@ namespace placing_manager {
 
 class PlacingManager{
 public:
-    PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.75);
+    PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.72);
 
     bool init(ros::Duration timeout, bool initTorso);
     void flagSample();
@@ -73,7 +73,7 @@ private:
     float initialTorsoQ_;
     float tableHeight_;
     float currentTorsoQ_ = -1.0;
-    float torsoVel_ = 0.35; // sec/cm
+    float torsoVel_ = 0.4; // sec/cm
 
     ros::NodeHandle n_;
     ros::Rate waitRate_;

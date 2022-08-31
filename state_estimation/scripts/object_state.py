@@ -3,6 +3,7 @@ from collections import deque
 import tf
 import time
 import rospy
+import rosparam
 import numpy as np
 
 from threading import Lock
@@ -225,6 +226,8 @@ class TagTransformator:
                 self.calibrated = True
                 self.should_calibrate = False
                 print(f"calibration for {self.cam_name} done")
+                print(self.T)
+                print(self.toffset)
         
         if self.calibrated:
             self.stamp = am.header.stamp
@@ -281,6 +284,11 @@ class StateEstimator:
         self.calibrated = False
         self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
+
+        if rosparam.get_param("/pal_robot_info/type") == "tiago_dual":
+            self.grasping_frame = "gripper_left_grasping_frame"
+        else:
+            self.grasping_frame = "gripper_grasping_frame"
 
         for _ in range(5):
             try:
@@ -406,10 +414,10 @@ class StateEstimator:
             self.ax.add_artist(Arrow3D([0,0,0], [0,0,1], color=[0.0, 0.0, 1.0, aalph]))
 
             handles = []
-            for vo, vc, col, tt in zip(voffsets, vcurrents, self.colors, calibrated_tts):
-                self.ax.add_artist(Arrow3D([0,0,0], vo, color=list(col)+[0.7]))
-                handles.append(self.ax.add_artist(Arrow3D([0,0,0], vc, color=list(col)+[1.0], label=f"{tt.cam_name} (d={tt.dist:.2f})"))
-                )
+            # for vo, vc, col, tt in zip(voffsets, vcurrents, self.colors, calibrated_tts):
+            #     self.ax.add_artist(Arrow3D([0,0,0], vo, color=list(col)+[0.7]))
+            #     handles.append(self.ax.add_artist(Arrow3D([0,0,0], vc, color=list(col)+[1.0], label=f"{tt.cam_name} (d={tt.dist:.2f})"))
+            #     )
             
             handles.append(
                 self.ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label="desired normal"))
@@ -464,7 +472,7 @@ class StateEstimator:
                         "base_footprint")
 
         try:
-            (_,rotG) = self.li.lookupTransform('/base_link', '/gripper_grasping_frame', rospy.Time(0))
+            (_,rotG) = self.li.lookupTransform('/base_link', self.grasping_frame, rospy.Time(0))
             rotGO = quaternion_multiply(quaternion_inverse(rotG), finalq)
             rotGO = normalize(rotGO)
 
@@ -473,7 +481,7 @@ class StateEstimator:
                         rotGO,
                         rospy.Time.now(), 
                         "grasped_object", 
-                        "gripper_grasping_frame")
+                        self.grasping_frame)
 
         except (tf.LookupException, tf.ConnectivityException):
             print("unable to find gripper transform!")

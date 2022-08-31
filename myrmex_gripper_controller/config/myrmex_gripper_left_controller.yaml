@@ -1,0 +1,18 @@
+myrmex_gripper_controller:
+  type: myrmex_gripper_controller/MyrmexGripperController
+  joints:
+    - gripper_left_right_finger_joint
+    - gripper_left_left_finger_joint
+  suffixes:
+    - right
+    - left
+  B: 0
+  normalize: True
+
+  constraints:
+    goal_time: 0.6
+    stopped_velocity_tolerance: 5.0
+    gripper_right_finger_joint:
+      goal: 0.02
+    gripper_left_finger_joint:
+      goal: 0.02

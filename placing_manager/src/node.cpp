@@ -25,14 +25,14 @@ int main(int argc, char **argv)
 
     int n;
     while (ros::ok()) {
-        cout << "\nnext? (0=exit;1=flag;2=grav;3-9=next)" << endl;
+        cout << "\nnext? (0=exit;1-7=collect;8=flag;9=grav)" << endl;
         cin >> n;
 
         if (n==0) return 0;
-        if (n==1) {
+        if (n==8) {
             ROS_INFO("\n--- flagging sample ---"); 
             pm->flagSample();
-        } else if (n==2) {
+        } else if (n==9) {
             ROS_INFO("\n+++ disabling arm gravity ... +++");
             EmptyGoal eag;
             gravAc.sendGoal(eag);
@@ -52,10 +52,14 @@ int main(int argc, char **argv)
             ROS_INFO("reinitializing PM ...");
             pm = make_shared<PlacingManager>();
             pm->init(ros::Duration(3), false);
-        } else {
+        } else if (n >= 1 && n <=7) {
+            // for (int j = 0; j<n;j++){
             std::cout << "calling PM" << std::endl;
             bool success = pm->collectSample();
             if (!success) return -1;
+            // }
+        } else {
+            std::cout << "invalid n: " << n << std::endl;
         }
     }
     return 0;

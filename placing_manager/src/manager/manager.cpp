@@ -31,7 +31,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     bufferJs(n_,            "joint_states", "/joint_states"),
     bufferMyLeft(n_,        "tactile_left", "/tactile_left"),
     bufferMyRight(n_,       "tactile_right", "/tactile_right"),
-    bufferFt(n_,            "ft", "/wrist_ft"),
+    bufferFt(n_,            "ft", "/wrist_left_ft"),
     bufferTf(n_,            "tf", "/tf"),
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
     bufferObjectState(n_,   "object_state", "/object_state_estimate"),
@@ -65,7 +65,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     jsSub_ = n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this);
 
     try {
-        tfBuffer_.canTransform("base_footprint", "gripper_grasping_frame", ros::Time(0), ros::Duration(5));
+        tfBuffer_.canTransform("base_footprint", "gripper_left_grasping_frame", ros::Time(0), ros::Duration(5));
     } catch (tf2::TransformException &ex) {
         ROS_FATAL("Could not setup get transform: %s",ex.what());
         return;
@@ -230,13 +230,13 @@ bool PlacingManager::reorientate(){
 float PlacingManager::getTorsoGoal(float &time){
     geometry_msgs::TransformStamped t;
     try {
-        t = tfBuffer_.lookupTransform("base_footprint", "gripper_grasping_frame", ros::Time(0), ros::Duration(5));
+        t = tfBuffer_.lookupTransform("base_footprint", "gripper_left_grasping_frame", ros::Time(0), ros::Duration(5));
     } catch (tf2::TransformException &ex) {
         ROS_FATAL("Could not setup get transform: %s",ex.what());
         return -1.0;
     }
     float gripperHeight = t.transform.translation.z;
-    float gripperTableDiff = gripperHeight-(tableHeight_+0.07);
+    float gripperTableDiff = gripperHeight-(tableHeight_+0.05);
 
     float desQ;
     {
@@ -255,13 +255,17 @@ bool PlacingManager::collectSample(){
     std_srvs::Empty e;
     ftCalibrationSrv_.call(e);
 
+    // make sure we have fresh data
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
         ROS_ERROR("data not fresh");
         return false;
     }
 
+    // clear data in buffers and start recording
     clearAll();
     unpause();
+
+    // get some data into buffers
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     ROS_INFO("moving torso down towards the table ...");
 
@@ -274,6 +278,8 @@ bool PlacingManager::collectSample(){
     ros::Time stopMoving = ros::Time::now();
     ros::Duration moveDur = stopMoving - startMoving;
 
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
     // pause data recording
     pause();
     nSamples_++;
@@ -281,7 +287,9 @@ bool PlacingManager::collectSample(){
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
     ros::Time contactTime = getContactTime();
+    cout << contactTime  << endl;
     bool hasSamples = checkSamples(contactTime);
+    cout << contactTime  << endl;
 
     if (contactTime != ros::Time(0) && hasSamples){
 
@@ -299,7 +307,9 @@ bool PlacingManager::collectSample(){
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
 
-    reorientate();
+
+    // ROS_INFO("reorientating wrist randomly ...");
+    // reorientate();
 
     return true;
 }
