@@ -45,9 +45,9 @@ a.__setattr__("netp", AttrDict(
     conv_padding = (0,0),
     conv_output = 128,
     rnn_neurons = 128,
-    rnn_layers = 2,
+    rnn_layers = 1,
     ft_rnn_neurons = 16,
-    ft_rnn_layers = 2,
+    ft_rnn_layers = 1,
     fc_neurons = [64, 32],
 ))
 a.__setattr__("adamp", AttrDict(
@@ -138,13 +138,16 @@ plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:
 plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:]):.5f}")
 if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
 
+
 if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
     plt.ylim([0.0,np.pi])
+    plt.ylabel("loss [radian]")
 elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
     plt.ylim([-0.05,1.0])
-plt.ylabel("loss")
+    plt.ylabel("loss")
 
-plt.xlabel("Batches")
+
+plt.xlabel("#batches")
 
 plt.title(f"dsname={a.dsname}; with_tactile={a.with_tactile}; with_gripper={a.with_gripper}; with_ft={a.with_ft}; input={a.input_data};")
 

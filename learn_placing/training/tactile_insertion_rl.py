@@ -139,7 +139,10 @@ class TactilePlacingNet(nn.Module):
             mlp_inputs.append(gr)
 
         if self.with_ft:
-            pass
+            # LSTM input shape: (batch, seq, M)
+            # !! LSTM needs to have `batch_first` set to `True` during instanciation !!
+            ftrnnout, (_,_) = self.ftrnn(ft, None)
+            mlp_inputs.append(ftrnnout[:,-1,:])
 
         if len(mlp_inputs)>1:
             mlpin = torch.cat(mlp_inputs, axis=1)
