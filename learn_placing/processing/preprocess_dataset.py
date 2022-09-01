@@ -16,7 +16,7 @@ from learn_placing.training.utils import InRot
 ZETA = timedelta(milliseconds=100)
 MAX_DEV = 0.005
 MIN_N = 10 # per camera
-M = 50  # myrmex lookback
+M = 50  # myrmex lookback TODO depends on dataset
 
 dsnames = ["five"]
 data_root = f"{os.environ['HOME']}/tud_datasets"

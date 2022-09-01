@@ -2,7 +2,9 @@ import os
 import numpy as np
 
 from PIL import Image
-from learn_placing.common.data import load_dataset, preprocess_myrmex, mm2img, upscale_repeat
+from learn_placing.common.data import load_dataset
+from learn_placing.common.myrmex_processing import preprocess_myrmex, mm2img, upscale_repeat
+
 
 def store_mm_sample_gif(data_left, data_right, name, store_path, M=50):
     print(f"creating {name}")
@@ -34,7 +36,7 @@ def store_mm_sample_gif(data_left, data_right, name, store_path, M=50):
     # duration is the number of milliseconds between frames
     imgs[0].save(f"{store_path}/{name}.gif", save_all=True, append_images=imgs[1:], duration=100, loop=1)
 
-dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_second"
+dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_five"
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
 
@@ -46,4 +48,4 @@ for t, sample in ds.items():
     data_left = sample["tactile_left"][1]
     data_right = sample["tactile_right"][1]
 
-    store_mm_sample_gif(data_left, data_right, name=name, store_path=store_path)
+    store_mm_sample_gif(data_left, data_right, name=name, store_path=store_path, M=100)

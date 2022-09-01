@@ -3,7 +3,7 @@ import numpy as np
 
 from learn_placing.common import load_dataset_file, preprocess_myrmex
 
-name="second"
+name="four"
 dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
 ds = load_dataset_file(dataset_file_path)
 
