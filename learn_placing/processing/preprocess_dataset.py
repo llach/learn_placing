@@ -31,9 +31,8 @@ ftLookback = {
 ZETA = timedelta(milliseconds=100)
 MAX_DEV = 0.005
 MIN_N = 10 # per camera
-M = 50  # myrmex lookback TODO depends on dataset
 
-dsnames = [DatasetName.object_var, DatasetName.gripper_var]
+dsnames = [DatasetName.cuboid, DatasetName.cylinder, DatasetName.object_var, DatasetName.gripper_var]
 data_root = f"{os.environ['HOME']}/tud_datasets"
 for dd in dsnames: 
     dsname = ds2name[dd]
@@ -205,10 +204,31 @@ for dd in dsnames:
         inputs.update({t: inp})
         static_inputs.update({t: inp_static})
 
+    # step 4: preprocess FT data
+    ft = {}
+    static_ft = {}
+    for i, (t, sample) in enumerate(ds.items()):
+        if t not in labels:
+            print(f"skipping FT sample {i}")
+            continue
+
+        data_ft = np.reshape(sample["ft"][1][-35:], (35,6))
+        
+        fro, to = ftLookback[dd][0]
+        ftt = data_ft[fro:to]
+        ft.update({t: ftt})
+
+        sfro, sto = ftLookback[dd][1]
+        ft_static = data_ft[sfro:sto]
+        static_ft.update({t: ft_static})
+
     with open(dataset_file, "wb") as f:
         pickle.dump({
             "labels": labels, 
             "inputs": inputs,
-            "static_inputs": static_inputs
+            "static_inputs": static_inputs,
+            "ft": ft,
+            "static_ft": static_ft
         }, f)
+    print()
 print("all done!")
