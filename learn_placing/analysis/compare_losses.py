@@ -24,9 +24,7 @@ for th in np.linspace(0.0,np.pi,10):
 
     gl = np.squeeze(wrap_torch_fn(geodesic_loss, [Rbase], [Rbasez]))
     pl = np.squeeze(wrap_torch_fn(point_loss, [Rbase], [Rbasez]))
-
     print(f"geodesic: {gl:.2f} | nikloss: {pl:.2f}")
-
 
 axp.title(f"Geodesic Loss vs. Point Loss")
 axp.show()

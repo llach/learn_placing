@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import learn_placing.common.transformations as tf
 
-from learn_placing.training.utils import compute_geodesic_distance_from_two_matrices, compute_rotation_matrix_from_quaternion, wrap_torch_fn
+from learn_placing.training.utils import compute_geodesic_distance_from_two_matrices, compute_rotation_matrix_from_quaternion, point_loss, wrap_torch_fn
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.label_processing import vecs2quat
 
@@ -34,6 +34,17 @@ def qloss_np(q1,q2):
 # norm_metric = np.array([qloss_np(qsample, vecs2quat([0,0,-1], u)) for u in points])
 
 # geodesic matrix loss
+# qsample = np.repeat([vecs2quat([0,0,-1], v)], N, axis=0)
+# Rsample = wrap_torch_fn(compute_rotation_matrix_from_quaternion, qsample)
+# Rout = wrap_torch_fn(
+#     compute_rotation_matrix_from_quaternion, 
+#     np.array([vecs2quat([0,0,-1], u) for u in points])
+# )
+
+# metric = wrap_torch_fn(compute_geodesic_distance_from_two_matrices, Rsample, Rout)
+# norm_metric = metric / np.pi
+
+# point loss
 qsample = np.repeat([vecs2quat([0,0,-1], v)], N, axis=0)
 Rsample = wrap_torch_fn(compute_rotation_matrix_from_quaternion, qsample)
 Rout = wrap_torch_fn(
@@ -41,13 +52,13 @@ Rout = wrap_torch_fn(
     np.array([vecs2quat([0,0,-1], u) for u in points])
 )
 
-metric = wrap_torch_fn(compute_geodesic_distance_from_two_matrices, Rsample, Rout)
+metric = wrap_torch_fn(point_loss, Rsample, Rout)
 norm_metric = metric / np.pi
 
 cm = plt.get_cmap("copper")
 colors = cm(norm_metric)
 
-threshold = 0.2
+threshold = 100.0
 colors = colors[np.where(metric<threshold)]
 points = points[np.where(metric<threshold)]
 
