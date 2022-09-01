@@ -6,7 +6,7 @@ from learn_placing.common.label_processing import rotate_v, normalize
 from learn_placing.common.vecplot import AxesPlot
 
 from utils import RotRepr, load_train_params, test_net, rep2loss, get_dataset
-from tactile_insertion_rl import TactileInsertionRLNet
+from tactile_insertion_rl import TactilePlacingNet
 
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_gripper-True_2022.08.27_20-46-32" 
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_gripper-True_2022.08.28_15-19-06" # gripper-only
@@ -27,7 +27,7 @@ trial_weights = f"{trial_path}/weights/final.pth"
 
 a = load_train_params(trial_path)
 
-model = TactileInsertionRLNet(**a.netp)
+model = TactilePlacingNet(**a.netp)
 checkp = torch.load(trial_weights)
 model.load_state_dict(checkp)
 

@@ -21,22 +21,12 @@ class ConvProc(str, Enum):
     TRL = "trl"
     SINGLETRL = "SINGLETRL"
 
-class TactileInsertionRLNet(nn.Module):
+class TactilePlacingNet(nn.Module):
     
 
     """
-    network code:
+    inspired from TactileInsertionNet with significant adaptations to our task:
     https://github.com/siyuandong16/Tactile_insertion_with_RL/blob/master/supervised_learning/crnn_model.py
-
-    notes on their code:
-
-    * they define dropout layers and parametrize them in the constructor, but don't use it (see the forward() functions). this is consistent with the paper
-
-    deviations:
-    * we ony use 2 conv layers since our input has lower dimensionality than theirs
-    * the FC layer between conv and LSTM is 128 instead of 512 neurons since the flattened conv output is already 256 units
-    * consequently, our MLP is smaller, too
-
     """
 
     def __init__(self, 
@@ -48,9 +38,12 @@ class TactileInsertionRLNet(nn.Module):
         conv_output = 128,
         rnn_neurons = 128,
         rnn_layers = 2,
+        ft_rnn_neurons = 16,
+        ft_rnn_layers = 2,
         fc_neurons = [128, 64],
+        with_tactile = True,
         with_gripper = False,
-        only_gripper = False,
+        with_ft = False,
         gripper_rot_type = RotRepr.quat,
         output_type = RotRepr.ortho6d,
         preproc_type = ConvProc.TRL
@@ -65,13 +58,17 @@ class TactileInsertionRLNet(nn.Module):
         self.conv_output = conv_output
         self.rnn_neurons = rnn_neurons
         self.rnn_layers = rnn_layers
+        self.ft_rnn_neurons = ft_rnn_neurons
+        self.ft_rnn_layers = ft_rnn_layers
         self.fc_neurons = fc_neurons
         self.output_type = output_type
+        self.with_tactile = with_tactile
         self.with_gripper = with_gripper
-        self.only_gripper = only_gripper
+        self.with_ft = with_ft
         self.gripper_rot_type = gripper_rot_type
         self.preproc_type = preproc_type
 
+        assert np.any([with_tactile, with_gripper, with_ft]), "no input modality"
         assert output_type in ["quat", "ortho6d", "sincos"], f"unknown output type {output_type}"
 
         if self.output_type == RotRepr.quat:
@@ -80,15 +77,12 @@ class TactileInsertionRLNet(nn.Module):
             self.output_size = 6
         elif self.output_type == RotRepr.sincos:
             self.output_size = 2
-        
-        if self.gripper_rot_type == RotRepr.quat:
-            self.gripper_input_size = 4
 
-        # if there's no additional gripper input, set it additional dim to 0
-        if not self.with_gripper and not self.only_gripper: self.gripper_input_size = 0
-
-        if not self.only_gripper:
-
+        self.gripper_input_size = 4 if self.with_gripper else 0
+        self.ft_input_size = self.ft_rnn_neurons if self.with_ft else 0
+        self.tactile_input_size = 0
+    
+        if self.with_tactile:
             if self.preproc_type == ConvProc.TRL:
                 # input channels are whatever comes out of the previous layer.
                 # first time it's the number of image dimensions
@@ -98,17 +92,23 @@ class TactileInsertionRLNet(nn.Module):
                 self.conv1, self.rnn1 = self._conv_pre("left")
                 self.conv2, self.rnn2 = self._conv_pre("right")
 
-                # MLP marrying the two preprocessed input sequences
-                self.mlpindim = 2*self.rnn_neurons+self.gripper_input_size
+                self.self.tactile_input_size  = 2*self.rnn_neurons
             elif self.preproc_type == ConvProc.SINGLETRL:
                 self.cnn_in_channels = [2] + self.cnn_out_channels[:-1]
 
                 self.conv, self.rnn = self._conv_pre("conv_proc")
 
-                self.mlpindim = self.rnn_neurons+self.gripper_input_size
-        else:
-            self.mlpindim = self.gripper_input_size
+                self.tactile_input_size = self.rnn_neurons
 
+        if self.with_ft:
+            self.ftrnn = nn.LSTM(
+                input_size=6,
+                hidden_size=self.ft_rnn_neurons,
+                num_layers=self.ft_rnn_layers,
+                batch_first=True
+            )
+
+        self.mlpindim = sum([self.gripper_input_size, self.tactile_input_size, self.ft_input_size])
         self.mlp = nn.Sequential(
             nn.Linear(self.mlpindim, self.fc_neurons[0]),
             nn.ReLU(),
@@ -117,7 +117,7 @@ class TactileInsertionRLNet(nn.Module):
             nn.Linear(self.fc_neurons[1], self.output_size),
         )
 
-    def forward(self, x: Tensor, gr: Tensor):
+    def forward(self, x: Tensor, gr: Tensor, ft: Tensor):
         """
         xs has dimensions: (batch, sensors, sequence, H, W)
         * we input the sequence of tactile images in the channels dimension
@@ -127,16 +127,24 @@ class TactileInsertionRLNet(nn.Module):
         """
         if not isinstance(x, Tensor): x = torch.Tensor(x)
 
-        if not self.only_gripper:
+        mlp_inputs = []
+        if self.with_tactile:
             if self.preproc_type == ConvProc.TRL:
-                mlpin = self.trl_proc(x, gr)
+                tacout = self.trl_proc(x, gr)
             elif self.preproc_type == ConvProc.SINGLETRL:
-                mlpin = self.single_trl_proc(x, gr)
+                tacout = self.single_trl_proc(x, gr)
+            mlp_inputs.append(tacout)
 
-            if self.with_gripper:
-                mlpin = torch.cat([mlpin, gr], axis=1)
-        else: # -> self.only_gripper == True
-            mlpin = gr
+        if self.with_gripper:
+            mlp_inputs.append(gr)
+
+        if self.with_ft:
+            pass
+
+        if len(mlp_inputs)>1:
+            mlpin = torch.cat(mlp_inputs, axis=1)
+        else: 
+            mlpin = mlp_inputs[0]
 
         mlpout = self.mlp(mlpin)
 
@@ -226,27 +234,3 @@ class TactileInsertionRLNet(nn.Module):
             batch_first=True
         )
         return nn.Sequential(OrderedDict(layers)), rnn
-
-if __name__ == "__main__":
-    import torch
-
-    from learn_placing.common import load_dataset
-    
-    from torch.utils.tensorboard import SummaryWriter
-
-    from learn_placing.training import TactileInsertionRLNet
-
-    base_path = f"{__file__.replace(__file__.split('/')[-1], '')}"
-    ds = load_dataset(f"{base_path}/test_samples")
-
-    net = TactileInsertionRLNet()
-    res = net(ds["tactile"])
-    print(res.shape)
-
-    # summary(net, input_size=(2, 40, 16, 16))
-    
-    # sw = SummaryWriter()
-    # sw.add_graph(net, torch.randn((30, 2, 40, 16, 16)))
-    # sw.close()
-    
-    pass

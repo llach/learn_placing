@@ -4,7 +4,6 @@ import torch
 import pickle
 
 import numpy as np
-import torch.nn as nn
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
@@ -13,15 +12,17 @@ from learn_placing.training.utils import rep2loss
 
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
 from learn_placing import datefmt, training_path
-from tactile_insertion_rl import TactileInsertionRLNet, ConvProc
+from tactile_insertion_rl import TactilePlacingNet, ConvProc
 
 """ PARAMETERS
 """
 a = AttrDict(
+    N_episodes = 10,
     dsname = DatasetName.object_var,
     input_data = InData.with_tap,
-    with_gripper_tf = False,
-    N_episodes = 10,
+    with_tactile = True,
+    with_gripper = False,
+    with_ft = False,
 
     loss_type = LossType.pointarccos,
     out_repr = RotRepr.ortho6d,
@@ -35,8 +36,9 @@ a = AttrDict(
 a.__setattr__("netp", AttrDict(
     preproc_type = ConvProc.SINGLETRL,
     output_type = a.out_repr,
-    with_gripper = a.with_gripper_tf,
-    only_gripper = False,
+    with_tactile = a.with_tactile,
+    with_gripper = a.with_gripper,
+    with_ft = a.with_ft,
     kernel_sizes = [(3,3), (3,3)],
     cnn_out_channels = [32, 64],
     conv_stride = (2,2),
@@ -44,6 +46,8 @@ a.__setattr__("netp", AttrDict(
     conv_output = 128,
     rnn_neurons = 128,
     rnn_layers = 2,
+    ft_rnn_neurons = 16,
+    ft_rnn_layers = 2,
     fc_neurons = [64, 32],
 ))
 a.__setattr__("adamp", AttrDict(
@@ -54,7 +58,12 @@ a.__setattr__("adamp", AttrDict(
     amsgrad=False
 ))
 
-trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}"
+trial_name = f"{a.dsname}_Neps{a.N_episodes}"
+if a.with_tactile: trial_name += "_tactile"
+if a.with_gripper: trial_name += "_gripper"
+if a.with_ft: trial_name += "_ft"
+trial_name += f"_{a.start_time.replace(':','-')}"
+
 trial_path = f"{training_path}/{trial_name}/"
 
 (train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
@@ -62,7 +71,7 @@ trial_path = f"{training_path}/{trial_name}/"
 a.__setattr__("train_indices", train_ind)
 a.__setattr__("test_indices", test_ind)
 
-model = TactileInsertionRLNet(**a.netp)
+model = TactilePlacingNet(**a.netp)
 optimizer = optim.Adam(model.parameters(), **a.adamp)
 
 criterion = rep2loss(a.loss_type)
@@ -82,13 +91,13 @@ save_batches = int(a.N_episodes*len(train_l)*a.save_freq)
 for epoch in range(a.N_episodes):  # loop over the dataset multiple times
     for i, data in enumerate(train_l, 0):
         # get the inputs; data is a list of [inputs, labels]
-        inputs, grip, labels = data
+        inputs, grip, ft, labels = data
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
-        outputs = model(inputs, grip)
+        outputs = model(inputs, grip, ft)
         loss = torch.mean(criterion(outputs, labels))
         loss.backward()
         optimizer.step()
@@ -137,7 +146,7 @@ plt.ylabel("loss")
 
 plt.xlabel("Batches")
 
-plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}; \ninput={a.input_data}; loss={a.loss_type};")
+plt.title(f"dsname={a.dsname}; with_tactile={a.with_tactile}; with_gripper={a.with_gripper}; with_ft={a.with_ft}; input={a.input_data};")
 
 plt.legend()
 plt.tight_layout()

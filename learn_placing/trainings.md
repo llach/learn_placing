@@ -1,10 +1,13 @@
 
 ## Experiment Variables
 
-* inputs:
+* inputs modalities:
   * gripper pose (proprioception)
   * tactile data
   * force/torque
+* input data variation / active touch:
+  * static
+  * dynamic
 * datasets:
   * object-to-gripper variation (O2G)
   * gripper-to-world variation (G2W)
@@ -23,11 +26,16 @@
 
 ## TODOs
 
-* add ft information, make network configurable for all possibilities
-* analyze static vs with tap on new datasets (also after dataset processing)
+* ~~add ft information~~
+* make network configurable for all possible input modalities
+* train for all input modality variations
+  
+* analyze static vs with tap on new datasets
+  
 * robot evaluation setup:
   * generating plan for pose delta (on TIAGo++)
   * vision baseline: correcting pose based on vision / (noisy?) ground truth data
   * collect and execute sample on robot
+
 * collect larger dataset with all variations combined
 * test for generalisation

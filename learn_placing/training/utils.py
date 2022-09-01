@@ -78,21 +78,26 @@ def get_dataset(dsname, a,indices=None):
 def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
+
+    ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
-    X = [v for _, v in ds[input_data].items()]
-    Y = [d[target_type] for d in list(ds["labels"].values())]
+    X =  [v for _, v in ds[input_data].items()]
+    Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
+    FT = [f for _, f in ds[ft_type].items()]
+
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
 
     N_train = int(len(X)*train_ratio)
     N_test = len(X)-N_train
 
-    X = torch.Tensor(np.array(X))
-    Y = torch.Tensor(np.array(Y))
+    X =  torch.Tensor(np.array(X))
+    Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
+    FT = torch.Tensor(np.array(FT))
     if out_repr==RotRepr.ortho6d: Y = compute_rotation_matrix_from_quaternion(Y)
     
-    tds = TensorDataset(X, GR, Y)
+    tds = TensorDataset(X, GR, FT, Y)
 
     if indices is None or indices == []:
         train, test = torch.utils.data.random_split(
@@ -136,8 +141,8 @@ def test_net(model, crit, dataset):
     model.eval()
     with torch.no_grad():
         for data in dataset:
-            inputs, grip, lbls = data
-            outs = model(inputs, grip)
+            inputs, grip, ft, lbls = data
+            outs = model(inputs, grip, ft)
             loss_t = crit(outs, lbls)
 
             losses.append(loss_t.numpy())
