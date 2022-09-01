@@ -46,6 +46,12 @@ class InData(str, Enum):
     with_tap = "inputs"
     static = "static_inputs"
 
+class LossType(str, Enum):
+    geodesic = "geodesic"
+    quaternion = "quatloss"
+    msesum = "msesum"
+    pointcos = "pointcos"
+    pointarccos = "pointarccos"
 
 def load_train_params(trial_path):
     with open(f"{trial_path}/parameters.json", "r") as f:
@@ -107,14 +113,19 @@ def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap,
 
     return (train_l, train_inds), (test_l, test_inds)
 
-def rep2loss(rep):
-    if rep == RotRepr.quat:
+def rep2loss(loss_type):
+    if loss_type == LossType.quaternion:
         # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
         return qloss
-    elif rep == RotRepr.ortho6d:
+    elif loss_type == LossType.geodesic:
         return compute_geodesic_distance_from_two_matrices
-    elif rep == RotRepr.sincos:
+    elif loss_type == LossType.msesum:
         return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
+    elif loss_type == LossType.pointarccos:
+        return lambda x, y: point_loss(x, y)
+    elif loss_type == LossType.pointcos:
+        return lambda x, y: 1-torch.cos(point_loss(x, y))
+
 
 def test_net(model, crit, dataset):
     losses = []
@@ -190,8 +201,8 @@ def point_loss(m1, m2, eps=1e-7):
 
     cos = bdot(v1, v2)
     theta = torch.acos(torch.clamp(cos, -1+eps, 1-eps))
-    # return theta
-    return 1-cos
+    return theta
+    # return 1-cos
 
 # batch*n
 # https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/tools.py#L20

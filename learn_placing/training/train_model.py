@@ -11,14 +11,15 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from learn_placing.training.utils import rep2loss
 
-from utils import get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
+from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
 from learn_placing import datefmt, training_path
-from tactile_insertion_rl import TactileInsertionRLNet
+from tactile_insertion_rl import TactileInsertionRLNet, ConvProc
 
 """ PARAMETERS
 """
 a = AttrDict(
     dsname = DatasetName.gripper_var,
+    loss_type = LossType.pointcos,
     out_repr = RotRepr.ortho6d,
     target_type = InRot.w2o,
     input_data = InData.with_tap,
@@ -31,6 +32,8 @@ a = AttrDict(
     save_freq = 0.1
 )
 a.__setattr__("netp", AttrDict(
+    preproc_type = ConvProc.SINGLETRL,
+    # preproc_type = ConvProc.TRL,
     output_type = a.out_repr,
     with_gripper = a.with_gripper_tf,
     only_gripper = False,
@@ -54,26 +57,24 @@ a.__setattr__("adamp", AttrDict(
 trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.out_repr}_{a.target_type}_gripper-{a.with_gripper_tf}_{a.start_time.replace(':','-')}"
 trial_path = f"{training_path}/{trial_name}/"
 
-os.makedirs(trial_path, exist_ok=True)
-os.makedirs(f"{trial_path}/weights", exist_ok=True)
-
 (train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
 
 a.__setattr__("train_indices", train_ind)
 a.__setattr__("test_indices", test_ind)
-# a.__setattr__("val_indices", val_ind)
-
-with open(f"{trial_path}parameters.json", "w") as f:
-    json.dump(a, f, indent=2)
 
 model = TactileInsertionRLNet(**a.netp)
 optimizer = optim.Adam(model.parameters(), **a.adamp)
 
-criterion = rep2loss(a.out_repr)
+criterion = rep2loss(a.loss_type)
 
 train_losses = []
 test_losses = []
 val_losses = []
+
+os.makedirs(trial_path, exist_ok=True)
+os.makedirs(f"{trial_path}/weights", exist_ok=True)
+with open(f"{trial_path}parameters.json", "w") as f:
+    json.dump(a, f, indent=2)
 
 # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 nbatch = 0
@@ -101,10 +102,7 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         test_losses.append(test_loss)
 
         if a.validate:
-            _, _, val_loss, _ = test_net(model, criterion, val_l)
-
-            val_loss = np.mean(val_loss)
-            val_losses.append(val_loss)
+            print("validation not supported atm")
 
         # store model weights
         if nbatch % save_batches == save_batches-1:
@@ -112,8 +110,6 @@ for epoch in range(a.N_episodes):  # loop over the dataset multiple times
         nbatch += 1
 
         print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
-        if a.validate:
-            print(f" | val loss: {val_loss:.3f}", end="")
         print()
 torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
@@ -133,16 +129,15 @@ plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:
 plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:]):.5f}")
 if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
 
-if a.out_repr == RotRepr.ortho6d:
+if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
     plt.ylim([0.0,np.pi])
-    plt.ylabel("geodesic error in [0,PI]")
-elif a.out_repr == RotRepr.quat:
+elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
     plt.ylim([0.0,1.0])
-    plt.ylabel("quaternion loss")
+plt.ylabel("loss")
 
 plt.xlabel("Batches")
 
-plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}; input={a.input_data}")
+plt.title(f"dsname={a.dsname}; out_repr={a.out_repr}; target={a.target_type}; gripper_tf={a.with_gripper_tf}; \ninput={a.input_data}; loss={a.loss_type};")
 
 plt.legend()
 plt.tight_layout()
