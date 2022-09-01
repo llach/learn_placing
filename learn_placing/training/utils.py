@@ -46,6 +46,7 @@ class InData(str, Enum):
     with_tap = "inputs"
     static = "static_inputs"
 
+
 def load_train_params(trial_path):
     with open(f"{trial_path}/parameters.json", "r") as f:
         params = json.loads(f.read())

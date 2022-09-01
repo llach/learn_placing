@@ -8,8 +8,16 @@ from learn_placing.common.label_processing import normalize, rotate_v
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, inverse_matrix, Ry
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
-from learn_placing.training.utils import InRot
+from learn_placing.training.utils import DatasetName, InRot, ds2name
 
+
+# we switched to longer record times around the detected touch, so different datasets have different timestamps
+dsLookback = {
+    DatasetName.cuboid: [[-50,None], [-100,-50]],
+    DatasetName.cylinder: [[-50,None], [-100,-50]],
+    DatasetName.object_var: [[-80,-30], [-130,-80]],
+    DatasetName.gripper_var: [[-80,-30], [-130,-80]],
+}
 
 """ PARAMETERS
 """
@@ -18,9 +26,10 @@ MAX_DEV = 0.005
 MIN_N = 10 # per camera
 M = 50  # myrmex lookback TODO depends on dataset
 
-dsnames = ["five"]
+dsnames = [DatasetName.object_var, DatasetName.gripper_var]
 data_root = f"{os.environ['HOME']}/tud_datasets"
-for dsname in dsnames: 
+for dd in dsnames: 
+    dsname = ds2name[dd]
     print(f"processing dataset {dsname} ...")
 
     dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
@@ -173,11 +182,13 @@ for dsname in dsnames:
         rir = preprocess_myrmex(sample["tactile_right"][1])
 
         # cut to same length (we determined that in `myrmex_lookback.py`)
-        ri = rir[-M:]
-        le = ler[-M:]
+        fro, to = dsLookback[dd][0]
+        ri = rir[fro:to]
+        le = ler[fro:to]
 
-        ri_static = rir[-2*M:-M]
-        le_static = ler[-2*M:-M]
+        sfro, sto = dsLookback[dd][1]
+        ri_static = rir[sfro:sto]
+        le_static = ler[sfro:sto]
 
         inp = np.stack([le, ri])
         inp_static = np.stack([le_static, ri_static])
