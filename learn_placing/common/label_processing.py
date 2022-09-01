@@ -110,6 +110,12 @@ def get_T(tfs, target, source):
             return make_T(t["translation"], t["rotation"])
     return -1
 
+def is_dual(t):
+    for msg in t:
+        if msg["parent_frame"] == "arm_left_6_link": return True
+        if msg["parent_frame"] == "arm_6_link": return False
+    return [None]
+
 def extract_gripper_T(tfs):
     world2obj = []
     grip2obj = []
@@ -117,6 +123,7 @@ def extract_gripper_T(tfs):
     T = None
     for t in tfs:
         if len(t)>4 and T is None:
+            if not is_dual(t):
                 Ts = [
                     make_T([0.000, 0.000, 0.099], [0.000, 0.000, 0.000, 1.000]), # footprint -> base
                     make_T([-0.062, 0.000, 0.193], [0.000, 0.000, 0.000, 1.000]), # base -> torso fixed
@@ -131,15 +138,30 @@ def extract_gripper_T(tfs):
                     make_T([-0.000, 0.000, 0.077], [-0.707, 0.707, -0.000, -0.000]), # arm 7 -> gripper
                     make_T([0.000, 0.000, -0.120],  [-0.500, 0.500, 0.500, 0.500]) # gripper -> grasping frame
                 ]
+            else:
+                Ts = [
+                    make_T([0.000, 0.000, 0.099], [0.000, 0.000, 0.000, 1.000]), # footprint -> base
+                    make_T([-0.062, 0.000, 0.193], [0.000, 0.000, 0.000, 1.000]), # base -> torso fixed
+                    get_T(t, "torso_lift_link", "torso_fixed_link"),
+                    get_T(t, "arm_left_1_link", "torso_lift_link"),
+                    get_T(t, "arm_left_2_link", "arm_left_1_link"),
+                    get_T(t, "arm_left_3_link", "arm_left_2_link"),
+                    get_T(t, "arm_left_4_link", "arm_left_3_link"),
+                    get_T(t, "arm_left_5_link", "arm_left_4_link"),
+                    get_T(t, "arm_left_6_link", "arm_left_5_link"),
+                    get_T(t, "arm_left_7_link", "arm_left_6_link"),
+                    make_T([-0.000, 0.000, 0.077], [-0.707, 0.707, -0.000, -0.000]), # arm 7 -> gripper
+                    make_T([0.000, 0.000, -0.120],  [-0.500, 0.500, 0.500, 0.500]) # gripper -> grasping frame
+                ]
 
-                T = np.eye(4)
-                for TT in Ts:
-                    T = T@TT
-                continue
+            T = np.eye(4)
+            for TT in Ts:
+                T = T@TT
+            continue
         for tr in t:
             if tr["child_frame"] == "object" and tr["parent_frame"] == "base_footprint":
                 world2obj.append(tr["rotation"])
-            elif tr["child_frame"] == "grasped_object" and tr["parent_frame"] == "gripper_grasping_frame":
+            elif tr["child_frame"] == "grasped_object" and (tr["parent_frame"] == "gripper_grasping_frame" or tr["parent_frame"] == "gripper_left_grasping_frame"):
                 grip2obj.append(tr["rotation"])
         
     return T, world2obj, grip2obj

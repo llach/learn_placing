@@ -18,7 +18,7 @@ MAX_DEV = 0.005
 MIN_N = 10 # per camera
 M = 50  # myrmex lookback
 
-dsnames = ["four"]
+dsnames = ["five"]
 data_root = f"{os.environ['HOME']}/tud_datasets"
 for dsname in dsnames: 
     print(f"processing dataset {dsname} ...")
