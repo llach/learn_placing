@@ -18,13 +18,14 @@ from tactile_insertion_rl import TactileInsertionRLNet, ConvProc
 """ PARAMETERS
 """
 a = AttrDict(
-    dsname = DatasetName.gripper_var,
-    loss_type = LossType.pointcos,
+    dsname = DatasetName.object_var,
+    input_data = InData.with_tap,
+    with_gripper_tf = False,
+    N_episodes = 10,
+
+    loss_type = LossType.pointarccos,
     out_repr = RotRepr.ortho6d,
     target_type = InRot.w2o,
-    input_data = InData.with_tap,
-    with_gripper_tf = True,
-    N_episodes = 10,
     validate = False,
     store_training = True,
     gripper_repr = RotRepr.quat,
@@ -33,7 +34,6 @@ a = AttrDict(
 )
 a.__setattr__("netp", AttrDict(
     preproc_type = ConvProc.SINGLETRL,
-    # preproc_type = ConvProc.TRL,
     output_type = a.out_repr,
     with_gripper = a.with_gripper_tf,
     only_gripper = False,
@@ -132,7 +132,7 @@ if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_l
 if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
     plt.ylim([0.0,np.pi])
 elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
-    plt.ylim([0.0,1.0])
+    plt.ylim([-0.05,1.0])
 plt.ylabel("loss")
 
 plt.xlabel("Batches")

@@ -15,7 +15,12 @@ from tactile_insertion_rl import TactileInsertionRLNet
 # trial_name = "Cuboid_Neps50_ortho6d_world2object_cleanX_gripper-True_2022.08.29_16-10-11" #  cleanX, with tap, with gripper tf
 # trial_name = "Cuboid_Neps50_sincos_local_dotproduct_gripper-False_2022.08.29_19-38-50" # world->object in gripper, WITH tap
 # trial_name = "Cuboid_Neps50_sincos_local_dotproduct_gripper-False_2022.08.29_19-46-11" # world->object in gripper, STATIC
-trial_name = "ObjectVar_Neps10_sincos_local_dotproduct_gripper-True_2022.08.31_19-31-47"
+# trial_name = "ObjectVar_Neps10_sincos_local_dotproduct_gripper-True_2022.08.31_19-31-47"
+
+### new datasets
+
+# trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-55-48"
+trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-58-42"
 
 trial_path = f"{training_path}/{trial_name}"
 trial_weights = f"{trial_path}/weights/final.pth"
@@ -26,7 +31,7 @@ model = TactileInsertionRLNet(**a.netp)
 checkp = torch.load(trial_weights)
 model.load_state_dict(checkp)
 
-criterion = rep2loss(a.out_repr)
+criterion = rep2loss(a.loss_type)
 
 (train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a, indices=[a.train_indices, a.test_indices, a.val_indices])
 

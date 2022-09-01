@@ -19,6 +19,13 @@ dsLookback = {
     DatasetName.gripper_var: [[-80,-30], [-130,-80]],
 }
 
+ftLookback = {
+    DatasetName.cuboid: [[-15,None], [-30,-15]],
+    DatasetName.cylinder: [[-15,None], [-30,-15]],
+    DatasetName.object_var: [[-20,-5], [-35,-20]],
+    DatasetName.gripper_var: [[-20,-5], [-35,-20]],
+}
+
 """ PARAMETERS
 """
 ZETA = timedelta(milliseconds=100)
@@ -61,6 +68,7 @@ for dd in dsnames:
     bad_timestamps = []
     labels = {}
 
+    # step 2: store cleaned object samples
     for i, (t, sample) in enumerate(os.items()):
         # sample is sequence: [ [timetsamp], [object state]]
         states = sample[1]
@@ -171,6 +179,7 @@ for dd in dsnames:
             }
         })
 
+    # step 3: store myrmex input samples, skipping bad ones
     inputs = {}
     static_inputs = {}
     for i, (t, sample) in enumerate(ds.items()):
