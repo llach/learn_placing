@@ -183,15 +183,15 @@ def compute_geodesic_distance_from_two_matrices(m1, m2, eps=1e-7):
 def point_loss(m1, m2, eps=1e-7):
     batch = m1.shape[0]
 
-    v = [0,0,-1,1] if m1.shape[-1]==4 else [0,0,-1]
-    vs = torch.Tensor(v).repeat(batch,1).unsqueeze(2)
-    
-    v1 = torch.bmm(m1, vs)
-    v2 = torch.bmm(m2, vs)
+    vs = torch.Tensor([0,0,-1]).repeat(batch,1).unsqueeze(2)
+
+    v1 = torch.bmm(m1[:,:3,:3], vs)
+    v2 = torch.bmm(m2[:,:3,:3], vs)
 
     cos = bdot(v1, v2)
     theta = torch.acos(torch.clamp(cos, -1+eps, 1-eps))
-    return theta
+    # return theta
+    return 1-cos
 
 # batch*n
 # https://github.com/papagina/RotationContinuity/blob/master/sanity_test/code/tools.py#L20

@@ -62,28 +62,14 @@ def nikloss(Rtar, Rpred):
     # return np.arccos(coss)
     return 1-coss
 
-def nikloss_torch(Rtat, Rpred, eps=1e-7):
-    batch = Rtat.shape[0]
-
-    vs = torch.Tensor([0,0,-1]).repeat(batch,1).unsqueeze(2)
-
-    v1 = torch.bmm(Rtat[:,:3,:3], vs)
-    v2 = torch.bmm(Rpred[:,:3,:3], vs)
-
-    cos = bdot(v1, v2)
-    theta = torch.acos(torch.clamp(cos, -1+eps, 1-eps))
-    return 1-cos
-
 Rgoals =  np.repeat([Rgoal], Rs.shape[0], axis=0)
-
-nikloss(Rgoals, Rs)
 
 # metric = wrap_torch_fn(point_loss, Rgoals, Rs)
 # norm_metric = metric / np.pi
 
-metric = wrap_torch_fn(nikloss_torch, Rgoals, Rs)
-norm_metric = metric/np.pi
-# norm_metric = metric/2
+metric = wrap_torch_fn(point_loss, Rgoals, Rs)
+# norm_metric = metric/np.pi
+norm_metric = metric/2
 
 cm = plt.get_cmap("copper")
 colors = cm(norm_metric)
