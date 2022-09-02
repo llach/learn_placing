@@ -177,7 +177,7 @@ if __name__ == "__main__":
     t_path = f"{training_path}/../batch_trainings"
     base_path = f"{t_path}/{now()}"
 
-    Neps=10
+    Neps=20
     datasets = [DatasetName.object_var, DatasetName.gripper_var]
     input_types = [InData.static, InData.with_tap]
     input_modalities = [
