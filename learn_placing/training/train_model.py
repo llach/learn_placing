@@ -7,154 +7,213 @@ import numpy as np
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
-from datetime import datetime
-from learn_placing.training.utils import rep2loss
-
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
-from learn_placing import datefmt, training_path
 from tactile_insertion_rl import TactilePlacingNet, ConvProc
 
-""" PARAMETERS
-"""
-a = AttrDict(
-    N_episodes = 10,
-    dsname = DatasetName.object_var,
-    input_data = InData.with_tap,
-    with_tactile = True,
-    with_gripper = False,
-    with_ft = False,
+from learn_placing import now, training_path
+from learn_placing.training.utils import rep2loss
 
-    loss_type = LossType.pointarccos,
-    out_repr = RotRepr.ortho6d,
-    target_type = InRot.w2o,
-    validate = False,
-    store_training = True,
-    gripper_repr = RotRepr.quat,
-    start_time = datetime.now().strftime(datefmt),
-    save_freq = 0.1
-)
-a.__setattr__("netp", AttrDict(
-    preproc_type = ConvProc.SINGLETRL,
-    output_type = a.out_repr,
-    with_tactile = a.with_tactile,
-    with_gripper = a.with_gripper,
-    with_ft = a.with_ft,
-    kernel_sizes = [(3,3), (3,3)],
-    cnn_out_channels = [32, 64],
-    conv_stride = (2,2),
-    conv_padding = (0,0),
-    conv_output = 128,
-    rnn_neurons = 128,
-    rnn_layers = 1,
-    ft_rnn_neurons = 16,
-    ft_rnn_layers = 1,
-    fc_neurons = [64, 32],
-))
-a.__setattr__("adamp", AttrDict(
-    lr=1e-3, 
-    betas=(0.9, 0.999), 
-    eps=1e-8, 
-    weight_decay=0, 
-    amsgrad=False
-))
+def plot_learning_curve(train_loss, test_loss, a, ax):
+    lastN = int(len(train_loss)*0.05)
 
-trial_name = f"{a.dsname}_Neps{a.N_episodes}"
-if a.with_tactile: trial_name += "_tactile"
-if a.with_gripper: trial_name += "_gripper"
-if a.with_ft: trial_name += "_ft"
-trial_name += f"_{a.start_time.replace(':','-')}"
+    xs = np.arange(len(test_loss)).astype(int)+1
+    ax.plot(xs, train_loss, label=f"training loss | {np.mean(train_loss[-lastN:]):.5f}")
+    ax.plot(xs, test_loss, label=f"test loss | {np.mean(test_loss[-lastN:]):.5f}")
 
-trial_path = f"{training_path}/{trial_name}/"
+    if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
+        ax.set_ylim([0.0,np.pi])
+        ax.set_ylabel("loss [radian]")
+    elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
+        ax.set_ylim([-0.05,1.0])
+        ax.set_ylabel("loss")
 
-(train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
+    ax.set_xlabel("#batches")
 
-a.__setattr__("train_indices", train_ind)
-a.__setattr__("test_indices", test_ind)
+    ax.set_title(f"dsname={a.dsname}; input={a.input_data}; tactile={a.with_tactile}; gripper={a.with_gripper}; ft={a.with_ft};")
 
-model = TactilePlacingNet(**a.netp)
-optimizer = optim.Adam(model.parameters(), **a.adamp)
+    ax.legend()
 
-criterion = rep2loss(a.loss_type)
+def train(
+    dataset: DatasetName,
+    input_type: InData,
+    input_modalities: list[bool],
+    trial_path: str,
+    Neps: int = 10,
+    other_ax = None
+):
+    """ PARAMETERS
+    """
+    with_tactile, with_gripper, with_ft = input_modalities
 
-train_losses = []
-test_losses = []
-val_losses = []
+    a = AttrDict(
+        N_episodes = Neps,
+        dsname = dataset,
+        input_data = input_type,
+        with_tactile = with_tactile,
+        with_gripper = with_gripper,
+        with_ft = with_ft,
 
-os.makedirs(trial_path, exist_ok=True)
-os.makedirs(f"{trial_path}/weights", exist_ok=True)
-with open(f"{trial_path}parameters.json", "w") as f:
-    json.dump(a, f, indent=2)
+        loss_type = LossType.pointarccos,
+        out_repr = RotRepr.ortho6d,
+        target_type = InRot.w2o,
+        validate = False,
+        store_training = True,
+        gripper_repr = RotRepr.quat,
+        start_time = now(),
+        save_freq = 0.1
+    )
+    a.__setattr__("netp", AttrDict(
+        preproc_type = ConvProc.SINGLETRL,
+        output_type = a.out_repr,
+        with_tactile = a.with_tactile,
+        with_gripper = a.with_gripper,
+        with_ft = a.with_ft,
+        kernel_sizes = [(3,3), (3,3)],
+        cnn_out_channels = [32, 64],
+        conv_stride = (2,2),
+        conv_padding = (0,0),
+        conv_output = 128,
+        rnn_neurons = 128,
+        rnn_layers = 1,
+        ft_rnn_neurons = 16,
+        ft_rnn_layers = 1,
+        fc_neurons = [64, 32],
+    ))
+    a.__setattr__("adamp", AttrDict(
+        lr=1e-3, 
+        betas=(0.9, 0.999), 
+        eps=1e-8, 
+        weight_decay=0, 
+        amsgrad=False
+    ))
 
-# code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-nbatch = 0
-save_batches = int(a.N_episodes*len(train_l)*a.save_freq)
-for epoch in range(a.N_episodes):  # loop over the dataset multiple times
-    for i, data in enumerate(train_l, 0):
-        # get the inputs; data is a list of [inputs, labels]
-        inputs, grip, ft, labels = data
+    trial_name = f"{a.dsname}_Neps{a.N_episodes}"
+    if a.with_tactile: trial_name += "_tactile"
+    if a.with_gripper: trial_name += "_gripper"
+    if a.with_ft: trial_name += "_ft"
+    trial_name += f"_{a.start_time}"
 
-        # zero the parameter gradients
-        optimizer.zero_grad()
+    trial_path = f"{trial_path}/{trial_name}/"
 
-        # forward + backward + optimize
-        outputs = model(inputs, grip, ft)
-        loss = torch.mean(criterion(outputs, labels))
-        loss.backward()
-        optimizer.step()
+    (train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
 
-        # print statistics
-        train_loss = loss.item()
-        train_losses.append(train_loss)
+    a.__setattr__("train_indices", train_ind)
+    a.__setattr__("test_indices", test_ind)
 
-        test_out, test_lbl, test_loss, _ = test_net(model, criterion, test_l)
-        test_loss = np.mean(test_loss)
-        test_losses.append(test_loss)
+    model = TactilePlacingNet(**a.netp)
+    optimizer = optim.Adam(model.parameters(), **a.adamp)
 
-        if a.validate:
-            print("validation not supported atm")
+    criterion = rep2loss(a.loss_type)
 
-        # store model weights
-        if nbatch % save_batches == save_batches-1:
-            torch.save(model.state_dict(), f"{trial_path}/weights/batch_{nbatch}.pth")
-        nbatch += 1
+    train_losses = []
+    test_losses = []
+    val_losses = []
 
-        print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
-        print()
-torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
+    os.makedirs(trial_path, exist_ok=True)
+    os.makedirs(f"{trial_path}/weights", exist_ok=True)
+    with open(f"{trial_path}parameters.json", "w") as f:
+        json.dump(a, f, indent=2)
 
-with open(f"{trial_path}/losses.pkl", "wb") as f:
-    pickle.dump({
-        "train": train_losses,
-        "test": test_losses,
-        "validation": val_losses
-    }, f)
+    # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
+    nbatch = 0
+    save_batches = int(a.N_episodes*len(train_l)*a.save_freq)
+    for epoch in range(a.N_episodes):  # loop over the dataset multiple times
+        for i, data in enumerate(train_l, 0):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, grip, ft, labels = data
 
-plt.figure(figsize=(8.71, 6.61))
+            # zero the parameter gradients
+            optimizer.zero_grad()
 
-lastN = int(len(train_losses)*0.05)
+            # forward + backward + optimize
+            outputs = model(inputs, grip, ft)
+            loss = torch.mean(criterion(outputs, labels))
+            loss.backward()
+            optimizer.step()
 
-xs = np.arange(len(test_losses)).astype(int)+1
-plt.plot(xs, train_losses, label=f"training loss | {np.mean(train_losses[-lastN:]):.5f}")
-plt.plot(xs, test_losses, label=f"test loss | {np.mean(test_losses[-lastN:]):.5f}")
-if a.validate: plt.plot(xs, val_losses, label=f"validation loss - {np.mean(val_losses[-lastN:])}")
+            # print statistics
+            train_loss = loss.item()
+            train_losses.append(train_loss)
 
+            test_out, test_lbl, test_loss, _ = test_net(model, criterion, test_l)
+            test_loss = np.mean(test_loss)
+            test_losses.append(test_loss)
 
-if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
-    plt.ylim([0.0,np.pi])
-    plt.ylabel("loss [radian]")
-elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
-    plt.ylim([-0.05,1.0])
-    plt.ylabel("loss")
+            if a.validate:
+                print("validation not supported atm")
 
+            # store model weights
+            if nbatch % save_batches == save_batches-1:
+                torch.save(model.state_dict(), f"{trial_path}/weights/batch_{nbatch}.pth")
+            nbatch += 1
 
-plt.xlabel("#batches")
+            print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
+            print()
+            if i==5:break # TODO
+        break # TODO
+    torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
-plt.title(f"dsname={a.dsname}; with_tactile={a.with_tactile}; with_gripper={a.with_gripper}; with_ft={a.with_ft}; input={a.input_data};")
+    with open(f"{trial_path}/losses.pkl", "wb") as f:
+        pickle.dump({
+            "train": train_losses,
+            "test": test_losses,
+            "validation": val_losses
+        }, f)
 
-plt.legend()
-plt.tight_layout()
-plt.savefig(f"{trial_path}/learning_curve.png")
-plt.clf()
+    fig, ax = plt.subplots(figsize=(8.71, 6.61))
+    plot_learning_curve(train_losses, test_losses, a, ax)
+    if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax)
 
-print('training done!')
-print(trial_name)
+    fig.tight_layout()
+    fig.savefig(f"{trial_path}/learning_curve.png")
+
+    print('training done!')
+    print(trial_name)
+    return trial_name
+
+if __name__ == "__main__":
+    t_path = f"{training_path}/../batch_trainings"
+
+    Neps=10
+    datasets = [DatasetName.object_var, DatasetName.gripper_var]
+    input_types = [InData.static, InData.with_tap]
+    input_modalities = [
+        [True,  False, False],
+        [False, True,  True],
+        [False, False, True],
+        [True,  True,  False],
+        [True, False, True],
+        [False, True, True],
+        [True, True, True],
+    ]
+
+    base_path = f"{t_path}/{now()}"
+    # trialname = train(
+    #     dataset=DatasetName.gripper_var,
+    #     input_type=InData.with_tap,
+    #     input_modalities=[False, True, False],
+    #     trial_path=f"{base_path}/test",
+    #     Neps=5
+    # )
+    for dataset in datasets:
+        dspath = f"{base_path}/{dataset}"
+        os.makedirs(dspath, exist_ok=True)
+
+        nrows=2
+        ncols=3 #len(input_modalities)
+        fig, axs = plt.subplots(2,nrows,figsize=(4.35*nrows,3.3*ncols))
+
+        trials = {}
+        for i, input_type in enumerate(input_types):
+            for j, input_mod in enumerate(input_modalities[:3]):
+                trialname = train(
+                    dataset=dataset,
+                    input_type=input_type,
+                    input_modalities=input_mod,
+                    trial_path=dspath,
+                    Neps=Neps,
+                    other_ax=axs[j,i]
+                )
+        fig.suptitle(f"Trainings for Dataset '{dataset}'")
+        fig.tight_layout()
+        fig.savefig(f"{dspath}/trainings.png")

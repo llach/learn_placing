@@ -43,8 +43,13 @@ class InRot(str, Enum):
     local_dotp = "local_dotproduct"
 
 class InData(str, Enum):
-    with_tap = "inputs"
-    static = "static_inputs"
+    with_tap = "with_tap"
+    static = "static"
+
+indata2key = {
+    InData.with_tap: "inputs",
+    InData.static: "static_inputs"
+}
 
 class LossType(str, Enum):
     geodesic = "geodesic"
@@ -81,7 +86,7 @@ def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap,
 
     ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
-    X =  [v for _, v in ds[input_data].items()]
+    X =  [v for _, v in ds[indata2key[input_data]].items()]
     Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
     FT = [f for _, f in ds[ft_type].items()]
