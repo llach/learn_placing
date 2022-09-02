@@ -1,10 +1,10 @@
 import numpy
 import qpsolvers
+import learn_placing.common.transformations as tf
 
 from std_msgs.msg import Header
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import TransformStamped, Transform, Quaternion, Vector3
-
 
 from wrist_motion.robot_model import RobotModel, Joint
 
@@ -46,6 +46,59 @@ TIAGO_IGNORED_JOINTS = [
     "xtion_rgb_optical_joint",
     "rgbd_laser_joint",
     "torso_fixed_column_link",
+    "arm_right_1_joint", 
+    "arm_right_2_joint", 
+    "arm_right_3_joint", 
+    "arm_right_4_joint", 
+    "arm_right_5_joint", 
+    "arm_right_6_joint", 
+    "arm_right_7_joint",
+    "arm_right_tool_joint",
+    "wrist_right_ft_joint",
+    "wrist_right_tool_joint",
+    "hand_right_tool_joint",
+    "hand_right_palm_joint",
+    "hand_right_thumb_joint",
+    "hand_right_index_joint",
+    "hand_right_mrl_joint",
+    "hand_right_thumb_abd_joint",
+    "hand_right_thumb_virtual_1_joint",
+    "hand_right_thumb_flex_1_joint",
+    "hand_right_thumb_virtual_2_joint",
+    "hand_right_thumb_flex_2_joint",
+    "hand_right_index_abd_joint",
+    "hand_right_index_virtual_1_joint",
+    "hand_right_index_flex_1_joint",
+    "hand_right_index_virtual_2_joint",
+    "hand_right_index_flex_2_joint",
+    "hand_right_index_virtual_3_joint",
+    "hand_right_index_flex_3_joint",
+    "hand_right_little_flex_1_joint",
+    "hand_right_little_virtual_2_joint",
+    "hand_right_little_flex_2_joint",
+    "hand_right_little_virtual_3_joint",
+    "hand_right_little_flex_3_joint",
+    "hand_right_grasping_fixed_joint",
+    "hand_right_safety_box_joint",
+    "hand_right_middle_flex_3_joint",
+    "hand_right_ring_abd_joint",
+    "hand_right_ring_virtual_1_joint",
+    "hand_right_ring_flex_1_joint",
+    "hand_right_ring_virtual_2_joint",
+    "hand_right_ring_flex_2_joint",
+    "hand_right_ring_virtual_3_joint",
+    "hand_right_ring_flex_3_joint",
+    "hand_right_little_abd_joint",
+    "hand_right_little_virtual_1_joint",
+    "hand_right_middle_abd_joint",
+    "hand_right_middle_virtual_1_joint",
+    "hand_right_middle_flex_1_joint",
+    "hand_right_middle_virtual_2_joint",
+    "hand_right_middle_flex_2_joint",
+    "hand_right_middle_virtual_3_joint",
+    "hand_right_middle_flex_3_joint",
+    "gripper_left_right_finger_joint",
+    "gripper_left_left_finger_joint",
 ]
 
 TIAGO_DISABLED_JOINTS = [
@@ -53,7 +106,7 @@ TIAGO_DISABLED_JOINTS = [
 ]
 
 GRASP_FRAME_POSE = TransformStamped(
-    header=Header(frame_id='gripper_grasping_frame'),
+    header=Header(frame_id='gripper_left_grasping_frame'),
     child_frame_id='target',
     transform=Transform(rotation=Quaternion(*[0,0,0,0]),translation=Vector3(0, 0, 0))
 )
@@ -228,10 +281,23 @@ class TIAGoController(object):
         """Move eef towards a specific target point in base frame"""
         return self.J[:3], scale*(T_tgt[0:3, 3]-T_cur[0:3, 3])
 
+    def orientation_task(self, T_tgt, T_cur, scale=1.0):
+        """Move eef into a specific target orientation in base frame"""
+        delta = numpy.identity(4)
+        delta[0:3, 0:3] = T_cur[0:3, 0:3].T.dot(T_tgt[0:3, 0:3])
+        angle, axis, _ = tf.rotation_from_matrix(delta)
+        # transform rotational velocity from end-effector into base frame orientation (only R!)
+        return self.J[3:], scale*(T_cur[0:3, 0:3].dot(angle * axis))
+
     def cone_task(self, axis, reference, threshold):
         """Align axis in eef frame to lie in cone spanned by reference axis and opening angle acos(threshold)"""
         axis = self.T[0:3, 0:3].dot(axis)  # transform axis from eef frame to base frame
         return reference.T.dot(skew(axis)).dot(self.J[3:]), (reference.T.dot(axis) - threshold), None
+
+    def pose_task(self, T_tgt, T_cur, scale=(1.0, 1.0)):
+        """Perform position and orientation task with same priority"""
+        return self.stack([self.position_task(T_tgt, T_cur, scale=scale[0]),
+                           self.orientation_task(T_tgt, T_cur, scale=scale[1])])
 
     def reorientation_trajectory(
         self, 
@@ -249,11 +315,11 @@ class TIAGoController(object):
         prev_qdelta = None
         for _ in range(max_steps):
             tasks = []
-            Jp, ep = self.position_task(Tinit, self.T)
-            ub, lb = (ep+tol), (ep-tol)
-            tasks.append((Jp, ub, lb))
+            # Jp, ep = self.position_task(Tinit, self.T)
+            # ub, lb = (ep+tol), (ep-tol)
+            # tasks.append((Jp, ub, lb))
 
-            oTask = self.cone_task(eef_axis, To[0:3, 0], 0.99)
+            oTask = self.pose_task(To, self.T)
             tasks.append(oTask)
 
             # _, Jelbow = self.fk_for_link("arm_7_link")

@@ -2,7 +2,6 @@ from tkinter import N
 import rospy
 import time
 import numpy as np
-import moveit_commander
 
 from tf import TransformListener
 from tf import transformations as tf
@@ -41,13 +40,11 @@ def sample_random_orientation_southern_hemisphere():
 
     return tf.quaternion_matrix(tf.quaternion_multiply(Qzt, Qyp))
 
-
-OBJECT_FRAME = "/grasped_object"
-GRIPPER_FRAME = "/gripper_grasping_frame"
+OBJECT_FRAME = "grasped_object"
+GRIPPER_FRAME = "gripper_left_grasping_frame"
 
 class Reorient:
-    JOINTS = ['torso_lift_joint', 'arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint', 'arm_5_joint', 'arm_6_joint', 'arm_7_joint']
-    PLANNING_GROUP = 'arm_torso'
+    JOINTS = ['torso_lift_joint', 'arm_left_1_joint', 'arm_left_2_joint', 'arm_left_3_joint', 'arm_left_4_joint', 'arm_left_5_joint', 'arm_left_6_joint', 'arm_left_7_joint']
 
     def __init__(self) -> None:
         self.Tinit = None
@@ -59,16 +56,17 @@ class Reorient:
         
         # tolerances are the box's side length (we pass tolernaces/2 to the planner)
         # the black wagon at PAL measures 40x40x57
-        self.tol = np.array([0.30, 0.30, 0.05])
-        self.eef_axis = np.array([0,0,-1])
+        self.tol = np.array(3*[0.1])
+        self.eef_axis = np.array([0,0,1])
 
-        self.Toff = tf.rotation_matrix(0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
+        self.Toff = tf.rotation_matrix(-0.5*np.pi, [0,1,0]) # this can be done in a general fashion. find orthogonal axis and than the dot product of X (arrow base orientation) and desired axis
+        # self.Toss = np.eye(4)
 
         self.valid_srv = rospy.ServiceProxy('/check_state_validity', GetStateValidity)
         self.reinit_srv = rospy.Service('/reinit_wrist_planner', Empty, self.reinit)
-        self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_sb)
+        self.js_sub = rospy.Subscriber('/joint_states', JointState, self.jointstate_cb)
         self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
-        # self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
+        self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
 
         self.li = TransformListener()
         for _ in range(6):
@@ -103,7 +101,7 @@ class Reorient:
             print(f"could not get gripper-object transform:\n{e}")
             return np.eye(4)
 
-    def jointstate_sb(self, msg):
+    def jointstate_cb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
 
         self.start_state = len(self.JOINTS)*[0.0]
@@ -135,7 +133,7 @@ class Reorient:
         _T[0:3, 3] = T[0:3, 3]
         return _T
 
-    def pub_markers(self, pub_goal=True):
+    def pub_markers(self, To, pub_goal=True):
         start_T, _ = self.c.robot.fk(self.c.target_link, dict(zip(self.JOINTS, self.start_state)))
 
         start_frame = frame(start_T, ns="start_frame")
@@ -149,9 +147,11 @@ class Reorient:
         start_arrow = orientationArrow(self.orientation_only_T(start_T@self.Toff), color=ColorRGBA(0, 0, 1, 1))
         start_arrow.id = 7
 
-        goal_arrow = orientationArrow(self.orientation_only_T(self.To), color=ColorRGBA(0, 0, 0, 0.8))
+        # black arrow for goal
+        goal_arrow = orientationArrow(self.orientation_only_T(To@self.Toff), color=ColorRGBA(0, 0, 0, 0.8))
         goal_arrow.id = 8
 
+        # white arrow for final arow after planning
         end_arrow = orientationArrow(self.orientation_only_T(self.c.T@self.Toff), color=ColorRGBA(1, 1, 1, 0.6))
         end_arrow.id = 9
 
@@ -168,7 +168,7 @@ class Reorient:
 
         self.marker_pub.publish(ma)
 
-    def plan_random(self, publish_traj=False, check_validity=True, table_height=0.0):
+    def plan_random(self, publish_traj=False, check_validity=True, table_height=0.0, To=None):
         print("getting current state")
 
         self.should_get_js = True
@@ -178,19 +178,28 @@ class Reorient:
         self.update_obj_transform()
 
         print("generating trajectory")
-        self.To = sample_random_orientation_southern_hemisphere()
-        goal_state, failed = self.c.reorientation_trajectory(self.To, self.Tinit, self.start_state, tol=.5*self.tol, eef_axis=self.eef_axis)
+        # self.To = sample_random_orientation_southern_hemisphere()
+        # if To is None: To = self.To
+
+        goal_state, failed = self.c.reorientation_trajectory(
+            To, 
+            self.Tinit, 
+            self.start_state, 
+            tol=.5*self.tol, 
+            eef_axis=self.eef_axis, # 
+            max_steps=100
+        )
 
         if failed: 
-            self.pub_markers(False)
+            self.pub_markers(To, False)
             return None, failed
 
-        Tarm, _ = self.c.fk_for_link("arm_7_link")
-        Thand, _ = self.c.fk_for_link("gripper_grasping_frame")
+        Tarm, _ = self.c.fk_for_link("arm_left_7_link")
+        Thand, _ = self.c.fk_for_link(GRIPPER_FRAME)
 
         if Tarm[2,3]<Thand[2,3]: 
             print("z constraint failed")
-            self.pub_markers(False)
+            self.pub_markers(To, True)
             return None, True
 
         # torso is frist joint, on the real robot we can't use it (otherwise moveit complains about planning groups / controllers)
@@ -200,7 +209,8 @@ class Reorient:
         gripper_zs = np.array([self.c.fk_for_joint_position([0.0]+list(tp))[0][2,3] for tp in traj_points])
 
         if not np.all(gripper_zs>table_height):
-            print(f"some points were below table height {gripper_zs>table_height}")
+            self.pub_markers(To, True)
+            print(f"some points were below table height {table_height} \n\t{gripper_zs}  \n\t{gripper_zs>table_height}")
             return None, True
 
         rss = []
@@ -227,11 +237,9 @@ class Reorient:
                 return rt, True
 
         if publish_traj:
-            while self.traj_pub.get_num_connections()<1:
-                time.sleep(0.1)
             self.traj_pub.publish(disp)
 
-        self.pub_markers()
+        self.pub_markers(To, True)
         return rt, failed
     
     # def execute(self, tr, wait=True):

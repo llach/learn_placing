@@ -27,10 +27,10 @@
 ## TODOs
 
 * ~~add ft information~~
-* make network configurable for all possible input modalities
-* train for all input modality variations
+* ~~make network configurable for all possible input modalities~~
+* ~~train for all input modality variations~~
   
-* analyze static vs with tap on new datasets
+* ~~analyze static vs with tap on new datasets~~
   
 * robot evaluation setup:
   * generating plan for pose delta (on TIAGo++)
