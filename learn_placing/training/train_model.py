@@ -7,13 +7,14 @@ import numpy as np
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
+from typing import List
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
 from tactile_insertion_rl import TactilePlacingNet, ConvProc
 
 from learn_placing import now, training_path
 from learn_placing.training.utils import rep2loss
 
-def plot_learning_curve(train_loss, test_loss, a, ax):
+def plot_learning_curve(train_loss, test_loss, a, ax, small_title=False):
     lastN = int(len(train_loss)*0.05)
 
     xs = np.arange(len(test_loss)).astype(int)+1
@@ -29,14 +30,17 @@ def plot_learning_curve(train_loss, test_loss, a, ax):
 
     ax.set_xlabel("#batches")
 
-    ax.set_title(f"dsname={a.dsname}; input={a.input_data}; tactile={a.with_tactile}; gripper={a.with_gripper}; ft={a.with_ft};")
+    if not small_title:
+        ax.set_title(f"dsname={a.dsname} input={a.input_data} tactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft}")
+    else:
+        ax.set_title(f"input={a.input_data};\ntactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft};")
 
     ax.legend()
 
 def train(
     dataset: DatasetName,
     input_type: InData,
-    input_modalities: list[bool],
+    input_modalities: List[bool],
     trial_path: str,
     Neps: int = 10,
     other_ax = None
@@ -149,8 +153,6 @@ def train(
 
             print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
             print()
-            if i==5:break # TODO
-        break # TODO
     torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
     with open(f"{trial_path}/losses.pkl", "wb") as f:
@@ -162,7 +164,7 @@ def train(
 
     fig, ax = plt.subplots(figsize=(8.71, 6.61))
     plot_learning_curve(train_losses, test_losses, a, ax)
-    if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax)
+    if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax, small_title=True)
 
     fig.tight_layout()
     fig.savefig(f"{trial_path}/learning_curve.png")
@@ -173,6 +175,7 @@ def train(
 
 if __name__ == "__main__":
     t_path = f"{training_path}/../batch_trainings"
+    base_path = f"{t_path}/{now()}"
 
     Neps=10
     datasets = [DatasetName.object_var, DatasetName.gripper_var]
@@ -187,25 +190,17 @@ if __name__ == "__main__":
         [True, True, True],
     ]
 
-    base_path = f"{t_path}/{now()}"
-    # trialname = train(
-    #     dataset=DatasetName.gripper_var,
-    #     input_type=InData.with_tap,
-    #     input_modalities=[False, True, False],
-    #     trial_path=f"{base_path}/test",
-    #     Neps=5
-    # )
     for dataset in datasets:
         dspath = f"{base_path}/{dataset}"
         os.makedirs(dspath, exist_ok=True)
 
-        nrows=2
-        ncols=3 #len(input_modalities)
-        fig, axs = plt.subplots(2,nrows,figsize=(4.35*nrows,3.3*ncols))
+        nrows=len(input_modalities)
+        ncols=len(input_types) 
+        fig, axs = plt.subplots(nrows,ncols,figsize=(4.3*ncols, 3.3*nrows))
 
         trials = {}
         for i, input_type in enumerate(input_types):
-            for j, input_mod in enumerate(input_modalities[:3]):
+            for j, input_mod in enumerate(input_modalities):
                 trialname = train(
                     dataset=dataset,
                     input_type=input_type,
@@ -214,6 +209,6 @@ if __name__ == "__main__":
                     Neps=Neps,
                     other_ax=axs[j,i]
                 )
-        fig.suptitle(f"Trainings for Dataset '{dataset}'")
+        fig.suptitle(f"Dataset '{dataset}'")
         fig.tight_layout()
         fig.savefig(f"{dspath}/trainings.png")
