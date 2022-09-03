@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from enum import Enum
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
 from learn_placing.common.data import load_dataset_file
 
 class AttrDict(dict):
@@ -19,6 +19,7 @@ class DatasetName(str, Enum):
     cylinder="Cylinder"
     object_var="ObjectVar"
     gripper_var="GripperVar"
+    combined_var="CombinedVar"
 
 ds2name = {
     DatasetName.cuboid: "second",
@@ -71,10 +72,28 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8):
+def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
-    train_l, test_l = get_dataset_loaders(ds2name[dsname], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+    if dsname == DatasetName.combined_var:
+        _,_, ovar_ds = get_dataset_loaders(ds2name[DatasetName.object_var], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        _,_, gvar_ds = get_dataset_loaders(ds2name[DatasetName.gripper_var], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+
+        cds = ConcatDataset([ovar_ds, gvar_ds])
+
+        N_train = int(len(cds)*train_ratio)
+        N_test = len(cds)-N_train
+        train, test = torch.utils.data.random_split(
+            cds, 
+            [N_train, N_test], 
+            generator=torch.Generator().manual_seed(seed)
+        )
+
+        train_l = DataLoader(train, shuffle=True, batch_size=batch_size)
+        test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
+
+    else:
+        train_l, test_l, _ = get_dataset_loaders(ds2name[dsname], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size)
 
     return train_l, test_l, seed
 
@@ -112,7 +131,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
-    return train_l, test_l
+    return train_l, test_l, tds
 
 def rep2loss(loss_type):
     if loss_type == LossType.quaternion:

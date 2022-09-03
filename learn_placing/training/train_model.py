@@ -57,6 +57,7 @@ def train(
         with_gripper = with_gripper,
         with_ft = with_ft,
 
+        batch_size=8 if dataset is not DatasetName.combined_var else 32,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
         target_type = InRot.w2o,
@@ -99,7 +100,7 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    train_l, test_l, seed = get_dataset(a.dsname, a)
+    train_l, test_l, seed = get_dataset(a.dsname, a, batch_size=a.batch_size)
     a.__setattr__("dataset_seed", seed)
 
     model = TactilePlacingNet(**a.netp)
@@ -176,16 +177,16 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=20
-    datasets = [DatasetName.object_var, DatasetName.gripper_var]
+    datasets = [DatasetName.object_var, DatasetName.gripper_var, DatasetName.combined_var]
     input_types = [InData.static, InData.with_tap]
     input_modalities = [
-        [True,  False, False],
-        [False, True,  True],
+        [True , False, False],
+        [False, True , False],
         [False, False, True],
-        [True,  True,  False],
-        [True, False, True],
-        [False, True, True],
-        [True, True, True],
+        [True , True , False],
+        [True , False, True],
+        [False, True , True],
+        [True , True , True],
     ]
 
     for dataset in datasets:
