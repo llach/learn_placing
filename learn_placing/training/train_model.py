@@ -99,10 +99,8 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    (train_l, train_ind), (test_l, test_ind) = get_dataset(a.dsname, a)
-
-    a.__setattr__("train_indices", train_ind)
-    a.__setattr__("test_indices", test_ind)
+    train_l, test_l, seed = get_dataset(a.dsname, a)
+    a.__setattr__("dataset_seed", seed)
 
     model = TactilePlacingNet(**a.netp)
     optimizer = optim.Adam(model.parameters(), **a.adamp)

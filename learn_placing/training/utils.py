@@ -71,16 +71,15 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a,indices=None):
-    if indices is not None:
-        tt_indices = indices[:2]
-    else:
-        tt_indices=None
-    (train_l, train_ind), (test_l, test_ind) = get_dataset_loaders(ds2name[dsname], target_type=a.target_type, out_repr=a.out_repr, train_ratio=0.8, indices=tt_indices, input_data=a.input_data)
-    return (train_l, train_ind), (test_l, test_ind)
+def get_dataset(dsname, a, seed=None, train_ratio=0.8):
+    if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
+
+    train_l, test_l = get_dataset_loaders(ds2name[dsname], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+
+    return train_l, test_l, seed
 
 
-def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, indices=None):
+def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -104,24 +103,16 @@ def get_dataset_loaders(name, target_type=InRot.w2o, input_data=InData.with_tap,
     
     tds = TensorDataset(X, GR, FT, Y)
 
-    if indices is None or indices == []:
-        train, test = torch.utils.data.random_split(
-            tds, 
-            [N_train, N_test], 
-            # generator=torch.Generator().manual_seed(42)
-        )
-        train_inds = train.indices
-        test_inds = test.indices
-    else:
-        train_inds = indices[0]
-        test_inds = indices[1]
-        train = TensorDataset(*tds[train_inds])
-        test = TensorDataset(*tds[test_inds])
+    train, test = torch.utils.data.random_split(
+        tds, 
+        [N_train, N_test], 
+        generator=torch.Generator().manual_seed(seed)
+    )
 
     train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
-    return (train_l, train_inds), (test_l, test_inds)
+    return train_l, test_l
 
 def rep2loss(loss_type):
     if loss_type == LossType.quaternion:
