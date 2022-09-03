@@ -57,7 +57,7 @@ def train(
         with_gripper = with_gripper,
         with_ft = with_ft,
 
-        batch_size=8 if dataset is not DatasetName.combined_var else 32,
+        batch_size = 8 if dataset is not DatasetName.combined_var else 16,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
         target_type = InRot.w2o,
@@ -210,4 +210,4 @@ if __name__ == "__main__":
                 )
         fig.suptitle(f"Dataset '{dataset}'")
         fig.tight_layout()
-        fig.savefig(f"{dspath}/trainings.png")
+        fig.savefig(f"{dspath}/trainings_{dataset.lower()}.png")
