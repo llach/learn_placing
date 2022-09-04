@@ -165,11 +165,11 @@ ros::Time PlacingManager::getContactTime(){
     return ros::Time(0);
 }
 
-void PlacingManager::storeSample(ros::Time contactTime){
+void PlacingManager::storeSample(){
     lastSample_ = currentDateTime();
 
-    ros::Time fromTime = contactTime - dataCutOff_;
-    ros::Time toTime = contactTime + dataCutOff_;
+    ros::Time fromTime = contactTime_ - dataCutOff_;
+    ros::Time toTime = contactTime_ + dataCutOff_;
 
     std::string file = basePath_+lastSample_+".bag";
 
@@ -191,7 +191,7 @@ void PlacingManager::storeSample(ros::Time contactTime){
     bag.write("bag_times", fromTime, s);
 
     s.data = "contactTime";
-    bag.write("bag_times", contactTime, s);
+    bag.write("bag_times", contactTime_, s);
     
     s.data = "toTime";
     bag.write("bag_times", toTime, s);
@@ -286,17 +286,15 @@ bool PlacingManager::collectSample(){
 
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
-    ros::Time contactTime = getContactTime();
-    cout << contactTime  << endl;
-    bool hasSamples = checkSamples(contactTime);
-    cout << contactTime  << endl;
+    contactTime_ = getContactTime();
+    bool hasSamples = checkSamples(contactTime_);
 
-    if (contactTime != ros::Time(0) && hasSamples){
+    if (contactTime_ != ros::Time(0) && hasSamples){
 
-        ROS_INFO_STREAM("contact detected at " << contactTime);
-        storeSample(contactTime);
+        ROS_INFO_STREAM("contact detected at " << contactTime_);
+        storeSample();
 
-    } else if (contactTime == ros::Time(0) ) {
+    } else if (contactTime_ == ros::Time(0) ) {
         ROS_FATAL_STREAM("\033[1;31mno contact -> can't store sample"<<"\033[0m");
     } else if (!hasSamples) {
         ROS_FATAL_STREAM("\033[1;31mmissing samples"<<"\033[0m");
@@ -306,7 +304,6 @@ bool PlacingManager::collectSample(){
 
     ROS_INFO("move torso up again ...");
     moveTorso(initialTorsoQ_, moveDur.toSec());
-
 
     // ROS_INFO("reorientating wrist randomly ...");
     // reorientate();
@@ -413,4 +410,50 @@ void PlacingManager::jsCB(const sensor_msgs::JointState::ConstPtr& msg)
 
     std::lock_guard<std::mutex> l(jsLock_);
     currentTorsoQ_ = msg->position[torsoIdx_];
+}
+
+void PlacingManager::sendSample(){
+    std::cout << "sending sample ..." << std::endl;
+    auto srv = n_.serviceClient<ExecutePlacing>("/nn_placing");
+    srv.waitForExistence();
+    std::cout << "service found!" << std::endl;
+
+    ros::Time fromTime = contactTime_ - dataCutOff_;
+    ros::Time toTime = contactTime_ + dataCutOff_;
+
+    ExecutePlacing ep;
+    {
+        std::lock_guard<std::mutex> l(bufferMyLeft.m_);
+
+        for (size_t i = 0; i<bufferMyLeft.data_.size(); i++){
+            if (bufferMyLeft.times_[i] > fromTime && bufferMyLeft.times_[i] < toTime){
+                ep.request.tactile_left.push_back(bufferMyLeft.data_[i]);
+            }
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(bufferMyRight.m_);
+        
+        for (size_t i = 0; i<bufferMyRight.data_.size(); i++){
+            if (bufferMyRight.times_[i] > fromTime && bufferMyRight.times_[i] < toTime){
+                ep.request.tactile_right.push_back(bufferMyRight.data_[i]);
+            }
+        }
+    }
+    {
+        std::lock_guard<std::mutex> l(bufferFt.m_);
+
+        for (size_t i = 0; i<bufferFt.data_.size(); i++){
+            if (bufferFt.times_[i] > fromTime && bufferFt.times_[i] < toTime){
+                ep.request.ft.push_back(bufferFt.data_[i]);
+            }
+        }
+    }
+
+    std::cout << ep.request.tactile_left.size() << " tactile left samples" << std::endl;
+    std::cout << ep.request.tactile_right.size() << " tactile right samples" << std::endl;
+    std::cout << ep.request.ft.size() << " FT samples" << std::endl;
+
+    srv.call(ep);
+    std::cout << "done." << std::endl;
 }

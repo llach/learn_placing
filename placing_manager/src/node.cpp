@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 
     int n;
     while (ros::ok()) {
-        cout << "\nnext? (0=exit;1-7=collect;8=flag;9=grav)" << endl;
+        cout << "\nnext? (0=exit;1-6=collect;7=send;8=flag;9=grav)" << endl;
         cin >> n;
 
         if (n==0) return 0;
@@ -52,7 +52,9 @@ int main(int argc, char **argv)
             ROS_INFO("reinitializing PM ...");
             pm = make_shared<PlacingManager>();
             pm->init(ros::Duration(3), false);
-        } else if (n >= 1 && n <=7) {
+        } else if (n == 7) {
+            pm->sendSample();
+        } else if (n >= 1 && n <=6) {
             // for (int j = 0; j<n;j++){
             std::cout << "calling PM" << std::endl;
             bool success = pm->collectSample();

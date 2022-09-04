@@ -27,8 +27,6 @@ public:
                 bag.write(name_, times_[i], data_[i]);
             }
         }
-        times_.clear();
-        data_.clear();
     }
 
     void clear(){

@@ -31,6 +31,7 @@
 #include <tactile_msgs/TactileState.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <wrist_motion/PlanWristAction.h>
+#include <placing_manager/ExecutePlacing.h>
 #include <moveit_msgs/ExecuteTrajectoryAction.h>
 #include <state_estimation/ObjectStateEstimate.h>
 #include <controller_manager_msgs/LoadController.h>
@@ -48,6 +49,7 @@ public:
     PlacingManager(float initialTorsoQ = 0.35, float tableHeight_ = 0.72);
 
     bool init(ros::Duration timeout, bool initTorso);
+    void sendSample();
     void flagSample();
     bool collectSample();
     bool isControllerRunning(std::string name);
@@ -75,6 +77,7 @@ private:
     float currentTorsoQ_ = -1.0;
     float torsoVel_ = 0.4; // sec/cm
 
+    ros::Time contactTime_;
     ros::NodeHandle n_;
     ros::Rate waitRate_;
 
@@ -99,7 +102,7 @@ private:
     void clearAll();
     bool reorientate();
     float getTorsoGoal(float &time);
-    void storeSample(ros::Time contactTime);
+    void storeSample();
     bool checkSamples(const ros::Time &n);
     bool checkLastTimes(ros::Time n);
     bool ensureRunningController(std::string name, std::string stop);

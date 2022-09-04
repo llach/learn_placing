@@ -26,209 +26,221 @@ ftLookback = {
     DatasetName.gripper_var: [[-20,-5], [-35,-20]],
 }
 
-""" PARAMETERS
-"""
-ZETA = timedelta(milliseconds=100)
-MAX_DEV = 0.005
-MIN_N = 10 # per camera
+def myrmex_transform(left, right, dd):
+    ler = preprocess_myrmex(left)
+    rir = preprocess_myrmex(right)
 
-dsnames = [DatasetName.cuboid, DatasetName.cylinder, DatasetName.object_var, DatasetName.gripper_var]
-data_root = f"{os.environ['HOME']}/tud_datasets"
-for dd in dsnames: 
-    dsname = ds2name[dd]
-    print(f"processing dataset {dsname} ...")
+    # cut to same length (we determined that in `myrmex_lookback.py`)
+    fro, to = dsLookback[dd][0]
+    ri = rir[fro:to]
+    le = ler[fro:to]
 
-    dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
-    dataset_file = f"{data_root}/{dsname}.pkl"
+    sfro, sto = dsLookback[dd][1]
+    ri_static = rir[sfro:sto]
+    le_static = ler[sfro:sto]
 
-    # sample timestamp -> sample
-    ds = load_dataset(dataset_path)
+    inp = np.stack([le, ri])
+    inp_static = np.stack([le_static, ri_static])
 
-    # step 1: filter object state samples at or after contact
-    os = {}
-    for k, v in ds.items():
-        # [ [timetsamp], [object state]]
-        o = v["object_state"]
+    return inp, inp_static
 
-        # get perceived contact time, subtract a bit to adjust for delay
-        contact_time = v["bag_times"][0][1]
-        last_time = contact_time-ZETA
-        
-        # only keep samples before last allowed time
-        o_filtered = [[], []]
-        for t, state in zip(*o):
-            if t < last_time: 
-                o_filtered[0].append(t)
-                o_filtered[1].append(state)
-        os.update({k: o_filtered})
+def ft_transform(ft, dd):
+    data_ft = np.reshape(ft[-35:], (35,6))
+            
+    fro, to = ftLookback[dd][0]
+    ftt = data_ft[fro:to]
 
-    min_lens=100
+    sfro, sto = ftLookback[dd][1]
+    ft_static = data_ft[sfro:sto]
 
-    bad_timestamps = []
-    labels = {}
+    return ftt, ft_static
 
-    # step 2: store cleaned object samples
-    for i, (t, sample) in enumerate(os.items()):
-        # sample is sequence: [ [timetsamp], [object state]]
-        states = sample[1]
-        
-        # stats: {cam: [N, mu, std]}
-        _, stats, dists = cam_stats(states)
+if __name__ == "__main__":
+    """ PARAMETERS
+    """
+    ZETA = timedelta(milliseconds=100)
+    MAX_DEV = 0.005
+    MIN_N = 10 # per camera
 
-        # we ignore cams if they have a high deviation in samples or too few measurements
-        ignored_cams = [k for k, v in stats.items() if v[2]>MAX_DEV or v[0] < MIN_N]
+    dsnames = [DatasetName.cuboid, DatasetName.cylinder, DatasetName.object_var, DatasetName.gripper_var]
+    data_root = f"{os.environ['HOME']}/tud_datasets"
+    for dd in dsnames: 
+        dsname = ds2name[dd]
+        print(f"processing dataset {dsname} ...")
 
-        # if all cams are ignored, we ignore the sample
-        if len(ignored_cams)==len(stats):
-            print(f"sample {i} is bad! --> ignore")
-            bad_timestamps.append(t)
-            continue
+        dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
+        dataset_file = f"{data_root}/{dsname}.pkl"
 
-        # remove bad cameras
-        for ic in ignored_cams: stats.pop(ic)
+        # sample timestamp -> sample
+        ds = load_dataset(dataset_path)
 
-        # get the one with lowest measurement deviation    
-        chosen_cam = ""
-        chosen_dev = MAX_DEV
-        chosen_N = 0
-        for cam, sta in stats.items():
-            if sta[2]<chosen_dev: 
-                chosen_cam = cam
-                chosen_dev = sta[2]
-                chosen_N = sta[0]
+        # step 1: filter object state samples at or after contact
+        os = {}
+        for k, v in ds.items():
+            # [ [timetsamp], [object state]]
+            o = v["object_state"]
 
-        # extract cam measurements
-        all_quaternions = []
-        for st in states:
-            for q, cam in zip(st["qOs"], st["cameras"]):
-                if cam == chosen_cam: all_quaternions.append(q)
+            # get perceived contact time, subtract a bit to adjust for delay
+            contact_time = v["bag_times"][0][1]
+            last_time = contact_time-ZETA
+            
+            # only keep samples before last allowed time
+            o_filtered = [[], []]
+            for t, state in zip(*o):
+                if t < last_time: 
+                    o_filtered[0].append(t)
+                    o_filtered[1].append(state)
+            os.update({k: o_filtered})
 
-        finalq = qO2qdiff(qavg(all_quaternions))
-        finalv = v_from_qdiff(finalq)
+        min_lens=100
 
-        # extract gripper transforms
-        tfs = ds[t]["tf"][1]
-        T, world2obj, grip2obj = extract_gripper_T(tfs)
+        bad_timestamps = []
+        labels = {}
 
-        # world -> gripper
-        qWG = quaternion_from_matrix(T)
-        qWG = normalize(qWG)
-        Rwg = quaternion_matrix(qWG)
+        # step 2: store cleaned object samples
+        for i, (t, sample) in enumerate(os.items()):
+            # sample is sequence: [ [timetsamp], [object state]]
+            states = sample[1]
+            
+            # stats: {cam: [N, mu, std]}
+            _, stats, dists = cam_stats(states)
 
-        # gripper -> object
-        qGO = quaternion_multiply(quaternion_inverse(qWG), finalq)
-        qGO = normalize(qGO)
-        Rgo = quaternion_matrix(qGO)
+            # we ignore cams if they have a high deviation in samples or too few measurements
+            ignored_cams = [k for k, v in stats.items() if v[2]>MAX_DEV or v[0] < MIN_N]
 
-        Zgo = Rgo@[0,0,1,1]
-        ZgoNorm = normalize([Zgo[2], -Zgo[0]])
-        gripper_angle = np.arctan2(ZgoNorm[1], ZgoNorm[0])
+            # if all cams are ignored, we ignore the sample
+            if len(ignored_cams)==len(stats):
+                print(f"sample {i} is bad! --> ignore")
+                bad_timestamps.append(t)
+                continue
 
-        Xgo = Rgo@[1,0,0,1]
-        XgoNorm = normalize([Xgo[0], Xgo[2]])
-        gripper_angle_x = np.arctan2(XgoNorm[1], XgoNorm[0])
+            # remove bad cameras
+            for ic in ignored_cams: stats.pop(ic)
 
-        RcleanX = Ry(-gripper_angle_x)
-        RcleanZ = Ry(-gripper_angle)
+            # get the one with lowest measurement deviation    
+            chosen_cam = ""
+            chosen_dev = MAX_DEV
+            chosen_N = 0
+            for cam, sta in stats.items():
+                if sta[2]<chosen_dev: 
+                    chosen_cam = cam
+                    chosen_dev = sta[2]
+                    chosen_N = sta[0]
 
-        RwCleanX = Rwg@RcleanX
-        RwCleanZ = Rwg@RcleanZ
+            # extract cam measurements
+            all_quaternions = []
+            for st in states:
+                for q, cam in zip(st["qOs"], st["cameras"]):
+                    if cam == chosen_cam: all_quaternions.append(q)
 
-        Rgw = inverse_matrix(Rwg)
+            finalq = qO2qdiff(qavg(all_quaternions))
+            finalv = v_from_qdiff(finalq)
 
-        Zgw = Rgw[:3,:3]@[0,0,1]
-        Zgc = RcleanX@[0,0,1,1]
+            # extract gripper transforms
+            tfs = ds[t]["tf"][1]
+            T, world2obj, grip2obj = extract_gripper_T(tfs)
 
-        local_dotp = np.arccos(np.dot(Zgw, Zgc[:3]))
+            # world -> gripper
+            qWG = quaternion_from_matrix(T)
+            qWG = normalize(qWG)
+            Rwg = quaternion_matrix(qWG)
 
-        # axp = AxesPlot()
+            # gripper -> object
+            qGO = quaternion_multiply(quaternion_inverse(qWG), finalq)
+            qGO = normalize(qGO)
+            Rgo = quaternion_matrix(qGO)
 
-        # published gripper to object transform VS the one we calculated based on tf msgs
-        # axp.plot_v(rotate_v([0,0,-1], grip2obj[0]), color="grey", label="published tf")
-        # axp.plot_v(rotate_v([0,0,-1], qGO), color="black", label="calculated tf")
-        # axp.title("gripper -> object TF")
+            Zgo = Rgo@[0,0,1,1]
+            ZgoNorm = normalize([Zgo[2], -Zgo[0]])
+            gripper_angle = np.arctan2(ZgoNorm[1], ZgoNorm[0])
 
-        # calculated object tf after filtering noisy camera measurements vs the one recorded during sample collection.
-        # might be off a little bit since the publised tf can be noisy, but not too much off across samples
-        # axp.plot_v(rotate_v([0,0,-1], world2obj[0]), color="grey", label="published tf")
-        # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="calculated tf")
-        # axp.title("world -> object TF")
+            Xgo = Rgo@[1,0,0,1]
+            XgoNorm = normalize([Xgo[0], Xgo[2]])
+            gripper_angle_x = np.arctan2(XgoNorm[1], XgoNorm[0])
 
-        # make sure the FK + gripper -> object transform matches the finalq we calculate based on measurements
-        # axp.plot_v(rotate_v([0,0,-1], quaternion_multiply(qWG, qGO)), color="grey", label="complete tf")
-        # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="finalq")
-        # axp.title("world -> object Quat.Mult.")
+            RcleanX = Ry(-gripper_angle_x)
+            RcleanZ = Ry(-gripper_angle)
 
-        # axp.show()
+            RwCleanX = Rwg@RcleanX
+            RwCleanZ = Rwg@RcleanZ
 
-        angle = np.dot(finalv, [0,0,-1])
+            Rgw = inverse_matrix(Rwg)
 
-        labels.update({
-            t: {
-                InRot.w2o: finalq,
-                InRot.w2cleanX: quaternion_from_matrix(RwCleanX),
-                InRot.w2cleanZ: quaternion_from_matrix(RwCleanZ),
-                InRot.w2g: qWG,
-                InRot.g2o: qGO,
-                InRot.gripper_angle: gripper_angle,
-                InRot.gripper_angle_x: gripper_angle_x,
-                InRot.local_dotp: local_dotp,
-                "vec": finalv,
-                "angle": angle,
-            }
-        })
+            Zgw = Rgw[:3,:3]@[0,0,1]
+            Zgc = RcleanX@[0,0,1,1]
 
-    # step 3: store myrmex input samples, skipping bad ones
-    inputs = {}
-    static_inputs = {}
-    for i, (t, sample) in enumerate(ds.items()):
-        if t not in labels:
-            print(f"skipping myrmex sample {i}")
-            continue
-        
-        ler = preprocess_myrmex(sample["tactile_left"][1])
-        rir = preprocess_myrmex(sample["tactile_right"][1])
+            local_dotp = np.arccos(np.dot(Zgw, Zgc[:3]))
 
-        # cut to same length (we determined that in `myrmex_lookback.py`)
-        fro, to = dsLookback[dd][0]
-        ri = rir[fro:to]
-        le = ler[fro:to]
+            # axp = AxesPlot()
 
-        sfro, sto = dsLookback[dd][1]
-        ri_static = rir[sfro:sto]
-        le_static = ler[sfro:sto]
+            # published gripper to object transform VS the one we calculated based on tf msgs
+            # axp.plot_v(rotate_v([0,0,-1], grip2obj[0]), color="grey", label="published tf")
+            # axp.plot_v(rotate_v([0,0,-1], qGO), color="black", label="calculated tf")
+            # axp.title("gripper -> object TF")
 
-        inp = np.stack([le, ri])
-        inp_static = np.stack([le_static, ri_static])
+            # calculated object tf after filtering noisy camera measurements vs the one recorded during sample collection.
+            # might be off a little bit since the publised tf can be noisy, but not too much off across samples
+            # axp.plot_v(rotate_v([0,0,-1], world2obj[0]), color="grey", label="published tf")
+            # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="calculated tf")
+            # axp.title("world -> object TF")
 
-        inputs.update({t: inp})
-        static_inputs.update({t: inp_static})
+            # make sure the FK + gripper -> object transform matches the finalq we calculate based on measurements
+            # axp.plot_v(rotate_v([0,0,-1], quaternion_multiply(qWG, qGO)), color="grey", label="complete tf")
+            # axp.plot_v(rotate_v([0,0,-1], finalq), color="black", label="finalq")
+            # axp.title("world -> object Quat.Mult.")
 
-    # step 4: preprocess FT data
-    ft = {}
-    static_ft = {}
-    for i, (t, sample) in enumerate(ds.items()):
-        if t not in labels:
-            print(f"skipping FT sample {i}")
-            continue
+            # axp.show()
 
-        data_ft = np.reshape(sample["ft"][1][-35:], (35,6))
-        
-        fro, to = ftLookback[dd][0]
-        ftt = data_ft[fro:to]
-        ft.update({t: ftt})
+            angle = np.dot(finalv, [0,0,-1])
 
-        sfro, sto = ftLookback[dd][1]
-        ft_static = data_ft[sfro:sto]
-        static_ft.update({t: ft_static})
+            labels.update({
+                t: {
+                    InRot.w2o: finalq,
+                    InRot.w2cleanX: quaternion_from_matrix(RwCleanX),
+                    InRot.w2cleanZ: quaternion_from_matrix(RwCleanZ),
+                    InRot.w2g: qWG,
+                    InRot.g2o: qGO,
+                    InRot.gripper_angle: gripper_angle,
+                    InRot.gripper_angle_x: gripper_angle_x,
+                    InRot.local_dotp: local_dotp,
+                    "vec": finalv,
+                    "angle": angle,
+                }
+            })
 
-    with open(dataset_file, "wb") as f:
-        pickle.dump({
-            "labels": labels, 
-            "inputs": inputs,
-            "static_inputs": static_inputs,
-            "ft": ft,
-            "static_ft": static_ft
-        }, f)
-    print()
-print("all done!")
+        # step 3: store myrmex input samples, skipping bad ones
+        inputs = {}
+        static_inputs = {}
+        for i, (t, sample) in enumerate(ds.items()):
+            if t not in labels:
+                print(f"skipping myrmex sample {i}")
+                continue
+
+            inp, inp_static = myrmex_transform(sample["tactile_left"][1], sample["tactile_right"][1])
+
+            inputs.update({t: inp})
+            static_inputs.update({t: inp_static})
+
+        # step 4: preprocess FT data
+        ft = {}
+        static_ft = {}
+        for i, (t, sample) in enumerate(ds.items()):
+            if t not in labels:
+                print(f"skipping FT sample {i}")
+                continue
+
+            ftt, ft_static = ft_transform(sample["ft"][1])
+            
+            ft.update({t: ftt})
+            static_ft.update({t: ft_static})
+
+        with open(dataset_file, "wb") as f:
+            pickle.dump({
+                "labels": labels, 
+                "inputs": inputs,
+                "static_inputs": static_inputs,
+                "ft": ft,
+                "static_ft": static_ft
+            }, f)
+        print()
+    print("all done!")

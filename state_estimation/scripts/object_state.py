@@ -299,7 +299,7 @@ class StateEstimator:
 
         self.tts = []
         for cam, pm in zip(cams, [False, False, False]):
-            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=True))
+            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=pm))
         self.head_tt = TagTransformator("head", n_calibration_samples=n_calibration_samples, publish_marker_tfs=False)
 
         self.calibrated = False
