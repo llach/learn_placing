@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1
+        - /TF1/Frames1
       Splitter Ratio: 0.7023809552192688
     Tree Height: 576
   - Class: rviz/Selection
@@ -267,204 +269,66 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        hand_right_grasping_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        hand_right_index_abd_link:
+        gripper_right_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_1_link:
+        gripper_right_coupler_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_2_link:
+        gripper_right_left_inner_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_3_link:
+        gripper_right_left_inner_finger_pad:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_link:
+        gripper_right_left_inner_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_1_link:
+        gripper_right_left_outer_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_2_link:
+        gripper_right_left_outer_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_3_link:
+        gripper_right_right_inner_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_abd_link:
+        gripper_right_right_inner_finger_pad:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_1_link:
+        gripper_right_right_inner_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_2_link:
+        gripper_right_right_outer_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_3_link:
+        gripper_right_right_outer_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_little_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_little_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_mrl_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_palm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_safety_box:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_tool_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
         head_1_link:
           Alpha: 1
           Show Axes: false
@@ -633,6 +497,10 @@ Visualization Manager:
           Value: false
         cam1:
           Value: false
+        cam2:
+          Value: true
+        cam3:
+          Value: true
         caster_back_left_1_link:
           Value: false
         caster_back_left_2_link:
@@ -661,93 +529,45 @@ Visualization Manager:
           Value: false
         gripper_left_tool_link:
           Value: false
-        hand_right_grasping_frame:
+        gripper_right_base_link:
           Value: false
-        hand_right_index_abd_link:
+        gripper_right_coupler_link:
           Value: false
-        hand_right_index_flex_1_link:
+        gripper_right_left_inner_finger:
           Value: false
-        hand_right_index_flex_2_link:
+        gripper_right_left_inner_finger_pad:
           Value: false
-        hand_right_index_flex_3_link:
+        gripper_right_left_inner_knuckle:
           Value: false
-        hand_right_index_link:
+        gripper_right_left_outer_finger:
           Value: false
-        hand_right_index_virtual_1_link:
+        gripper_right_left_outer_knuckle:
           Value: false
-        hand_right_index_virtual_2_link:
+        gripper_right_right_inner_finger:
           Value: false
-        hand_right_index_virtual_3_link:
+        gripper_right_right_inner_finger_pad:
           Value: false
-        hand_right_little_abd_link:
+        gripper_right_right_inner_knuckle:
           Value: false
-        hand_right_little_flex_1_link:
+        gripper_right_right_outer_finger:
           Value: false
-        hand_right_little_flex_2_link:
-          Value: false
-        hand_right_little_flex_3_link:
-          Value: false
-        hand_right_little_virtual_1_link:
-          Value: false
-        hand_right_little_virtual_2_link:
-          Value: false
-        hand_right_little_virtual_3_link:
-          Value: false
-        hand_right_middle_abd_link:
-          Value: false
-        hand_right_middle_flex_1_link:
-          Value: false
-        hand_right_middle_flex_2_link:
-          Value: false
-        hand_right_middle_flex_3_link:
-          Value: false
-        hand_right_middle_virtual_1_link:
-          Value: false
-        hand_right_middle_virtual_2_link:
-          Value: false
-        hand_right_middle_virtual_3_link:
-          Value: false
-        hand_right_mrl_link:
-          Value: false
-        hand_right_palm_link:
-          Value: false
-        hand_right_ring_abd_link:
-          Value: false
-        hand_right_ring_flex_1_link:
-          Value: false
-        hand_right_ring_flex_2_link:
-          Value: false
-        hand_right_ring_flex_3_link:
-          Value: false
-        hand_right_ring_virtual_1_link:
-          Value: false
-        hand_right_ring_virtual_2_link:
-          Value: false
-        hand_right_ring_virtual_3_link:
-          Value: false
-        hand_right_safety_box:
-          Value: false
-        hand_right_thumb_abd_link:
-          Value: false
-        hand_right_thumb_flex_1_link:
-          Value: false
-        hand_right_thumb_flex_2_link:
-          Value: false
-        hand_right_thumb_link:
-          Value: false
-        hand_right_thumb_virtual_1_link:
-          Value: false
-        hand_right_thumb_virtual_2_link:
-          Value: false
-        hand_right_tool_link:
+        gripper_right_right_outer_knuckle:
           Value: false
         head_1_link:
           Value: false
         head_2_link:
           Value: false
+        map:
+          Value: true
         object:
           Value: false
         object_cam1:
+          Value: false
+        object_cam3:
+          Value: false
+        object_head:
+          Value: false
+        odom:
           Value: false
         rgbd_laser_link:
           Value: false
@@ -757,25 +577,15 @@ Visualization Manager:
           Value: false
         table:
           Value: false
-        tag_0:
+        tag_4_cam1:
           Value: false
-        tag_0_cam1:
+        tag_5_cam1:
           Value: false
-        tag_1:
+        tag_6_cam3:
           Value: false
-        tag_1_cam1:
+        tag_7_cam3:
           Value: false
-        tag_2:
-          Value: false
-        tag_2_cam1:
-          Value: false
-        tag_3:
-          Value: false
-        tag_3_cam1:
-          Value: false
-        tag_8:
-          Value: false
-        tag_8_cam1:
+        tag_9_cam3:
           Value: false
         torso_fixed_column_link:
           Value: false
@@ -786,8 +596,6 @@ Visualization Manager:
         wheel_left_link:
           Value: false
         wheel_right_link:
-          Value: false
-        world:
           Value: false
         wrist_left_ft_link:
           Value: false
@@ -818,176 +626,139 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        world:
-          base_footprint:
-            base_cover_link:
-              {}
-            base_link:
-              base_antenna_left_link:
+        map:
+          odom:
+            base_footprint:
+              base_cover_link:
                 {}
-              base_antenna_right_link:
-                {}
-              base_imu_link:
-                {}
-              base_laser_link:
-                {}
-              base_mic_back_left_link:
-                {}
-              base_mic_back_right_link:
-                {}
-              base_mic_front_left_link:
-                {}
-              base_mic_front_right_link:
-                {}
-              base_sonar_01_link:
-                {}
-              base_sonar_02_link:
-                {}
-              base_sonar_03_link:
-                {}
-              caster_back_left_1_link:
-                caster_back_left_2_link:
+              base_link:
+                base_antenna_left_link:
                   {}
-              caster_back_right_1_link:
-                caster_back_right_2_link:
+                base_antenna_right_link:
                   {}
-              caster_front_left_1_link:
-                caster_front_left_2_link:
+                base_imu_link:
                   {}
-              caster_front_right_1_link:
-                caster_front_right_2_link:
+                base_laser_link:
                   {}
-              suspension_left_link:
-                wheel_left_link:
+                base_mic_back_left_link:
                   {}
-              suspension_right_link:
-                wheel_right_link:
+                base_mic_back_right_link:
                   {}
-              torso_fixed_column_link:
-                {}
-              torso_fixed_link:
-                torso_lift_link:
-                  arm_left_1_link:
-                    arm_left_2_link:
-                      arm_left_3_link:
-                        arm_left_4_link:
-                          arm_left_5_link:
-                            arm_left_6_link:
-                              arm_left_7_link:
-                                arm_left_tool_link:
-                                  wrist_left_ft_link:
-                                    wrist_left_ft_tool_link:
-                                      gripper_left_link:
-                                        gripper_left_grasping_frame:
-                                          grasped_object:
+                base_mic_front_left_link:
+                  {}
+                base_mic_front_right_link:
+                  {}
+                base_sonar_01_link:
+                  {}
+                base_sonar_02_link:
+                  {}
+                base_sonar_03_link:
+                  {}
+                caster_back_left_1_link:
+                  caster_back_left_2_link:
+                    {}
+                caster_back_right_1_link:
+                  caster_back_right_2_link:
+                    {}
+                caster_front_left_1_link:
+                  caster_front_left_2_link:
+                    {}
+                caster_front_right_1_link:
+                  caster_front_right_2_link:
+                    {}
+                suspension_left_link:
+                  wheel_left_link:
+                    {}
+                suspension_right_link:
+                  wheel_right_link:
+                    {}
+                torso_fixed_column_link:
+                  {}
+                torso_fixed_link:
+                  torso_lift_link:
+                    arm_left_1_link:
+                      arm_left_2_link:
+                        arm_left_3_link:
+                          arm_left_4_link:
+                            arm_left_5_link:
+                              arm_left_6_link:
+                                arm_left_7_link:
+                                  arm_left_tool_link:
+                                    wrist_left_ft_link:
+                                      wrist_left_ft_tool_link:
+                                        gripper_left_link:
+                                          gripper_left_grasping_frame:
+                                            grasped_object:
+                                              {}
+                                          gripper_left_left_finger_link:
                                             {}
-                                        gripper_left_left_finger_link:
+                                          gripper_left_right_finger_link:
+                                            {}
+                                        gripper_left_tool_link:
                                           {}
-                                        gripper_left_right_finger_link:
-                                          {}
-                                      gripper_left_tool_link:
-                                        {}
-                  arm_right_1_link:
-                    arm_right_2_link:
-                      arm_right_3_link:
-                        arm_right_4_link:
-                          arm_right_5_link:
-                            arm_right_6_link:
-                              arm_right_7_link:
-                                arm_right_tool_link:
-                                  wrist_right_ft_link:
-                                    wrist_right_ft_tool_link:
-                                      hand_right_palm_link:
-                                        hand_right_grasping_frame:
-                                          {}
-                                        hand_right_index_abd_link:
-                                          hand_right_index_virtual_1_link:
-                                            hand_right_index_flex_1_link:
-                                              hand_right_index_virtual_2_link:
-                                                hand_right_index_flex_2_link:
-                                                  hand_right_index_virtual_3_link:
-                                                    hand_right_index_flex_3_link:
-                                                      {}
-                                        hand_right_index_link:
-                                          {}
-                                        hand_right_little_abd_link:
-                                          hand_right_little_virtual_1_link:
-                                            hand_right_little_flex_1_link:
-                                              hand_right_little_virtual_2_link:
-                                                hand_right_little_flex_2_link:
-                                                  hand_right_little_virtual_3_link:
-                                                    hand_right_little_flex_3_link:
-                                                      {}
-                                        hand_right_middle_abd_link:
-                                          hand_right_middle_virtual_1_link:
-                                            hand_right_middle_flex_1_link:
-                                              hand_right_middle_virtual_2_link:
-                                                hand_right_middle_flex_2_link:
-                                                  hand_right_middle_virtual_3_link:
-                                                    hand_right_middle_flex_3_link:
-                                                      {}
-                                        hand_right_mrl_link:
-                                          {}
-                                        hand_right_ring_abd_link:
-                                          hand_right_ring_virtual_1_link:
-                                            hand_right_ring_flex_1_link:
-                                              hand_right_ring_virtual_2_link:
-                                                hand_right_ring_flex_2_link:
-                                                  hand_right_ring_virtual_3_link:
-                                                    hand_right_ring_flex_3_link:
-                                                      {}
-                                        hand_right_thumb_abd_link:
-                                          hand_right_thumb_virtual_1_link:
-                                            hand_right_thumb_flex_1_link:
-                                              hand_right_thumb_virtual_2_link:
-                                                hand_right_thumb_flex_2_link:
-                                                  {}
-                                        hand_right_thumb_link:
-                                          {}
-                                      hand_right_safety_box:
-                                        {}
-                                      hand_right_tool_link:
-                                        {}
-                  head_1_link:
-                    head_2_link:
-                      xtion_link:
-                        xtion_optical_frame:
-                          {}
-                        xtion_orbbec_aux_joint_frame:
-                          xtion_rgb_frame:
-                            xtion_depth_frame:
-                              xtion_depth_optical_frame:
+                    arm_right_1_link:
+                      arm_right_2_link:
+                        arm_right_3_link:
+                          arm_right_4_link:
+                            arm_right_5_link:
+                              arm_right_6_link:
+                                arm_right_7_link:
+                                  arm_right_tool_link:
+                                    wrist_right_ft_link:
+                                      wrist_right_ft_tool_link:
+                                        gripper_right_coupler_link:
+                                          gripper_right_base_link:
+                                            gripper_right_left_inner_knuckle:
+                                              {}
+                                            gripper_right_left_outer_knuckle:
+                                              gripper_right_left_outer_finger:
+                                                gripper_right_left_inner_finger:
+                                                  gripper_right_left_inner_finger_pad:
+                                                    {}
+                                            gripper_right_right_inner_knuckle:
+                                              {}
+                                            gripper_right_right_outer_knuckle:
+                                              gripper_right_right_outer_finger:
+                                                gripper_right_right_inner_finger:
+                                                  gripper_right_right_inner_finger_pad:
+                                                    {}
+                    head_1_link:
+                      head_2_link:
+                        xtion_link:
+                          xtion_optical_frame:
+                            {}
+                          xtion_orbbec_aux_joint_frame:
+                            xtion_rgb_frame:
+                              xtion_depth_frame:
+                                xtion_depth_optical_frame:
+                                  {}
+                              xtion_rgb_optical_frame:
                                 {}
-                            xtion_rgb_optical_frame:
-                              {}
-            object:
-              {}
-            rgbd_laser_link:
-              {}
-            table:
-              cam1:
-                tag_0_cam1:
+              object:
+                {}
+              rgbd_laser_link:
+                {}
+              table:
+                cam1:
+                  tag_4_cam1:
+                    {}
+                  tag_5_cam1:
+                    {}
+                cam2:
                   {}
-                tag_1_cam1:
+                cam3:
+                  tag_6_cam3:
+                    {}
+                  tag_7_cam3:
+                    {}
+                  tag_9_cam3:
+                    {}
+                object_cam1:
                   {}
-                tag_2_cam1:
+                object_cam3:
                   {}
-                tag_3_cam1:
+                object_head:
                   {}
-                tag_8_cam1:
-                  {}
-              object_cam1:
-                {}
-              tag_0:
-                {}
-              tag_1:
-                {}
-              tag_2:
-                {}
-              tag_3:
-                {}
-              tag_8:
-                {}
       Update Interval: 0
       Value: true
     - Class: rviz/MarkerArray
@@ -995,7 +766,9 @@ Visualization Manager:
       Marker Topic: /reorient_markers
       Name: MarkerArray
       Namespaces:
-        {}
+        "": true
+        goal_frame: true
+        start_frame: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -1003,7 +776,8 @@ Visualization Manager:
       Marker Topic: /placing_markers
       Name: MarkerArray
       Namespaces:
-        {}
+        start_frame: true
+        target_frame: true
       Queue Size: 100
       Value: true
     - Class: moveit_rviz_plugin/Trajectory
@@ -1221,204 +995,66 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        hand_right_grasping_frame:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        hand_right_index_abd_link:
+        gripper_right_base_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_1_link:
+        gripper_right_coupler_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_2_link:
+        gripper_right_left_inner_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_flex_3_link:
+        gripper_right_left_inner_finger_pad:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_link:
+        gripper_right_left_inner_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_1_link:
+        gripper_right_left_outer_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_2_link:
+        gripper_right_left_outer_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_index_virtual_3_link:
+        gripper_right_right_inner_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_abd_link:
+        gripper_right_right_inner_finger_pad:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_1_link:
+        gripper_right_right_inner_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_2_link:
+        gripper_right_right_outer_finger:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_flex_3_link:
+        gripper_right_right_outer_knuckle:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        hand_right_little_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_little_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_little_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_flex_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_middle_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_mrl_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_palm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_flex_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_ring_virtual_3_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_safety_box:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_abd_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_flex_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_flex_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_virtual_1_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_thumb_virtual_2_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        hand_right_tool_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
         head_1_link:
           Alpha: 1
           Show Axes: false
@@ -1555,7 +1191,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 1.5164397954940796
+      Distance: 1.4612674713134766
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -1563,17 +1199,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.45775869488716125
-        Y: 0.37971198558807373
-        Z: 0.5384762287139893
+        X: -0.16479283571243286
+        Y: 0.6641607880592346
+        Z: 0.7693081498146057
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.23039810359477997
+      Pitch: 0.6153979301452637
       Target Frame: <Fixed Frame>
-      Yaw: 5.398525714874268
+      Yaw: 0.13534092903137207
     Saved: ~
 Window Geometry:
   Displays:
@@ -1581,7 +1217,7 @@ Window Geometry:
   Height: 919
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd0000000400000000000001aa000002f0fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000007c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002c000002f00000011000fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c005400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000001c0000001c000000010000013f000002f0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002c000002f0000000de00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000006d10000004cfc0100000002fb0000000800540069006d00650100000000000006d10000032e00fffffffb0000000800540069006d0065010000000000000450000000000000000000000523000002f000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001aa000002f0fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000007c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002c000002f00000011000fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c005400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005400ffffff000000010000013f000002f0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002c000002f0000000de00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000006d10000004cfc0100000002fb0000000800540069006d00650100000000000006d10000032e00fffffffb0000000800540069006d0065010000000000000450000000000000000000000523000002f000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:

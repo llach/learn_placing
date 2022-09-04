@@ -204,7 +204,6 @@ class TagTransformator:
 
                 axis = np.cross(w,u)
                 angle = np.arccos(np.dot(w,u))
-                print(angle)
 
                 qd = quaternion_about_axis(angle, axis)
                 

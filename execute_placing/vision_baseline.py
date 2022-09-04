@@ -51,20 +51,20 @@ if __name__ == "__main__":
     import time
     import rospy
     from sensor_msgs.msg import JointState
-
-    INITIAL_STATE = [0.0, 1.07, 0.04, 1.87, 1.43, 0.28, 0.48, -0.92]
-    ACTIVE_JOINTS = ['torso_lift_joint', 'arm_left_1_joint', 'arm_left_2_joint', 'arm_left_3_joint', 'arm_left_4_joint', 'arm_left_5_joint', 'arm_left_6_joint', 'arm_left_7_joint']
-
-    init_js = {jn: [jp] for jn, jp in zip(ACTIVE_JOINTS, INITIAL_STATE)}
-
     rospy.init_node("placing_oracle")
 
-    joint_pub = rospy.Publisher('/move_group/fake_controller_joint_states', JointState, queue_size=10)
-    print("waiting for js subscriber")
-    while joint_pub.get_num_connections()<1:
-        time.sleep(0.5)
+    # INITIAL_STATE = [0.0, 1.07, 0.04, 1.87, 1.43, 0.28, 0.48, -0.92]
+    # ACTIVE_JOINTS = ['torso_lift_joint', 'arm_left_1_joint', 'arm_left_2_joint', 'arm_left_3_joint', 'arm_left_4_joint', 'arm_left_5_joint', 'arm_left_6_joint', 'arm_left_7_joint']
 
-    joint_pub.publish(JointState(name=ACTIVE_JOINTS, position=INITIAL_STATE))
+    # init_js = {jn: [jp] for jn, jp in zip(ACTIVE_JOINTS, INITIAL_STATE)}
+
+
+    # joint_pub = rospy.Publisher('/move_group/fake_controller_joint_states', JointState, queue_size=10)
+    # print("waiting for js subscriber")
+    # while joint_pub.get_num_connections()<1:
+    #     time.sleep(0.5)
+
+    # joint_pub.publish(JointState(name=ACTIVE_JOINTS, position=INITIAL_STATE))
 
     po = PlacingOracle()
     time.sleep(0.2)

@@ -39,6 +39,12 @@ class PlacingPlanner:
                 print(e)
         print("planner init done")
 
+    def input_or_quit(self, text):
+        i = input(text)
+        if i.lower() == "q" or i.lower() == "s":
+            return False
+        return True
+
     def plan_placing(self, Two):
         Tfwg = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
         Twg = Tf2T(*Tfwg)
@@ -73,6 +79,8 @@ class PlacingPlanner:
             check_validity=True,
             table_height=0.4, 
         )
+
+        print("planning done")
 
         # input("execute?")
 

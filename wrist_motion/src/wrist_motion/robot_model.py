@@ -87,7 +87,7 @@ class Joint():
             try:
                 self.min = float(get_value(tag, 'limit', 'lower'))
                 self.max = float(get_value(tag, 'limit', 'upper'))
-            except IndexError:
+            except (ValueError, IndexError) as e:
                 raise Exception("Joint %s has not limits" % self.name)
 
             mimic = tag.getElementsByTagName('mimic')
@@ -122,6 +122,15 @@ class RobotModel():
         for tag in robot.getElementsByTagName('joint'):
             if tag.getAttribute('name') in ignore_joints: continue
             if tag.getAttribute('type') == '': continue # skip <transmission> joints
+            # skip joints without limits (e.g. wheels)
+            try:
+                jtype = getattr(Joint, tag.getAttribute('type'))
+                active = jtype in [Joint.revolute, Joint.prismatic]
+                if active:
+                    float(get_value(tag, 'limit', 'lower'))
+            except Exception:
+                print(f"skipping Joint {tag.getAttribute('name')} due to missing joint limits")
+                continue
             self._add(Joint(tag))
 
     def _add(self, joint):
@@ -138,6 +147,7 @@ class RobotModel():
         joint = self.joints[jn]
         joint.active = False
         self.disabled_joints.append(joint)
+        if joint in self.active_joints: self.active_joints.remove(joint)
 
     def fk(self, link, joints):
         def value(joint):

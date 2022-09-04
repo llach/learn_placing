@@ -188,10 +188,10 @@ class Reorient:
 
         gripper_zs = np.array([self.c.fk_for_joint_position([0.0]+list(tp))[0][2,3] for tp in traj_points])
 
-        if not np.all(gripper_zs>table_height):
-            self.pub_markers(Tgocorr, True)
-            print(f"some points were below table height {table_height} \n\t{gripper_zs}  \n\t{gripper_zs>table_height}")
-            return None, True
+        # if not np.all(gripper_zs>table_height):
+        #     self.pub_markers(Tgocorr, True)
+        #     print(f"some points were below table height {table_height} \n\t{gripper_zs}  \n\t{gripper_zs>table_height}")
+        #     return None, True
 
         rss = []
         traj = JointTrajectory()
@@ -201,7 +201,7 @@ class Reorient:
             rss.append(self.raw2rs(self.JOINTS[1:], p))
             traj.points.append(JointTrajectoryPoint(positions=p, time_from_start=rospy.Duration(t)))
 
-        init_rs = self.raw2rs(self.JOINTS[1:], self.start_state)
+        init_rs = self.raw2rs(self.JOINTS, self.start_state)
 
         rt = RobotTrajectory(joint_trajectory=traj)
         disp = DisplayTrajectory(trajectory_start=init_rs)
