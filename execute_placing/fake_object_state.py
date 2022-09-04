@@ -20,7 +20,7 @@ ospub = rospy.Publisher("/object_state_estimate", ObjectStateEstimate, queue_siz
 r = rospy.Rate(20)
 
 while not rospy.is_shutdown():
-    Qgo = tf.quaternion_about_axis(np.pi, [0,1,0])
+    Qgo = tf.quaternion_about_axis(np.pi+0.43, [0,1,0])
 
     br.sendTransform(
         [0,0,0], 
