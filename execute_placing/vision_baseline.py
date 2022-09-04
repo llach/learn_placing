@@ -39,9 +39,9 @@ class PlacingOracle:
         print("aligning object ...")
         self.oslock.acquire()
 
-        qdiff = qO2qdiff(qavg([q2l(q) for q in self.os.qOs]))
-        # self.planner.plan_placing(quaternion_matrix(qdiff))
-        self.planner.plan_placing(Ry(0.73))
+        qdiff = q2l(self.os.finalq)
+        self.planner.plan_placing(quaternion_matrix(qdiff))
+        # self.planner.plan_placing(Ry(0.73))
 
         self.oslock.release()
         return EmptyResponse()

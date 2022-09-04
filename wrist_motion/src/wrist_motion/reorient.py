@@ -68,14 +68,6 @@ class Reorient:
         self.marker_pub = rospy.Publisher('/reorient_markers', MarkerArray, queue_size=10)
         self.traj_pub = rospy.Publisher('/reorient_trajectory', DisplayTrajectory, queue_size=10)
 
-        self.li = TransformListener()
-        for _ in range(6):
-            try:
-                self.li.waitForTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time(0), rospy.Duration(3))
-                break
-            except Exception as e:
-                print(e)
-        self.update_obj_transform()
         print("setup done")
 
     def reinit(self, req):
@@ -83,23 +75,11 @@ class Reorient:
         self.Tinit = None
         return EmptyResponse() 
 
-    def update_obj_transform(self):
-        oT = self.get_object_transform()
-        # print(f"updating object TF to\n{oT}")
-        self.c.robot.joints["target"].set_T(oT)
+    def update_obj_transform(self, Tgo):
+        self.c.robot.joints["target"].set_T(Tgo)
     
     def get_target_joint_tf(self):
         return self.c.robot.joints["target"].T
-
-    def get_object_transform(self):
-        try:
-            (trans, rot) = self.li.lookupTransform(GRIPPER_FRAME, OBJECT_FRAME, rospy.Time(0))
-            T = quaternion_matrix(rot)
-            T[0:3, 3] = trans
-            return T
-        except Exception as e:
-            print(f"could not get gripper-object transform:\n{e}")
-            return np.eye(4)
 
     def jointstate_cb(self, msg):
         if not self.should_get_js: return # only process joint state if we need it
@@ -144,22 +124,22 @@ class Reorient:
         tolerance_box.id = 6
 
         # orientation for arrows is along the +X axis, so Toff rotates the X axis to align with the Z axis (eef axis)
-        start_arrow = orientationArrow(self.orientation_only_T(start_T@self.Toff), color=ColorRGBA(0, 0, 1, 1))
+        start_arrow = orientationArrow(self.orientation_only_T(start_T), color=ColorRGBA(0, 0, 1, 1))
         start_arrow.id = 7
 
         # black arrow for goal
-        goal_arrow = orientationArrow(self.orientation_only_T(To@self.Toff), color=ColorRGBA(0, 0, 0, 0.8))
+        goal_arrow = orientationArrow(self.orientation_only_T(To), color=ColorRGBA(0, 0, 0, 0.8))
         goal_arrow.id = 8
 
         # white arrow for final arow after planning
-        end_arrow = orientationArrow(self.orientation_only_T(self.c.T@self.Toff), color=ColorRGBA(1, 1, 1, 0.6))
+        end_arrow = orientationArrow(self.orientation_only_T(self.c.T), color=ColorRGBA(1, 1, 1, 0.6))
         end_arrow.id = 9
 
         ma = MarkerArray(markers=[
             *start_frame,
-            tolerance_box,
-            start_arrow,
-            end_arrow
+            # tolerance_box,
+            # start_arrow,
+            # end_arrow
         ])
 
         if pub_goal:
@@ -168,22 +148,22 @@ class Reorient:
 
         self.marker_pub.publish(ma)
 
-    def plan_random(self, publish_traj=False, check_validity=True, table_height=0.0, To=None):
+    def plan_random(self, Tgo, Tgocorr, publish_traj=False, check_validity=True, table_height=0.0):
         print("getting current state")
 
         self.should_get_js = True
         while self.should_get_js: time.sleep(0.1) # jointstate subscriber thread will set flag to false when done
         
-        # gets current object tf and applies it to the last, fixed target joint of the robot's model
-        self.update_obj_transform()
+        # sets the transform from gripper to object as a fixed joint in chain
+        self.update_obj_transform(Tgo)
 
         print("generating trajectory")
         # self.To = sample_random_orientation_southern_hemisphere()
         # if To is None: To = self.To
 
         goal_state, failed = self.c.reorientation_trajectory(
-            To, 
-            self.Tinit, 
+            Tgocorr, 
+            self.c.T, 
             self.start_state, 
             tol=.5*self.tol, 
             eef_axis=self.eef_axis, # 
@@ -191,16 +171,16 @@ class Reorient:
         )
 
         if failed: 
-            self.pub_markers(To, False)
+            self.pub_markers(Tgocorr, False)
             return None, failed
 
         Tarm, _ = self.c.fk_for_link("arm_left_7_link")
         Thand, _ = self.c.fk_for_link(GRIPPER_FRAME)
 
-        if Tarm[2,3]<Thand[2,3]: 
-            print("z constraint failed")
-            self.pub_markers(To, True)
-            return None, True
+        # if Tarm[2,3]<Thand[2,3]: 
+        #     print("z constraint failed")
+        #     self.pub_markers(To, True)
+        #     return None, True
 
         # torso is frist joint, on the real robot we can't use it (otherwise moveit complains about planning groups / controllers)
         traj_points = np.linspace(self.start_state[1:], goal_state[1:], 10)
@@ -209,7 +189,7 @@ class Reorient:
         gripper_zs = np.array([self.c.fk_for_joint_position([0.0]+list(tp))[0][2,3] for tp in traj_points])
 
         if not np.all(gripper_zs>table_height):
-            self.pub_markers(To, True)
+            self.pub_markers(Tgocorr, True)
             print(f"some points were below table height {table_height} \n\t{gripper_zs}  \n\t{gripper_zs>table_height}")
             return None, True
 
@@ -239,7 +219,7 @@ class Reorient:
         if publish_traj:
             self.traj_pub.publish(disp)
 
-        self.pub_markers(To, True)
+        self.pub_markers(Tgocorr, True)
         return rt, failed
     
     # def execute(self, tr, wait=True):

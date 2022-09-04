@@ -1,46 +1,46 @@
 <launch>
-  <arg name="rviz" default="false" />
-  <arg name="publish_marker_image" default="true" />
+    <arg name="rviz" default="false" />
+    <arg name="publish_marker_image" default="true" />
 
-  <arg name="cam1" default="webcam" />
-  <arg name="cam2" default="external_webcam" />
+    <arg name="cam1" default="webcam" />
+    <arg name="cam2" default="external_webcam" />
 
-   <group if="$(arg rviz)">
-     <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
-   </group>
+    <group if="$(arg rviz)">
+        <node pkg="rviz" type="rviz" name="rviz_april" args="-d $(find state_estimation)/config/apriltag.rviz"  />
+    </group>
 
-   
-  <!-- Set parameters -->
-  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector1" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector2" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector1" />
-  <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector2" />
-  
-  <!--
-    TAG DETECTOR 1
-  -->
-  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector1"  output="screen" >
-    <!-- Remap topics from those used in code to those on the ROS network -->
-    <remap from="image_rect" to="/$(arg cam1)/image_raw" />
-    <remap from="camera_info" to="/$(arg cam1)/camera_info" />
-    <remap from="tag_detections" to="/tag_detections_$(arg cam1)" />
-    <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam1)" />
+    
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector1" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector2" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector1" />
+    <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector2" />
+    
+    <!--
+        TAG DETECTOR 1
+    -->
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector1"  output="screen" >
+        <!-- Remap topics from those used in code to those on the ROS network -->
+        <remap from="image_rect" to="/$(arg cam1)/image_raw" />
+        <remap from="camera_info" to="/$(arg cam1)/camera_info" />
+        <remap from="tag_detections" to="/tag_detections_$(arg cam1)" />
+        <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam1)" />
 
-    <!-- <param name="publish_tf" value="false" /> -->
-    <param name="publish_tf" value="false" />
-    <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
-  </node>
+        <!-- <param name="publish_tf" value="false" /> -->
+        <param name="publish_tf" value="false" />
+        <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
+    </node>
 
-  <!--
-    TAG DETECTOR 2
-  -->   
-  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector2"  output="screen" >
-    <!-- Remap topics from those used in code to those on the ROS network -->
-    <remap from="image_rect" to="/$(arg cam2)/image_raw" />
-    <remap from="camera_info" to="/$(arg cam2)/camera_info" />
-    <remap from="tag_detections" to="/tag_detections_$(arg cam2)" />
-    <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
+    <!--
+        TAG DETECTOR 2
+    -->   
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector2"  output="screen" >
+        <!-- Remap topics from those used in code to those on the ROS network -->
+        <remap from="image_rect" to="/$(arg cam2)/image_raw" />
+        <remap from="camera_info" to="/$(arg cam2)/camera_info" />
+        <remap from="tag_detections" to="/tag_detections_$(arg cam2)" />
+        <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam2)" />
 
-    <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
-  </node>
+        <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />      <!-- default: false -->
+    </node>
 </launch>

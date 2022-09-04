@@ -194,9 +194,31 @@ class TagTransformator:
             translations.append(v2l(d.pose.pose.pose.position))
 
             if self.calibrated and self.publish_marker_tfs:
+                # the following lines just transform marker TFs into table frame
+                # while ignoring rotations about the marker's z axis
+                Tca = Tf2T(translations[-1], pnormalq)
+                Rta = self.Tinv[:3,:3]@Tca[:3,:3]
+
+                w = [0,0,1]
+                u = Rta@[-1,0,0]
+
+                axis = np.cross(w,u)
+                angle = np.arccos(np.dot(w,u))
+                print(angle)
+
+                qd = quaternion_about_axis(angle, axis)
+                
+                O = np.eye(4)
+                O[:3,:3] = Rta
+                # self.br.sendTransform(
+                #             [0,0,0], 
+                #             qd, 
+                #             rospy.Time.now(),
+                #             f"tag_{mid}", 
+                #             "table")
                 self.br.sendTransform(
                             translations[-1], 
-                            markerq, 
+                            pnormalq, 
                             rospy.Time.now(),
                             f"tag_{mid}_{self.cam_name}", 
                             self.cam_name)
@@ -278,14 +300,15 @@ class StateEstimator:
 
         self.tts = []
         for cam, pm in zip(cams, [False, False, False]):
-            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=pm))
+            self.tts.append(TagTransformator(cam, n_calibration_samples=n_calibration_samples, publish_marker_tfs=True))
         self.head_tt = TagTransformator("head", n_calibration_samples=n_calibration_samples, publish_marker_tfs=False)
 
         self.calibrated = False
         self.li = tf.TransformListener()
         self.br = tf.TransformBroadcaster()
 
-        if rosparam.get_param("/pal_robot_info/type") == "tiago_dual":
+        # if rosparam.get_param("/pal_robot_info/type") == "tiago_dual":
+        if True:
             self.grasping_frame = "gripper_left_grasping_frame"
         else:
             self.grasping_frame = "gripper_grasping_frame"
@@ -311,7 +334,7 @@ class StateEstimator:
         self.has_plot = False
 
     def __del__(self):
-        if self.has_plot:
+        if self.should_plot and self.has_plot:
             plt.close(self.fig)
 
     def calculate_Ttable(self):

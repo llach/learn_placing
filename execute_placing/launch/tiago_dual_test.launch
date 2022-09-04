@@ -8,6 +8,39 @@
   <arg name="end_effector"  default="pal-gripper"/>
   <arg name="camera_model"  default="orbbec-astra"/>
 
+  <arg name="with_cam" default="false" />
+
+  <group if="$(arg with_cam)" >
+    <arg name="cam1" default="cam1" />
+    <arg name="cam1_video" default="/dev/video2" />
+    <arg name="publish_marker_image" default="true" />
+    
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find state_estimation)/config/AT_settings.yaml" ns="apriltag_detector_1" />
+   <rosparam command="load" file="$(find state_estimation)/config/AT_tags.yaml" ns="apriltag_detector_1" />
+
+    <node pkg="usb_cam" type="usb_cam_node" name="usb_cam_$(arg cam1)" output="screen" >
+        <param name="camera_name" value="$(arg cam1)" />
+        <param name="pixel_format" value="yuyv" />
+        <param name="video_device" value="$(arg cam1_video)" />
+    </node>
+
+  <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="apriltag_detector_1" output="screen" >
+    <remap from="image_rect" to="/usb_cam_$(arg cam1)/image_raw" />
+    <remap from="camera_info" to="/usb_cam_$(arg cam1)/camera_info" />
+    <remap from="tag_detections" to="/tag_detections_$(arg cam1)" />
+    <remap from="tag_detections_image" to="/tag_detections_image_$(arg cam1)" />
+
+    <param name="publish_tf" value="false" />
+    <param name="publish_tag_detections_image" type="bool" value="$(arg publish_marker_image)" />
+  </node>
+
+    <!-- <node pkg="state_estimation" type="object_state.py" name="state_estimation"  output="screen" /> -->
+
+    <node name="foot_table" pkg="tf2_ros" type="static_transform_publisher" args="0.75 0 0.54 0 0 0 base_footprint table" />
+
+  </group>
+
     <!-- Load the URDF, SRDF and other .yaml configuration files on the param server -->
     <include file="$(find tiago_dual_moveit_config)/launch/planning_context.launch">
         <arg name="end_effector_left" value="pal-gripper" />

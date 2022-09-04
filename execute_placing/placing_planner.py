@@ -7,7 +7,7 @@ from wrist_motion.marker import frame
 from wrist_motion.reorient import Reorient
 from visualization_msgs.msg import MarkerArray
 from moveit_msgs.msg import ExecuteTrajectoryAction, ExecuteTrajectoryGoal
-from learn_placing.common.transformations import inverse_matrix, quaternion_matrix
+from learn_placing.common.transformations import inverse_matrix, quaternion_inverse, quaternion_matrix, quaternion_multiply, quaternion_from_matrix, rotation_from_matrix, rotation_matrix
 
 def Tf2T(pos, rot):
     T = quaternion_matrix(rot)
@@ -39,27 +39,39 @@ class PlacingPlanner:
                 print(e)
         print("planner init done")
 
-    def plan_placing(self, Tdiff):
-        Tfg = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        Tg = Tf2T(*Tfg)
+    def plan_placing(self, Two):
+        Tfwg = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+        Twg = Tf2T(*Tfwg)
+        Tgw = inverse_matrix(Twg)
 
-        Tdiffinv = inverse_matrix(Tdiff)
+        Tgo = quaternion_matrix(quaternion_multiply(quaternion_inverse(Tfwg[1]), quaternion_from_matrix(Two)))
 
-        Rgoal = Tg[:3,:3]@Tdiffinv[:3,:3]
-        Tgoal = RtoT(Rgoal, Tfg[0])
+        Tow = inverse_matrix(Two)
 
-        target_frame = frame(Tgoal, ns="target_frame")
+        u = [0,0,1]
+        w = Tow[:3,:3]@[0,0,1]
+
+        axis = np.cross(u,w)
+        angle = np.arccos(np.dot(u,w))
+
+        Toocorr = rotation_matrix(angle, axis)
+        Tgocorr = Tgo@Toocorr
+
+        start_frame = frame(Twg@Tgo, ns="start_frame")
+        target_frame = frame(Twg@Tgocorr, ns="target_frame")
 
         ma = MarkerArray(markers=[
+            *start_frame,
             *target_frame
         ])
         self.marker_pub.publish(ma)
 
         tr, failed = self.ro.plan_random(
+            Tgo,
+            Twg@Tgocorr,
             publish_traj=True, 
             check_validity=True,
             table_height=0.4, 
-            To=Tgoal
         )
 
         # input("execute?")
