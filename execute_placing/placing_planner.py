@@ -82,7 +82,7 @@ class PlacingPlanner:
 
         print("planning done")
 
-        # input("execute?")
-
-        # self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
+        if self.input_or_quit("execute?"):
+            print("EXECUTE")
+            # self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
         
