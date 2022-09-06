@@ -3,10 +3,9 @@ import rospy
 from threading import Lock
 from std_srvs.srv import Empty, EmptyResponse
 from state_estimation.msg import ObjectStateEstimate
-from learn_placing.common import qO2qdiff, qavg
 from learn_placing.processing.bag2pickle import q2l
 from execute_placing.placing_planner import PlacingPlanner
-from learn_placing.common.transformations import quaternion_matrix, Ry
+from learn_placing.common.transformations import quaternion_matrix
 
 class PlacingOracle:
     """ vision-based placing with (partial?) object state knowledge
@@ -37,13 +36,21 @@ class PlacingOracle:
 
     def align_object(self, _):
         print("aligning object ...")
-        self.oslock.acquire()
 
-        qdiff = q2l(self.os.finalq)
-        self.planner.plan_placing(quaternion_matrix(qdiff))
-        # self.planner.plan_placing(Ry(0.73))
-
-        self.oslock.release()
+        done = False
+        while not done:
+            inp = input("next? a=align; p=place\n")
+            inp = inp.lower()
+            if inp == "a":
+                self.oslock.acquire()
+                qdiff = q2l(self.os.finalq)
+                self.planner.align(quaternion_matrix(qdiff))
+                self.oslock.release()
+            elif inp == "p":
+                self.planner.place()
+            else:
+                print("all done, bye")
+                done = True
         return EmptyResponse()
 
 
@@ -68,6 +75,7 @@ if __name__ == "__main__":
 
     po = PlacingOracle()
     time.sleep(0.2)
+    # po.align_object(0)
     po.align_object(0)
     # posrv = rospy.ServiceProxy("/placing_oracle/align", Empty)
     # posrv()

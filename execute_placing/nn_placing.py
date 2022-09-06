@@ -2,8 +2,8 @@ import torch
 import rospy
 import numpy as np
 
+from tf import TransformListener
 from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
-
 from learn_placing.training.utils import load_train_params
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
@@ -22,6 +22,14 @@ class NNPlacing:
         self.model.eval()
 
         self.placingsrv = rospy.Service("/nn_placing", ExecutePlacing, self.place)
+
+        self.li = TransformListener()
+        for _ in range(6):
+            try:
+                self.li.waitForTransform(self.grasping_frame, self.world_frame, rospy.Time(0), rospy.Duration(3))
+                break
+            except Exception as e:
+                print(e)
 
     def place(self, req):
         print("placing object with NN ...")
@@ -52,14 +60,20 @@ class NNPlacing:
 
         mmin, mmax = np.min(myr), np.max(myr)
         fmin, fmax = np.min(ft), np.max(ft)
+
+        msmin, msmax = np.min(smyr), np.max(smyr)
+        fsmin, fsmax = np.min(sft), np.max(sft)
+
+        fmin, fmax = np.min([fmin, fsmin]), np.max([fmax, fsmax])
+        mmin, mmax = np.min([mmin, msmin]), np.max([mmax, msmax])
         
         axs[0,0].plot(range(len(sft)),sft)
         axs[0,1].plot(range(len(ft)),ft)
-        for ax in axs[0,:]: ax.set_ylim(1.1*fmin, 1.1*fmax)
+        for ax in axs[0,:]: ax.set_ylim(0.9*fmin, 1.1*fmax)
 
         axs[1,0].plot(range(len(smyr)),smyr)
         axs[1,1].plot(range(len(myr)),myr)
-        for ax in axs[1,:]: ax.set_ylim(1.1*mmin, 1.1*mmax)
+        for ax in axs[1,:]: ax.set_ylim(0.9*mmin, 1.1*mmax)
 
         axs[0,0].set_title("FT static")
         axs[0,1].set_title("FT dynamic")

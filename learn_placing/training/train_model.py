@@ -92,7 +92,7 @@ def train(
         amsgrad=False
     ))
 
-    trial_name = f"{a.dsname}_Neps{a.N_episodes}"
+    trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.input_data}"
     if a.with_tactile: trial_name += "_tactile"
     if a.with_gripper: trial_name += "_gripper"
     if a.with_ft: trial_name += "_ft"

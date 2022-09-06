@@ -213,7 +213,7 @@ class Reorient:
                 print("valid trajectory")
             else:
                 print("trajectory not valid!")
-                self.pub_markers(False)
+                self.pub_markers(Tgocorr, False)
                 return rt, True
 
         if publish_traj:

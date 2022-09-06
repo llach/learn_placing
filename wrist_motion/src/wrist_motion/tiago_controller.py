@@ -153,7 +153,11 @@ TIAGO_IGNORED_JOINTS = [
 ]
 
 TIAGO_DISABLED_JOINTS = [
-    # "torso_lift_joint",
+    "torso_lift_joint",
+    "arm_left_1_joint",
+    "arm_left_2_joint",
+    "arm_left_3_joint",
+    "arm_left_4_joint",
 ]
 
 GRASP_FRAME_POSE = TransformStamped(
@@ -358,7 +362,7 @@ class TIAGoController(object):
         tol,  # tolerance box
         eef_axis,
         max_steps=25, 
-        eps=0.00005):
+        eps=0.000005):
 
         self.set_state(initial_state)
         state = self.joint_msg.position[:] # copy

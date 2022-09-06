@@ -51,6 +51,7 @@ public:
     bool init(ros::Duration timeout, bool initTorso);
     void sendSample();
     void flagSample();
+    bool staticSample();
     bool collectSample();
     bool isControllerRunning(std::string name);
 private:

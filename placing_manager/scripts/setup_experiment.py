@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     head_goal = FollowJointTrajectoryGoal()
     head_goal.trajectory.joint_names = ["head_1_joint", "head_2_joint"]
-    head_goal.trajectory.points.append(JointTrajectoryPoint(positions=[1.22, -0.65], time_from_start=rospy.Duration(1.0)))
+    head_goal.trajectory.points.append(JointTrajectoryPoint(positions=[0.0, -0.65], time_from_start=rospy.Duration(1.0)))
 
     print("enabling torso controller ...")
     safe_switch("torso_controller", "torso_stop_controller")
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         close_gripper()
         print("waiting 3sec to settle...")
         time.sleep(3)
-        # mmKill()
+        mmKill()
 
     ################################################
     ################ FT CALIBRATION ################

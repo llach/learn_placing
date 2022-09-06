@@ -311,6 +311,49 @@ bool PlacingManager::collectSample(){
     return true;
 }
 
+bool PlacingManager::staticSample(){
+    ROS_INFO("### collecting data sample no. %d ###", nSamples_);
+
+    ROS_INFO("recalibrating FT");
+    std_srvs::Empty e;
+    ftCalibrationSrv_.call(e);
+
+    // make sure we have fresh data
+    if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
+        ROS_ERROR("data not fresh");
+        return false;
+    }
+
+    // clear data in buffers and start recording
+    clearAll();
+    unpause();
+
+    // get some data into buffers
+    ROS_INFO("waiting for samples");
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+
+    // pause data recording
+    pause();
+    ROS_INFO("got %d object samples", bufferObjectState.numData());
+
+    contactTime_ = ros::Time::now()-ros::Duration(1.5);
+    bool hasSamples = checkSamples(contactTime_);
+    
+    if (contactTime_ != ros::Time(0) && hasSamples){
+
+        ROS_INFO_STREAM("contact detected at " << contactTime_);
+
+    } else if (contactTime_ == ros::Time(0) ) {
+        ROS_FATAL_STREAM("\033[1;31mno contact -> can't store sample"<<"\033[0m");
+    } else if (!hasSamples) {
+        ROS_FATAL_STREAM("\033[1;31mmissing samples"<<"\033[0m");
+    } else {
+        ROS_FATAL_STREAM("\033[1;31munknown error"<<"\033[0m");
+    }
+
+    return true;
+}
+
 void PlacingManager::flagSample(){
     ROS_INFO_STREAM("flagging sample " << lastSample_);
     

@@ -147,7 +147,7 @@ class RobotModel():
         joint = self.joints[jn]
         joint.active = False
         self.disabled_joints.append(joint)
-        if joint in self.active_joints: self.active_joints.remove(joint)
+        # if joint in self.active_joints: self.active_joints.remove(joint)
 
     def fk(self, link, joints):
         def value(joint):

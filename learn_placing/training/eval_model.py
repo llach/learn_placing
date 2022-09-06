@@ -20,7 +20,9 @@ from tactile_insertion_rl import TactilePlacingNet
 ### new datasets
 
 # trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-55-48"
-trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-58-42"
+# trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-58-42"
+
+trial_name = "../batch_trainings/2022.09.02_11-38-14/ObjectVar/ObjectVar_Neps20_tactile_ft_2022.09.02_12-10-22"
 
 trial_path = f"{training_path}/{trial_name}"
 trial_weights = f"{trial_path}/weights/final.pth"

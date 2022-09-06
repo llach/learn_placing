@@ -25,11 +25,17 @@ int main(int argc, char **argv)
 
     int n;
     while (ros::ok()) {
-        cout << "\nnext? (0=exit;1-6=collect;7=send;8=flag;9=grav)" << endl;
+        cout << "\nnext? (0=exit;1-5=collect;6=static;7=send;8=flag;9=grav)" << endl;
         cin >> n;
 
         if (n==0) return 0;
-        if (n==8) {
+        if (n == 6) {
+            ROS_INFO("\n--- static sample ---"); 
+            pm->staticSample();
+        } else if (n == 7) {
+            ROS_INFO("\n--- sending sample ---"); 
+            pm->sendSample();
+        } else if (n==8) {
             ROS_INFO("\n--- flagging sample ---"); 
             pm->flagSample();
         } else if (n==9) {
@@ -52,9 +58,7 @@ int main(int argc, char **argv)
             ROS_INFO("reinitializing PM ...");
             pm = make_shared<PlacingManager>();
             pm->init(ros::Duration(3), false);
-        } else if (n == 7) {
-            pm->sendSample();
-        } else if (n >= 1 && n <=6) {
+        } else if (n >= 1 && n <=5) {
             // for (int j = 0; j<n;j++){
             std::cout << "calling PM" << std::endl;
             bool success = pm->collectSample();
