@@ -19,6 +19,7 @@ dsLookback = {
     DatasetName.object_var2: [[-80,-30], [-130,-80]],
     DatasetName.gripper_var: [[-80,-30], [-130,-80]],
     DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
+    DatasetName.combined_var2: [[-80,-30], [-130,-80]],
 }
 
 ftLookback = {
@@ -28,6 +29,7 @@ ftLookback = {
     DatasetName.object_var2: [[-20,-5], [-35,-20]],
     DatasetName.gripper_var: [[-20,-5], [-35,-20]],
     DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
+    DatasetName.combined_var2: [[-20,-5], [-35,-20]],
 }
 
 def myrmex_transform(left, right, dd):

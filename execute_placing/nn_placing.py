@@ -104,9 +104,6 @@ class NNPlacing:
         prediction = self.model(*[torch.Tensor(np.array(x)) for x in xs])
         prediction = np.squeeze(prediction.detach().numpy())
 
-        Tpred = np.eye(4)
-        Tpred[:3,:3] = prediction
-
         try:
             (_, Qwo) = self.li.lookupTransform(self.world_frame, "object", rospy.Time(0))
             loss = self.criterion(torch.Tensor([prediction]), torch.Tensor([quaternion_matrix(Qwo)[:3,:3]]))
@@ -122,22 +119,26 @@ class NNPlacing:
                     "loss": loss 
                 })
 
+        Tpred = np.eye(4)
+        Tpred[:3,:3] = prediction
+        print(Tpred)
+
         with self.olock:
             self.object_tf = copy.deepcopy(Tpred)
 
-        print("aligning object ...")
-        done = False
-        while not done:
-            inp = input("next? a=align; p=place\n")
-            inp = inp.lower()
-            if inp == "a":
-                self.planner.align(Tpred)
-            elif inp == "p":
-                self.planner.place()
-                break
-            else:
-                done = True
-        print("all done, bye")
+        # print("aligning object ...")
+        # done = False
+        # while not done:
+        #     inp = input("next? a=align; p=place\n")
+        #     inp = inp.lower()
+        #     if inp == "a":
+        #         self.planner.align(Tpred)
+        #     elif inp == "p":
+        #         self.planner.place()
+        #         break
+        #     else:
+        #         done = True
+        # print("all done, bye")
 
         # used to debug the input
         # self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
@@ -188,7 +189,7 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/GripperVar/GripperVar_Neps20_tactile_2022.09.03_11-48-52"
+    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.07_11-14-24/GripperVar2/GripperVar2_Neps20_static_tactile_2022.09.07_12-48-15"
     # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/ObjectVar/ObjectVar_Neps20_tactile_2022.09.03_11-13-08"
     weights = "final"
 
