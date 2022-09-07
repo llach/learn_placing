@@ -18,14 +18,19 @@ class DatasetName(str, Enum):
     cuboid="Cuboid"
     cylinder="Cylinder"
     object_var="ObjectVar"
+    object_var2="ObjectVar2"
     gripper_var="GripperVar"
+    gripper_var2="GripperVar2"
     combined_var="CombinedVar"
+    combined_var2="CombinedVar2"
 
 ds2name = {
     DatasetName.cuboid: "second",
     DatasetName.cylinder: "third",
     DatasetName.object_var: "four",
-    DatasetName.gripper_var: "five"
+    DatasetName.gripper_var: "five",
+    DatasetName.object_var2: "six",
+    DatasetName.gripper_var2: "seven",
 }
 
 class RotRepr(str, Enum):

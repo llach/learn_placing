@@ -16,14 +16,18 @@ dsLookback = {
     DatasetName.cuboid: [[-50,None], [-100,-50]],
     DatasetName.cylinder: [[-50,None], [-100,-50]],
     DatasetName.object_var: [[-80,-30], [-130,-80]],
+    DatasetName.object_var2: [[-80,-30], [-130,-80]],
     DatasetName.gripper_var: [[-80,-30], [-130,-80]],
+    DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
 }
 
 ftLookback = {
     DatasetName.cuboid: [[-15,None], [-30,-15]],
     DatasetName.cylinder: [[-15,None], [-30,-15]],
     DatasetName.object_var: [[-20,-5], [-35,-20]],
+    DatasetName.object_var2: [[-20,-5], [-35,-20]],
     DatasetName.gripper_var: [[-20,-5], [-35,-20]],
+    DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
 }
 
 def myrmex_transform(left, right, dd):
@@ -62,7 +66,7 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.cuboid, DatasetName.cylinder, DatasetName.object_var, DatasetName.gripper_var]
+    dsnames = [DatasetName.gripper_var2]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
@@ -216,7 +220,7 @@ if __name__ == "__main__":
                 print(f"skipping myrmex sample {i}")
                 continue
 
-            inp, inp_static = myrmex_transform(sample["tactile_left"][1], sample["tactile_right"][1])
+            inp, inp_static = myrmex_transform(sample["tactile_left"][1], sample["tactile_right"][1], dd)
 
             inputs.update({t: inp})
             static_inputs.update({t: inp_static})
@@ -229,7 +233,7 @@ if __name__ == "__main__":
                 print(f"skipping FT sample {i}")
                 continue
 
-            ftt, ft_static = ft_transform(sample["ft"][1])
+            ftt, ft_static = ft_transform(sample["ft"][1], dd)
             
             ft.update({t: ftt})
             static_ft.update({t: ft_static})

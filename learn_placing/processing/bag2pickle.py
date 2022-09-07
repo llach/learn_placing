@@ -54,8 +54,11 @@ if __name__ == "__main__":
     store_base = f"{base_path[:-1]}_pkl/"
     os.makedirs(store_base, exist_ok=True)
 
-    with open(f"{base_path}/flagged.txt", "r") as f:
-        flagged = [li.replace("\n", "") for li in f.readlines() if len(li)>5]
+    try:
+        with open(f"{base_path}/flagged.txt", "r") as f:
+            flagged = [li.replace("\n", "") for li in f.readlines() if len(li)>5]
+    except FileNotFoundError:
+        flagged = []
 
     print(f"{len(flagged)} samples were flagged")
 

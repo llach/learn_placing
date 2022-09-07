@@ -1,15 +1,21 @@
 import torch
+import copy
 import rospy
 import numpy as np
 
-from tf import TransformListener
+from tf import TransformListener, TransformBroadcaster
+from threading import Lock
 from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
-from learn_placing.training.utils import load_train_params
+from execute_placing.placing_planner import PlacingPlanner
+from learn_placing.training.utils import load_train_params, InData
+from learn_placing.common.transformations import quaternion_from_matrix
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
 from learn_placing.processing.preprocess_dataset import myrmex_transform, ft_transform
 
 class NNPlacing:
+    grasping_frame = "gripper_left_grasping_frame"
+    world_frame = "base_footprint"
 
     def __init__(self, trial_path, weights_name) -> None:
         trial_weights = f"{trial_path}/weights/{weights_name}.pth"
@@ -17,12 +23,17 @@ class NNPlacing:
         self.params = load_train_params(trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
 
+        self.olock = Lock()
+        self.object_tf = None
+
         checkp = torch.load(trial_weights)
         self.model.load_state_dict(checkp)
         self.model.eval()
 
+        self.planner = PlacingPlanner()
         self.placingsrv = rospy.Service("/nn_placing", ExecutePlacing, self.place)
 
+        self.br = TransformBroadcaster()
         self.li = TransformListener()
         for _ in range(6):
             try:
@@ -31,8 +42,26 @@ class NNPlacing:
             except Exception as e:
                 print(e)
 
+    def pub_object_tf(self):
+        with self.olock:
+            if self.object_tf is None: return
+
+            self.br.sendTransform(
+                [0,0,0],
+                quaternion_from_matrix(self.object_tf),
+                rospy.Time.now(),
+                "object_predicted",
+                "base_footprint"
+            )
+
     def place(self, req):
         print("placing object with NN ...")
+
+        try:
+            (_, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+        except Exception as e:
+            print(f"[ERROR] couldn't get gripper TF: {e}")
+            return
 
         tleft = [msg2matrix(m) for m in req.tactile_left]
         tright = [msg2matrix(m) for m in req.tactile_right]
@@ -41,7 +70,50 @@ class NNPlacing:
         tinp, tinp_static = myrmex_transform(tleft, tright, self.params.dsname)
         ftinp, ftinp_static = ft_transform(ft, self.params.dsname)
 
-        self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
+        """
+        x.shape
+        torch.Size([8, 2, 50, 16, 16])
+        -> [batch, sensors, sequence, H, W]
+
+        gr.shape
+        torch.Size([8, 4])
+        -> [batch, Q]
+
+        ft.shape
+        torch.Size([8, 15, 6])
+        -> [batch, sequence, FT]
+        """
+        if self.params.input_data == InData.static:
+            print(self.params.input_data)
+            xs = [[tinp_static], [Qwg], [ftinp_static]]
+        elif self.params.input_data == InData.with_tap:
+            print(self.params.input_data)
+            xs = [[tinp], [Qwg], [ftinp]]
+        prediction = self.model(*[torch.Tensor(np.array(x)) for x in xs])
+        prediction = np.squeeze(prediction.detach().numpy())
+
+        Tpred = np.eye(4)
+        Tpred[:3,:3] = prediction
+
+        with self.olock:
+            self.object_tf = copy.deepcopy(Tpred)
+
+        print("aligning object ...")
+        done = False
+        while not done:
+            inp = input("next? a=align; p=place\n")
+            inp = inp.lower()
+            if inp == "a":
+                self.planner.align(Tpred)
+            elif inp == "p":
+                self.planner.place()
+                break
+            else:
+                done = True
+        print("all done, bye")
+
+        # used to debug the input
+        # self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
 
         return ExecutePlacingResponse()
 
@@ -89,8 +161,14 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.02_11-38-14/ObjectVar/ObjectVar_Neps20_tactile_gripper_ft_2022.09.02_11-55-10"
+    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/GripperVar/GripperVar_Neps20_tactile_2022.09.03_11-48-52"
+    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/ObjectVar/ObjectVar_Neps20_tactile_2022.09.03_11-13-08"
     weights = "final"
 
     nnp = NNPlacing(netname, weights)
-    rospy.spin()
+    r = rospy.Rate(20)
+
+    while not rospy.is_shutdown():
+        nnp.pub_object_tf()
+        r.sleep()
+    print("bye!")

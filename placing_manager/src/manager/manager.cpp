@@ -278,11 +278,15 @@ bool PlacingManager::collectSample(){
     ros::Time stopMoving = ros::Time::now();
     ros::Duration moveDur = stopMoving - startMoving;
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    ROS_INFO("move torso up again ...");
+    moveTorso(initialTorsoQ_, moveDur.toSec(), true, false);
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
     // pause data recording
     pause();
     nSamples_++;
+
+    torsoAc_.waitForResult();
 
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
@@ -301,9 +305,6 @@ bool PlacingManager::collectSample(){
     } else {
         ROS_FATAL_STREAM("\033[1;31munknown error"<<"\033[0m");
     }
-
-    ROS_INFO("move torso up again ...");
-    moveTorso(initialTorsoQ_, moveDur.toSec());
 
     // ROS_INFO("reorientating wrist randomly ...");
     // reorientate();
@@ -366,7 +367,7 @@ void PlacingManager::flagSample(){
   TORSO CONTROLLER METHODS
 */
 
-void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
+void PlacingManager::moveTorso(float targetQ, float duration, bool absolute, bool wait){
     float startQ;
     {   
         std::lock_guard<std::mutex> l(jsLock_);
@@ -396,8 +397,13 @@ void PlacingManager::moveTorso(float targetQ, float duration, bool absolute){
     FollowJointTrajectoryGoal torsoGoal;
     torsoGoal.trajectory = jt;
 
-    torsoAc_.sendGoalAndWait(torsoGoal);
-    ROS_INFO("Action finished: %s",torsoAc_.getState().toString().c_str());
+    torsoAc_.sendGoal(torsoGoal);
+    if (wait) {
+        torsoAc_.waitForResult();
+        ROS_INFO("Action finished: %s",torsoAc_.getState().toString().c_str());
+    } else {
+        ROS_INFO("not waiting for torso action to finish");
+    }
 }
 
 float PlacingManager::lerp(float a, float b, float f) {

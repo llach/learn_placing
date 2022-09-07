@@ -95,7 +95,7 @@ private:
 
     float lerp(float a, float b, float f);
     
-    void moveTorso(float targetQ, float duration, bool absolute = true);
+    void moveTorso(float targetQ, float duration, bool absolute = true, bool wait = true);
 
     ros::Time getContactTime();
     void pause();
