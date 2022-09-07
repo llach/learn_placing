@@ -23,9 +23,9 @@ int main(int argc, char **argv)
     shared_ptr<PlacingManager> pm = make_shared<PlacingManager>();
     pm->init(ros::Duration(3), false);
 
-    int n;
+    int n = 99;
     while (ros::ok()) {
-        cout << "\nnext? (0=exit;1-5=collect;6=static;7=send;8=flag;9=grav)" << endl;
+        cout << "\nnext? ["<< n <<"] (0=exit;1-5=collect;6=static;7=send;8=flag;9=grav)" << endl;
         cin >> n;
 
         if (n==0) return 0;

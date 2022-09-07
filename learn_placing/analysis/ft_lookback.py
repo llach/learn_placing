@@ -3,7 +3,7 @@ import numpy as np
 
 from learn_placing.common import load_dataset
 
-dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_seven"
+# dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_seven"
 dataset_path = f"{os.environ['HOME']}/placing_data_pkl"
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
@@ -13,7 +13,7 @@ plot_path = f"{this_path}/../plots/"
 store_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
 
 Ns = []
-L = 40
+L = 30
 series = []
 for t, sample in ds.items():
     name = t.strftime("%Y-%m-%d_%H:%M:%S")

@@ -13,7 +13,7 @@ plot_path = f"{this_path}/../plots/"
 store_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
 
 Ns = []
-L = 150
+L = 140
 series = []
 for t, sample in ds.items():
     name = t.strftime("%Y-%m-%d_%H:%M:%S")
