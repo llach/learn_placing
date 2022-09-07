@@ -110,8 +110,9 @@ class NNPlacing:
         try:
             (_, Qwo) = self.li.lookupTransform(self.world_frame, "object", rospy.Time(0))
             loss = self.criterion(torch.Tensor([prediction]), torch.Tensor([quaternion_matrix(Qwo)[:3,:3]]))
+            print(f"loss: {loss}")
         except Exception as e:
-            loss = np.pi
+            loss = None
 
         if self.store_samples:
             with open(f"{self.samples_net_dir}/{now()}.pkl", "wb") as f:
