@@ -24,3 +24,8 @@
 
 * If myrmex sensors don't deliver data, reconnect the USB cables of the PC
 * when starting the OpenNi camera on the robot, it sometimes fails if the tiagocam is connected. Reconnecting the webcam solves the issue.
+
+## Notes
+
+ObjectVar2, GripperVar2 arm positions:
+`[1.16, 0.13, 1.95, 1.10, 0.03, 0.37, 0.06]`
