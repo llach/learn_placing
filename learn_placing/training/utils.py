@@ -80,9 +80,14 @@ def load_train_params(trial_path):
 def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
-    if dsname == DatasetName.combined_var:
-        _,_, ovar_ds = get_dataset_loaders(ds2name[DatasetName.object_var], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
-        _,_, gvar_ds = get_dataset_loaders(ds2name[DatasetName.gripper_var], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+    if dsname in [DatasetName.combined_var, DatasetName.combined_var2]:
+        if dsname == DatasetName.combined_var:
+            ds1, ds2 = ds2name[DatasetName.object_var], ds2name[DatasetName.gripper_var]
+        elif dsname == DatasetName.combined_var2:
+            ds1, ds2 = ds2name[DatasetName.object_var2], ds2name[DatasetName.gripper_var2]
+
+        _,_, ovar_ds = get_dataset_loaders(ds1, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        _,_, gvar_ds = get_dataset_loaders(ds2, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
 
         cds = ConcatDataset([ovar_ds, gvar_ds])
 
