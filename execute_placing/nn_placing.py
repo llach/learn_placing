@@ -1,14 +1,17 @@
+import os
 import torch
 import copy
 import rospy
+import pickle
 import numpy as np
 
 from tf import TransformListener, TransformBroadcaster
 from threading import Lock
 from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
 from execute_placing.placing_planner import PlacingPlanner
-from learn_placing.training.utils import load_train_params, InData
-from learn_placing.common.transformations import quaternion_from_matrix
+from learn_placing import now
+from learn_placing.training.utils import load_train_params, InData, rep2loss
+from learn_placing.common.transformations import quaternion_from_matrix, quaternion_matrix
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
 from learn_placing.processing.preprocess_dataset import myrmex_transform, ft_transform
@@ -17,11 +20,20 @@ class NNPlacing:
     grasping_frame = "gripper_left_grasping_frame"
     world_frame = "base_footprint"
 
-    def __init__(self, trial_path, weights_name) -> None:
+    def __init__(self, trial_path, weights_name, store_samples = True) -> None:
         trial_weights = f"{trial_path}/weights/{weights_name}.pth"
+        self.samples_dir = f"{os.environ['HOME']}/nn_samples/"
+        self.net_name = trial_path.split("/")[-1]
+        self.samples_net_dir = f"{self.samples_dir}/{self.net_name}"
+
+        self.store_samples = store_samples
+        if self.store_samples:
+            os.makedirs(self.samples_dir)
+            os.makedirs(self.samples_net_dir)
 
         self.params = load_train_params(trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
+        self.criterion = rep2loss(self.params.loss_type)
 
         self.olock = Lock()
         self.object_tf = None
@@ -94,6 +106,20 @@ class NNPlacing:
 
         Tpred = np.eye(4)
         Tpred[:3,:3] = prediction
+
+        try:
+            (_, Qwo) = self.li.lookupTransform(self.world_frame, "object", rospy.Time(0))
+            loss = self.criterion(torch.Tensor([prediction]), torch.Tensor([quaternion_matrix(Qwo)[:3,:3]]))
+        except Exception as e:
+            loss = np.pi
+
+        if self.store_samples:
+            with open(f"{self.samples_net_dir}/{now()}.pkl", "wb") as f:
+                pickle.dump({
+                    "xs": xs,
+                    "y": prediction,
+                    "loss": loss 
+                })
 
         with self.olock:
             self.object_tf = copy.deepcopy(Tpred)
