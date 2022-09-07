@@ -177,7 +177,7 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=20
-    datasets = [DatasetName.object_var, DatasetName.gripper_var, DatasetName.combined_var]
+    datasets = [DatasetName.combined_var2, DatasetName.object_var2, DatasetName.gripper_var2]
     input_types = [InData.static, InData.with_tap]
     input_modalities = [
         [True , False, False],
