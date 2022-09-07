@@ -1,3 +1,5 @@
 tactile_msgs/TactileState[] tactile_left
 tactile_msgs/TactileState[] tactile_right
 geometry_msgs/WrenchStamped[] ft
+string sample_name
+---

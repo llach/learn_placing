@@ -1,6 +1,7 @@
 import os
 import torch
 import copy
+from learn_placing.common.vecplot import AxesPlot
 import rospy
 import pickle
 import numpy as np
@@ -10,6 +11,7 @@ from threading import Lock
 from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
 from execute_placing.placing_planner import PlacingPlanner
 from learn_placing import now
+from learn_placing.analysis.myrmex_gifs import store_mm_sample_gif
 from learn_placing.training.utils import load_train_params, InData, rep2loss
 from learn_placing.common.transformations import quaternion_from_matrix, quaternion_matrix
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
@@ -28,8 +30,8 @@ class NNPlacing:
 
         self.store_samples = store_samples
         if self.store_samples:
-            os.makedirs(self.samples_dir)
-            os.makedirs(self.samples_net_dir)
+            os.makedirs(self.samples_dir, exist_ok=True)
+            os.makedirs(self.samples_net_dir, exist_ok=True)
 
         self.params = load_train_params(trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
@@ -106,25 +108,48 @@ class NNPlacing:
 
         try:
             (_, Qwo) = self.li.lookupTransform(self.world_frame, "object", rospy.Time(0))
-            loss = self.criterion(torch.Tensor([prediction]), torch.Tensor([quaternion_matrix(Qwo)[:3,:3]]))
+            Two = quaternion_matrix(Qwo)
+
+            loss = self.criterion(torch.Tensor([np.array(prediction)]), torch.Tensor([np.array(quaternion_matrix(Qwo))[:3,:3]]))
             print(f"loss: {loss}")
         except Exception as e:
+            print("no object trafo")
             loss = None
+            Qwo = None
+            Two = None
 
         if self.store_samples:
-            with open(f"{self.samples_net_dir}/{now()}.pkl", "wb") as f:
+            sname = req.sample_name
+            with open(f"{self.samples_net_dir}/{sname}.pkl", "wb") as f:
                 pickle.dump({
                     "xs": xs,
+                    "tleft": tleft,
+                    "tright": tright,
+                    "ft": ft,
+                    "Qwg": Qwg,
                     "y": prediction,
                     "loss": loss 
-                })
+                }, f)
+            store_mm_sample_gif(xs[0][0][0,:,:,:], xs[0][0][1,:,:,:], sname, self.samples_net_dir, preprocess=False)
 
         Tpred = np.eye(4)
         Tpred[:3,:3] = prediction
         print(Tpred)
+        print(quaternion_from_matrix(Tpred))
 
         with self.olock:
             self.object_tf = copy.deepcopy(Tpred)
+
+        # input sanity checks
+        # self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
+
+        # output rotation viz
+        # self.plot_prediction3d(
+        #     Tpred = Tpred,
+        #     Twg   = quaternion_matrix(Qwg),
+        #     Two   = Two,
+        #     loss  = loss
+        # )
 
         # print("aligning object ...")
         # done = False
@@ -140,10 +165,24 @@ class NNPlacing:
         #         done = True
         # print("all done, bye")
 
-        # used to debug the input
-        # self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
-
         return ExecutePlacingResponse()
+
+    def plot_prediction3d(self, Tpred, Twg=None, Two=None, loss=np.pi):
+        if loss is None: loss = np.pi
+        axp = AxesPlot()
+
+        pv = Tpred[:3,:3]@[0,0,1]
+        axp.plot_v(pv, label=f"predicted Z | {loss:.5f}", color="black")
+
+        gv = Twg[:3,:3]@[0,0,-1]
+        axp.plot_v(gv, label=f"gripper -Z", color="yellow")
+
+        if Two is not None:
+            ov = Two[:3,:3]@[0,0,1]
+            axp.plot_v(ov, label="object's Z", color="grey")
+
+        axp.title("NN Prediction")
+        axp.show()
 
     def plot_input(self, tinp, tinp_static, ftinp, ftinp_static):
         import matplotlib.pyplot as plt
@@ -189,7 +228,7 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.07_11-14-24/GripperVar2/GripperVar2_Neps20_static_tactile_2022.09.07_12-48-15"
+    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.07_11-14-24/GripperVar2/GripperVar2_Neps20_static_gripper_2022.09.07_12-51-46"
     # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/ObjectVar/ObjectVar_Neps20_tactile_2022.09.03_11-13-08"
     weights = "final"
 

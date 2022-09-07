@@ -103,7 +103,8 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
         test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
     else:
-        train_l, test_l, _ = get_dataset_loaders(ds2name[dsname], seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size)
+        dname = dsname if dsname not in ds2name else ds2name[dsname]
+        train_l, test_l, _ = get_dataset_loaders(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size)
 
     return train_l, test_l, seed
 
@@ -138,7 +139,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
         generator=torch.Generator().manual_seed(seed)
     )
 
-    train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
+    train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size) if N_train > 0 else None
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
     return train_l, test_l, tds

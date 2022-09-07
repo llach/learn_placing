@@ -343,6 +343,7 @@ bool PlacingManager::staticSample(){
     if (contactTime_ != ros::Time(0) && hasSamples){
 
         ROS_INFO_STREAM("contact detected at " << contactTime_);
+        storeSample();
 
     } else if (contactTime_ == ros::Time(0) ) {
         ROS_FATAL_STREAM("\033[1;31mno contact -> can't store sample"<<"\033[0m");
@@ -499,9 +500,11 @@ void PlacingManager::sendSample(){
         }
     }
 
+    ep.request.sample_name = lastSample_;
     std::cout << ep.request.tactile_left.size() << " tactile left samples" << std::endl;
     std::cout << ep.request.tactile_right.size() << " tactile right samples" << std::endl;
     std::cout << ep.request.ft.size() << " FT samples" << std::endl;
+    std::cout << "sample name: " << ep.request.sample_name << std::endl;
 
     srv.call(ep);
     std::cout << "done." << std::endl;

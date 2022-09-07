@@ -29,3 +29,6 @@
 
 ObjectVar2, GripperVar2 arm positions:
 `[1.16, 0.13, 1.95, 1.10, 0.03, 0.37, 0.06]`
+
+
+

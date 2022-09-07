@@ -74,8 +74,8 @@ if __name__ == "__main__":
         dsname = ds2name[dd]
         print(f"processing dataset {dsname} ...")
 
-        dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
-        dataset_file = f"{data_root}/{dsname}.pkl"
+        dataset_path = f"{data_root}/placing_data_pkl_gripper_trial"
+        dataset_file = f"{data_root}/gripper_trial.pkl"
 
         # sample timestamp -> sample
         ds = load_dataset(dataset_path)
