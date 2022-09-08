@@ -44,9 +44,13 @@ class OptiState:
     def pub_loop(self):
         now = rospy.Time.now()
 
-        (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        (two, Qwo) = self.li.lookupTransform(self.world_frame, self.object_frame, rospy.Time(0))
-        (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, self.object_frame, rospy.Time(0))
+        try:
+            (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+            (two, Qwo) = self.li.lookupTransform(self.world_frame, self.object_frame, rospy.Time(0))
+            (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, self.object_frame, rospy.Time(0))
+        except Exception as e:
+            print(f"could not get object transforms:\n{e}")
+            return
 
         self.otfpub.publish(TFMessage(
             transforms=[
@@ -64,7 +68,7 @@ class OptiState:
             self.markerpub.publish(MarkerArray(markers = [
                 *frame(Twg, ns="Twg"),
                 *frame(Two, ns="Two"),
-                # *frame(Twg@Tgo, ns="Tgo")
+                *frame(Twg@Tgo, ns="Tgo")
             ]))
 
 if __name__ == "__main__":
