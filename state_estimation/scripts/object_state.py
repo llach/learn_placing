@@ -404,7 +404,9 @@ class StateEstimator:
         if len(angles)==0: 
             # print("warn: no detection")
             return
-
+            
+        def qO2qdiff(qO): return vecs2quat([0,0,-1], rotate_v([1,0,0], qO)) 
+        def v_from_qdiff(qd): return rotate_v([0,0,-1], qd)
         qdiffs = [vecs2quat([0,0,-1], rotate_v([1,0,0], q)) for q in qOs]
         finalq = qavg(qdiffs)
         final_ang = np.mean(angles)

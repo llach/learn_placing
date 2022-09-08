@@ -125,7 +125,7 @@ class TactilePlacingNet(nn.Module):
         -> select xs[:,S,:], where S is the sensors index in {0,1}
         * then we loop over each image in the sequence, pass it into the CNN individually, concatenate the result and pass it into the RNN
         """
-        if not isinstance(x, Tensor): x = torch.Tensor(x)
+        if not isinstance(x, Tensor) and x is not None: x = torch.Tensor(x)
 
         mlp_inputs = []
         if self.with_tactile:

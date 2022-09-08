@@ -82,7 +82,7 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
+def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8, random=True):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
     if dsname in [DatasetName.combined_var, DatasetName.combined_var2]:
@@ -91,8 +91,8 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
         elif dsname == DatasetName.combined_var2:
             ds1, ds2 = ds2name[DatasetName.object_var2], ds2name[DatasetName.gripper_var2]
 
-        _,_, ovar_ds = get_dataset_loaders(ds1, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
-        _,_, gvar_ds = get_dataset_loaders(ds2, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        _,_, ovar_ds = get_dataset_loaders(ds1, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
+        _,_, gvar_ds = get_dataset_loaders(ds2, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
 
         cds = ConcatDataset([ovar_ds, gvar_ds])
 
@@ -109,15 +109,20 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
 
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        train_l, test_l, _ = get_dataset_loaders(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size)
+        train_l, test_l, _ = get_dataset_loaders(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size, random=random)
 
     return train_l, test_l, seed
 
 
-def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True):
+def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, random=True):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
+    ds_sorted = {}
+    for mod, dat in ds.items():
+        ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
+    ds = ds_sorted
+    
     ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
     X =  [v for _, v in ds[indata2key[input_data]].items()]
@@ -137,6 +142,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     FT = torch.Tensor(np.array(FT))
     
     tds = TensorDataset(X, GR, FT, Y)
+    if not random: return None, DataLoader(tds, shuffle=False, batch_size=batch_size), None
 
     train, test = torch.utils.data.random_split(
         tds, 

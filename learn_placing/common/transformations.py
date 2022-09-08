@@ -1202,6 +1202,10 @@ def quaternion_from_matrix(matrix):
     True
 
     """
+    if matrix.shape == (3,3):
+        T = numpy.eye(4)
+        T[:3,:3] = matrix
+        matrix = T
     q = numpy.empty((4, ), dtype=numpy.float64)
     M = numpy.array(matrix, dtype=numpy.float64, copy=False)[:4, :4]
     t = numpy.trace(M)
