@@ -67,10 +67,10 @@ Rgoals =  np.repeat([Rgoal], Rs.shape[0], axis=0)
 # metric = wrap_torch_fn(point_loss, Rgoals, Rs)
 # norm_metric = metric / np.pi
 
-metric = 1-np.cos(wrap_torch_fn(point_loss, Rgoals, Rs))
-# metric = wrap_torch_fn(point_loss, Rgoals, Rs)
-# norm_metric = metric/np.pi
-norm_metric = metric/2
+# metric = 1-np.cos(wrap_torch_fn(point_loss, Rgoals, Rs))
+metric = wrap_torch_fn(point_loss, Rgoals, Rs)
+norm_metric = metric/np.pi
+# norm_metric = metric/2
 
 cm = plt.get_cmap("copper")
 colors = cm(norm_metric)

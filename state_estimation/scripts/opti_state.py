@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import rospy
 
-from tf import TransformListener
+from tf import TransformListener, TransformBroadcaster
 from std_msgs.msg import Header
 from tf2_msgs.msg import TFMessage
 from wrist_motion.marker import frame
@@ -21,6 +21,7 @@ class OptiState:
         self.otfpub = rospy.Publisher("/opti_state", TFMessage, queue_size=10)
         self.markerpub = rospy.Publisher("/opti_state_markers", MarkerArray, queue_size=10)
         
+        self.br = TransformBroadcaster()
         self.li = TransformListener()
         for _ in range(6):
             try:
@@ -71,6 +72,14 @@ class OptiState:
                 *frame(Two, ns="Two"),
                 *frame(Twg@Tgo, ns="Tgo")
             ]))
+
+        self.br.sendTransform(
+            [0,0,0],
+            Qwo, 
+            rospy.Time.now(),
+            "object",
+            "base_footprint"
+        )
 
 if __name__ == "__main__":
     rospy.init_node("opti_state")

@@ -10,7 +10,7 @@ from utils import load_train_params, test_net, rep2loss, get_dataset
 from tactile_insertion_rl import TactilePlacingNet
 
 # trial_name = "../batch_trainings/2022.09.07_11-14-24/ObjectVar2/ObjectVar2_Neps20_static_tactile_2022.09.07_12-31-22"
-trial_name = "../batch_trainings/2022.09.07_11-14-24/GripperVar2/GripperVar2_Neps20_static_gripper_2022.09.07_12-51-46"
+trial_name = "../batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
 
 trial_path = f"{training_path}/{trial_name}"
 trial_weights = f"{trial_path}/weights/final.pth"
@@ -23,11 +23,12 @@ model.load_state_dict(checkp)
 
 criterion = rep2loss(a.loss_type)
 
-train_l, test_l, _ = get_dataset("gripper_trial", a, seed=a.dataset_seed, train_ratio=0.0)
+train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, train_ratio=0.0)
 
 outputs, labels, loss, grips = test_net(model, criterion, test_l)
 cm = plt.get_cmap("copper")
 axp = AxesPlot()
+print(loss)
 for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
     lo_norm = lo/np.pi
     

@@ -126,7 +126,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     FT = [f for _, f in ds[ft_type].items()]
 
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
-    if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y) for y in Y]
+    if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
 
     N_train = int(len(X)*train_ratio)
     N_test = len(X)-N_train

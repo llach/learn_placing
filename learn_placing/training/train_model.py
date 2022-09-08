@@ -188,7 +188,7 @@ if __name__ == "__main__":
     #     [False, True , True],
     #     [True , True , True],
     # ]
-    input_types = [InData.static]
+    input_types = [InData.with_tap]
     input_modalities = [
         [True , False, False],
         [False, True , False],  

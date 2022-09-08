@@ -22,7 +22,7 @@ from tactile_insertion_rl import TactilePlacingNet
 # trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-55-48"
 # trial_name = "GripperVar_Neps10_ortho6d_world2object_gripper-False_2022.09.01_16-58-42"
 
-trial_name = "../batch_trainings/2022.09.03_11-13-08/ObjectVar/ObjectVar_Neps20_tactile_ft_2022.09.03_11-22-38"
+trial_name = "../batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
 
 trial_path = f"{training_path}/{trial_name}"
 trial_weights = f"{trial_path}/weights/final.pth"
@@ -35,7 +35,7 @@ model.load_state_dict(checkp)
 
 criterion = rep2loss(a.loss_type)
 
-train_l, test_l, _ = get_dataset(a.dsname, a, seed=a.dataset_seed)
+train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, batch_size=3)
 
 outputs, labels, loss, grips = test_net(model, criterion, test_l)
 if a.out_repr == RotRepr.sincos:

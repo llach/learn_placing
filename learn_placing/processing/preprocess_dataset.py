@@ -50,7 +50,6 @@ def myrmex_transform(left, right, dd):
     le_static = ler[sfro:sto]
 
     inp = np.stack([le, ri])
-    print(le_static.shape, ri_static.shape)
     inp_static = np.stack([le_static, ri_static])
 
     return inp, inp_static
@@ -77,14 +76,14 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.opti_gripper_test]
+    dsnames = [DatasetName.test]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
         print(f"processing dataset {dsname} ...")
 
-        dataset_path = f"{data_root}/placing_data_pkl_opti_test"
-        dataset_file = f"{data_root}/opti_test.pkl"
+        dataset_path = f"{data_root}/placing_data_pkl_{dsname}"
+        dataset_file = f"{data_root}/{dsname}.pkl"
 
         # sample timestamp -> sample
         ds = load_dataset(dataset_path)

@@ -130,7 +130,7 @@ class NNPlacing:
                     "y": prediction,
                     "loss": loss 
                 }, f)
-            store_mm_sample_gif(xs[0][0][0,:,:,:], xs[0][0][1,:,:,:], sname, self.samples_net_dir, preprocess=False)
+            store_mm_sample_gif(xs[0][0][0,:,:,:], xs[0][0][1,:,:,:], sname, self.samples_net_dir, preprocess=False, M=40)
 
         Tpred = np.eye(4)
         Tpred[:3,:3] = prediction
@@ -228,8 +228,8 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.07_11-14-24/GripperVar2/GripperVar2_Neps20_static_gripper_2022.09.07_12-51-46"
-    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.03_11-13-08/ObjectVar/ObjectVar_Neps20_tactile_2022.09.03_11-13-08"
+    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_ft_2022.09.08_16-43-39"
+    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
     weights = "final"
 
     nnp = NNPlacing(netname, weights)
