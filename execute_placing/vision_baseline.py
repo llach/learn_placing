@@ -1,6 +1,7 @@
 import rospy
 
 from threading import Lock
+from tf import TransformListener
 from std_srvs.srv import Empty, EmptyResponse
 from state_estimation.msg import ObjectStateEstimate
 from learn_placing.processing.bag2pickle import q2l
@@ -11,28 +12,40 @@ class PlacingOracle:
     """ vision-based placing with (partial?) object state knowledge
     """
 
-    def __init__(self):
+    def __init__(self, optitrack=True):
+        self.optitrack=optitrack
         self.os_t = None # latest timestamp
         self.os = None
+        self.grasping_frame = "gripper_left_grasping_frame"
+        self.world_frame = "base_footprint"
         self.oslock = Lock()
 
         self.planner = PlacingPlanner()
 
-        self.ossub = rospy.Subscriber("/object_state_estimate", ObjectStateEstimate, self.os_callback)
+        if not optitrack: 
+            self.ossub = rospy.Subscriber("/object_state_estimate", ObjectStateEstimate, self.os_callback)
+            print("waiting for object state ...")
+            while self.os is None and not rospy.is_shutdown(): rospy.Rate(10).sleep()
+
         self.alignservice = rospy.Service("/placing_oracle/align", Empty, self.align_object)
 
-        print("waiting for object state ...")
-        while self.os is None and not rospy.is_shutdown(): rospy.Rate(10).sleep()
+        self.li = TransformListener()
+        for _ in range(6):
+            try:
+                self.li.waitForTransform(self.world_frame, "pot", rospy.Time(0), rospy.Duration(3))
+                break
+            except Exception as e:
+                print(e)
 
         print("placing oracle setup done!")
 
     def os_callback(self, msg):
-        self.oslock.acquire()
+        # self.oslock.acquire()
 
         self.os = msg
         self.os_t = rospy.Time.now()
 
-        self.oslock.release()
+        # self.oslock.release()
 
     def align_object(self, _):
         print("aligning object ...")
@@ -41,11 +54,21 @@ class PlacingOracle:
         while not done:
             inp = input("next? a=align; p=place\n")
             inp = inp.lower()
+
+            if self.optitrack:
+                try:
+                    (_, Qwp) = self.li.lookupTransform(self.world_frame, "pot", rospy.Time(0))
+                except Exception as e:
+                    print(f"[ERROR] couldn't get pot TF: {e}")
+                    return
             if inp == "a":
-                self.oslock.acquire()
-                qdiff = q2l(self.os.finalq)
-                self.planner.align(quaternion_matrix(qdiff))
-                self.oslock.release()
+                if self.optitrack:
+                    self.planner.align(quaternion_matrix(Qwp))
+                else:
+                    # self.oslock.acquire()
+                    qdiff = q2l(self.os.finalq)
+                    self.planner.align(quaternion_matrix(qdiff))
+                    # self.oslock.release()
             elif inp == "p":
                 self.planner.place()
             else:
@@ -73,7 +96,7 @@ if __name__ == "__main__":
 
     # joint_pub.publish(JointState(name=ACTIVE_JOINTS, position=INITIAL_STATE))
 
-    po = PlacingOracle()
+    po = PlacingOracle(optitrack=True)
     time.sleep(0.2)
     # po.align_object(0)
     po.align_object(0)

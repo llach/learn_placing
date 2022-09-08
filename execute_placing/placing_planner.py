@@ -14,8 +14,6 @@ from std_srvs.srv import Empty
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal, JointTrajectoryControllerState
 
-from cm_interface import safe_switch, is_running
-
 def Tf2T(pos, rot):
     T = quaternion_matrix(rot)
     T[:3,3] = pos
@@ -55,6 +53,7 @@ class PlacingPlanner:
 
         self.mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
 
+        from cm_interface import safe_switch, is_running
         print("enabling torso controller ...")
         safe_switch("torso_controller", "torso_stop_controller")
 
@@ -74,6 +73,7 @@ class PlacingPlanner:
         for _ in range(6):
             try:
                 self.li.waitForTransform(self.grasping_frame, self.world_frame, rospy.Time(0), rospy.Duration(3))
+                self.li.waitForTransform(self.grasping_frame, "pot", rospy.Time(0), rospy.Duration(3))
                 break
             except Exception as e:
                 print(e)
@@ -82,7 +82,7 @@ class PlacingPlanner:
     def tcb(self, msg): self.t_current = msg.actual.positions[0]
 
     def activate_torso(self):
-        
+        from cm_interface import safe_switch, is_running
         if not is_running("torso_stop_controller"):
             print("enabling torso controller ...")
             safe_switch("torso_controller", "torso_stop_controller")
@@ -118,18 +118,23 @@ class PlacingPlanner:
         return True
 
     def align(self, Two):
-        Tfwg = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        Twg = Tf2T(*Tfwg)
+        (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+        (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, "pot", rospy.Time(0))
+        Twg = Tf2T(twg, Qwg)
         Tgw = inverse_matrix(Twg)
 
-        Tgo = quaternion_matrix(
-                quaternion_multiply(
-                    quaternion_inverse(Tfwg[1]), 
-                    quaternion_from_matrix(Two)
-                )
-            )
-
+        # Tgo2 = quaternion_matrix(
+        #         quaternion_multiply(
+        #             quaternion_inverse(Qwg), 
+        #             quaternion_from_matrix(Two)
+        #         )
+        #     )
+        # print(np.linalg.norm(quaternion_from_matrix(Two)))
+        Tgo = Tf2T([0,0,0], Qgo)
         Tow = inverse_matrix(Two)
+
+        # print(Tgo2)
+        # print(Tgo)
 
         u = [0,0,1]
         w = Tow[:3,:3]@[0,0,1]
@@ -164,6 +169,7 @@ class PlacingPlanner:
             self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
         
     def place(self):
+        
         self.activate_torso()
 
         if self.t_current == None: 
@@ -193,7 +199,7 @@ class PlacingPlanner:
         print("opening gripper")
         self.open_gripper()
 
-        print("moving torso up")
-        self.torso_up()
+        # print("moving torso up")
+        # self.torso_up()
         
         print("placing done! :)")

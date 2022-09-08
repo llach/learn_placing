@@ -207,14 +207,14 @@ class Reorient:
         disp = DisplayTrajectory(trajectory_start=init_rs)
         disp.trajectory.append(rt)
 
-        if check_validity:
-            validities = [self.check_validity(rs) for rs in rss]
-            if all(validities):
-                print("valid trajectory")
-            else:
-                print("trajectory not valid!")
-                self.pub_markers(Tgocorr, False)
-                return rt, True
+        # if check_validity:
+        #     validities = [self.check_validity(rs) for rs in rss]
+        #     if all(validities):
+        #         print("valid trajectory")
+        #     else:
+        #         print("trajectory not valid!")
+        #         self.pub_markers(Tgocorr, False)
+        #         return rt, True
 
         if publish_traj:
             self.traj_pub.publish(disp)
