@@ -22,6 +22,7 @@ dsLookback = {
     DatasetName.combined_var2: [[-80,-30], [-130,-80]],
     DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
     DatasetName.test: [[-80,-40], [-120,-80]],
+    DatasetName.test_obj: [[-80,-40], [-120,-80]],
 }
 
 ftLookback = {
@@ -34,6 +35,7 @@ ftLookback = {
     DatasetName.combined_var2: [[-20,-5], [-35,-20]],
     DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
     DatasetName.test: [[-20,-5], [-35,-20]],
+    DatasetName.test_obj: [[-20,-5], [-35,-20]],
 }
 
 def myrmex_transform(left, right, dd):
@@ -76,7 +78,7 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.test]
+    dsnames = [DatasetName.test_obj]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]

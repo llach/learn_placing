@@ -177,7 +177,7 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=20
-    datasets = [DatasetName.opti_gripper_test]
+    datasets = [DatasetName.test_obj]
     # input_types = [InData.static, InData.with_tap]
     # input_modalities = [
     #     [True , False, False],
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     #     [False, True , True],
     #     [True , True , True],
     # ]
-    input_types = [InData.with_tap]
+    input_types = [InData.static]
     input_modalities = [
         [True , False, False],
         [False, True , False],  

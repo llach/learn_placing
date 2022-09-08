@@ -331,13 +331,13 @@ bool PlacingManager::staticSample(){
 
     // get some data into buffers
     ROS_INFO("waiting for samples");
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     // pause data recording
     pause();
     ROS_INFO("got %d object samples", bufferObjectState.numData());
 
-    contactTime_ = ros::Time::now()-ros::Duration(1.5);
+    contactTime_ = ros::Time::now()-ros::Duration(0.5);
     bool hasSamples = checkSamples(contactTime_);
     
     if (contactTime_ != ros::Time(0) && hasSamples){

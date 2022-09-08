@@ -26,6 +26,7 @@ class DatasetName(str, Enum):
     combined_var2="CombinedVar2"
     opti_gripper_test = "OptiGripperTest"
     test="test"
+    test_obj="test_obj"
 
 ds2name = {
     DatasetName.cuboid: "second",
@@ -36,6 +37,7 @@ ds2name = {
     DatasetName.gripper_var2: "seven",
     DatasetName.opti_gripper_test: "opti_test",
     DatasetName.test: "test",
+    DatasetName.test_obj: "test_obj",
 }
 
 class RotRepr(str, Enum):

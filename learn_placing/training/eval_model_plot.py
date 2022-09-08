@@ -23,12 +23,11 @@ model.load_state_dict(checkp)
 
 criterion = rep2loss(a.loss_type)
 
-train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, train_ratio=0.0)
+train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, train_ratio=0.0, random=False)
 
 outputs, labels, loss, grips = test_net(model, criterion, test_l)
 cm = plt.get_cmap("copper")
 axp = AxesPlot()
-print(loss)
 for i, out, lbl, lo, grip in zip(range(outputs.shape[0]), outputs, labels, np.squeeze(loss), grips):
     lo_norm = lo/np.pi
     

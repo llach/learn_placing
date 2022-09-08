@@ -35,7 +35,7 @@ model.load_state_dict(checkp)
 
 criterion = rep2loss(a.loss_type)
 
-train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, batch_size=3)
+train_l, test_l, _ = get_dataset("test", a, seed=a.dataset_seed, random=False)
 
 outputs, labels, loss, grips = test_net(model, criterion, test_l)
 if a.out_repr == RotRepr.sincos:

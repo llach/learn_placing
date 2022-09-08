@@ -228,8 +228,9 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_ft_2022.09.08_16-43-39"
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
+    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_19-11-16/test_obj/test_obj_Neps20_static_tactile_gripper_ft_2022.09.08_19-12-35"
+    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
+    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_17-56-42/OptiGripperTest/OptiGripperTest_Neps20_with_tap_tactile_2022.09.08_17-56-42"
     weights = "final"
 
     nnp = NNPlacing(netname, weights)
