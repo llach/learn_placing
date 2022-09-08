@@ -56,7 +56,14 @@
 ObjectVar2, GripperVar2 arm positions:
 `[1.16, 0.13, 1.95, 1.10, 0.03, 0.37, 0.06]`
 
-ObjectOpti, GripperOpti arm positions:
-`[1.29, 0.03, 2.29, 0.76, -0.29, 0.67, 0.75]`
+### GripperOptiTest
 
+arm positions: `[1.29, 0.03, 2.29, 0.76, -0.29, 0.67, 0.75]`
 
+arm_7:
+* start (middle point): `0.75`
+* min: `-0.19`
+* max: `1.75`
+
+* sometimes optitrack didn't detect the markers. the data collection node recognized this. keeping an eye on the optitrack state publisher terminal allows to detect vanished markers quickly
+* in one specifc arm position, TIAGo's arm was shaking while moving which led to false positive table contacts. samples were flagged (manually)
