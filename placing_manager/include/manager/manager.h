@@ -114,7 +114,7 @@ private:
     TopicBuffer<tactile_msgs::TactileState> bufferMyLeft;
     TopicBuffer<tactile_msgs::TactileState> bufferMyRight;
     TopicBuffer<geometry_msgs::WrenchStamped> bufferFt;
-    TopicBuffer<state_estimation::ObjectStateEstimate> bufferObjectState;
+    TopicBuffer<tf2_msgs::TFMessage> bufferObjectState;
 
     std::mutex jsLock_;
     ros::Subscriber jsSub_;

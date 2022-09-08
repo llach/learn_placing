@@ -1,10 +1,12 @@
 #!/usr/bin/python
+from pickletools import optimize
 import time
 import rospy
 import rosnode
 import actionlib
 import numpy as np
 
+from tf2_msgs.msg import TFMessage
 from std_srvs.srv import Empty, Trigger
 from sensor_msgs.msg import JointState
 from pal_common_msgs.msg import EmptyAction, EmptyActionGoal
@@ -54,16 +56,24 @@ def send_trajectory(to):
 def open_gripper(): send_trajectory(JT_MAX)
 def close_gripper(): send_trajectory(JT_MIN)
 
+optipub = False
 if __name__ == "__main__":
     rospy.init_node("setup_experiment")
+
 
     ################################################
     ############## ROS COMMUNICATION ###############
     ################################################
 
+    def cb(_):
+        global optipub
+        optipub=True
+
+    osSub = rospy.Subscriber('/opti_state', TFMessage, callback=cb)
+
     mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
     mmCalib = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Trigger)
-    objectStateCalib = rospy.ServiceProxy("/object_state_calibration", Empty)
+    # objectStateCalib = rospy.ServiceProxy("/object_state_calibration", Empty)
     ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
     reinitSrv = rospy.ServiceProxy("/reinit_wrist_planner", Empty)
 
@@ -107,8 +117,8 @@ if __name__ == "__main__":
     print("waiting for gravity compensation server ...")
     gravityAC.wait_for_server()
 
-    print("waiting for object state estimation calibration service ...")
-    objectStateCalib.wait_for_service()
+    # print("waiting for object state estimation calibration service ...")
+    # objectStateCalib.wait_for_service()
 
     print("waiting for myrmex kill service ...")
     mmKill.wait_for_service()
@@ -124,19 +134,29 @@ if __name__ == "__main__":
 
     print("################ setup done")
 
+    print("checking optitrack ...")
+    start = rospy.Time.now()
+    while not optipub:
+        rospy.Rate(20).sleep()
+        if rospy.Time.now()-start > rospy.Duration(5.0):
+            print("ERROR optitrack doesn't seem to be published ...")
+            exit(-1)
+
+    print("optitrack is being published!")
+    
     ################################################
     ################ TAG CALIBRATION ###############
     ################################################
 
-    if input_or_quit("object calib?"): objectStateCalib()
+    # if input_or_quit("object calib?"): objectStateCalib()
 
     ################################################
     ################ REPOSITION ARM ################
     ################################################
 
-    arm_goal = EmptyActionGoal()
 
     if input_or_quit("gravity off?"):
+        arm_goal = EmptyActionGoal()
         gravityAC.send_goal(arm_goal)
 
         input_or_quit("done?")

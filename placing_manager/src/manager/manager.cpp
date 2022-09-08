@@ -34,7 +34,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     bufferFt(n_,            "ft", "/wrist_left_ft"),
     bufferTf(n_,            "tf", "/tf"),
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
-    bufferObjectState(n_,   "object_state", "/object_state_estimate"),
+    bufferObjectState(n_,   "opti_state", "/opti_state"),
     jsSub_(n_.subscribe("/joint_states", 1, &PlacingManager::jsCB, this)),
     wristAc_("/wrist_plan", true),
     executeAc_("/execute_trajectory", true),
@@ -202,6 +202,9 @@ void PlacingManager::storeSample(){
 }
 
 bool PlacingManager::reorientate(){
+    ROS_ERROR("reorientation is not supported rn");
+    return false;
+    
     ROS_INFO("planning arm reorientation ...");
     PlanWristGoal g;
     g.table_height = tableHeight_+0.1;
@@ -305,9 +308,6 @@ bool PlacingManager::collectSample(){
     } else {
         ROS_FATAL_STREAM("\033[1;31munknown error"<<"\033[0m");
     }
-
-    // ROS_INFO("reorientating wrist randomly ...");
-    // reorientate();
 
     return true;
 }
