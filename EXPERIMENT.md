@@ -46,11 +46,17 @@
 
 * If myrmex sensors don't deliver data, reconnect the USB cables of the PC
 * when starting the OpenNi camera on the robot, it sometimes fails if the tiagocam is connected. Reconnecting the webcam solves the issue.
+* open and close gripper: `/home/llach/.pyenv/versions/3.9.6/bin/python /home/llach/robot_mitm_ws/src/learn_placing/myrmex_gripper_controller/scripts/open_close.py`
+  * `o` opens gripper
+  * `c` closes gripper
+  * `k` kills current goal **recommended** after closing for experiments to avoid gripper movements caused be force differences during tap
 
 ## Notes
 
 ObjectVar2, GripperVar2 arm positions:
 `[1.16, 0.13, 1.95, 1.10, 0.03, 0.37, 0.06]`
 
+ObjectOpti, GripperOpti arm positions:
+`[1.29, 0.03, 2.29, 0.76, -0.29, 0.67, 0.75]`
 
 
