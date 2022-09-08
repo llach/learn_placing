@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
 from learn_placing.common.data import load_dataset_file
+from learn_placing.common.transformations import quaternion_matrix
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -23,6 +24,7 @@ class DatasetName(str, Enum):
     gripper_var2="GripperVar2"
     combined_var="CombinedVar"
     combined_var2="CombinedVar2"
+    test="test"
 
 ds2name = {
     DatasetName.cuboid: "second",
@@ -31,6 +33,7 @@ ds2name = {
     DatasetName.gripper_var: "five",
     DatasetName.object_var2: "six",
     DatasetName.gripper_var2: "seven",
+    DatasetName.test: "test",
 }
 
 class RotRepr(str, Enum):
@@ -121,6 +124,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     FT = [f for _, f in ds[ft_type].items()]
 
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
+    if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y) for y in Y]
 
     N_train = int(len(X)*train_ratio)
     N_test = len(X)-N_train
@@ -129,7 +133,6 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
-    if out_repr==RotRepr.ortho6d: Y = compute_rotation_matrix_from_quaternion(Y)
     
     tds = TensorDataset(X, GR, FT, Y)
 

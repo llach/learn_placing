@@ -111,6 +111,8 @@ if __name__ == "__main__":
                 msgs[topic][1].append(bool(msg.in_contact))
             elif topic == "bag_times":
                 msgs[topic][1].append(msg2str(msg))
+            elif topic == "opti_state":
+                msgs[topic][1].append(msg2tf(msg))
             else:
                 continue
             # we only reach this line if the `else` above wasn't reached
@@ -122,7 +124,7 @@ if __name__ == "__main__":
             if k == "joint_names": continue
             assert len(v[0])==len(v[1]), f"length mismatch for {k}"
 
-        if "object_state" not in topics:
+        if "object_state" not in topics and "opti_state" not in topics:
             print("no object state")
             filtered += 1
             continue 
