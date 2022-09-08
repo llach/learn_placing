@@ -24,6 +24,7 @@ class DatasetName(str, Enum):
     gripper_var2="GripperVar2"
     combined_var="CombinedVar"
     combined_var2="CombinedVar2"
+    opti_gripper_test = "OptiGripperTest"
     test="test"
 
 ds2name = {
@@ -33,6 +34,7 @@ ds2name = {
     DatasetName.gripper_var: "five",
     DatasetName.object_var2: "six",
     DatasetName.gripper_var2: "seven",
+    DatasetName.opti_gripper_test: "opti_test",
     DatasetName.test: "test",
 }
 

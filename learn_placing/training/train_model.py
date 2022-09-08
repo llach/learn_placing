@@ -177,15 +177,22 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=20
-    datasets = [DatasetName.test]
-    input_types = [InData.static, InData.with_tap]
+    datasets = [DatasetName.opti_gripper_test]
+    # input_types = [InData.static, InData.with_tap]
+    # input_modalities = [
+    #     [True , False, False],
+    #     [False, True , False],  
+    #     [False, False, True],
+    #     [True , True , False],
+    #     [True , False, True],
+    #     [False, True , True],
+    #     [True , True , True],
+    # ]
+    input_types = [InData.static]
     input_modalities = [
         [True , False, False],
         [False, True , False],  
         [False, False, True],
-        [True , True , False],
-        [True , False, True],
-        [False, True , True],
         [True , True , True],
     ]
 
@@ -200,13 +207,14 @@ if __name__ == "__main__":
         trials = {}
         for i, input_type in enumerate(input_types):
             for j, input_mod in enumerate(input_modalities):
+                oax = axs[j,i] if ncols>1 else axs[j]
                 trialname = train(
                     dataset=dataset,
                     input_type=input_type,
                     input_modalities=input_mod,
                     trial_path=dspath,
                     Neps=Neps,
-                    other_ax=axs[j,i]
+                    other_ax=oax
                 )
         fig.suptitle(f"Dataset '{dataset}'")
         fig.tight_layout()
