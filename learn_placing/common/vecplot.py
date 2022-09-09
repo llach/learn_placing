@@ -16,9 +16,13 @@ class Arrow3D(FancyArrowPatch):
 
 class AxesPlot:
 
-    def __init__(self) -> None:
-        self.fig = plt.figure(figsize=(9.71, 8.61))
-        self.ax = self.fig.add_subplot(111, projection='3d')
+    def __init__(self, fig=None, sps=111, angles=None) -> None:
+        if fig is None:
+            self.fig = plt.figure(figsize=(9.71, 8.61))
+        else:
+            self.fig = fig
+        self.ax = self.fig.add_subplot(sps, projection='3d')
+        if angles is not None: self.ax.view_init(azim=angles[0], elev=angles[1])
         self.clean()
     
     def clean(self):
@@ -36,8 +40,17 @@ class AxesPlot:
 
         self.handles = []
         self.handles.append(
-            self.ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label=f"desired normal"))
+            self.ax.add_artist(Arrow3D([0,0,0], [0,0,-1], color=[0.0, 1.0, 1.0, 0.7], label=f"placing normal"))
         )
+
+    def angles_on_click(self):
+        def on_click(event):
+            azim, elev = self.get_angles()
+            print(azim, elev)
+        self.fig.canvas.mpl_connect('button_release_event', on_click)
+
+    def get_angles(self):
+        return self.ax.azim, self.ax.elev
     
     def plot_v(self, vec, start=[0,0,0], color="blue", label="", legend=False):
         h = self.ax.add_artist(Arrow3D(start, vec, color=color, label=label))
@@ -47,12 +60,26 @@ class AxesPlot:
         h = self.ax.scatter(points[:,0], points[:,1], points[:,2], *args, **kwargs)
         if "label" in kwargs: self.handles.append(h)
 
+    def axtitle(self, t):
+        self.ax.set_title(t)
+
     def title(self, t):
         self.fig.suptitle(t)
 
-    def show(self):
-        self.ax.legend(handles=self.handles)
+    def legend(self, **kwargs):
+        self.ax.legend(handles=self.handles, **kwargs)
+
+    def finalize(self, legend):
+        if legend: self.legend()
             
         self.fig.tight_layout()
         self.fig.canvas.draw()
+
+    def store(self, path, legend=False):
+        self.finalize(legend=legend)
+        plt.savefig(path)
+        plt.clf()
+        
+    def show(self, legend=False):
+        self.finalize(legend=legend)
         plt.show()
