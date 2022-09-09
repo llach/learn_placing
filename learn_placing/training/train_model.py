@@ -57,7 +57,7 @@ def train(
         with_gripper = with_gripper,
         with_ft = with_ft,
 
-        batch_size = 8 if dataset is not DatasetName.combined_var else 16,
+        batch_size = 32,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
         target_type = InRot.w2o,
@@ -152,6 +152,8 @@ def train(
 
             print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
             print()
+            break
+        break
     torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
     with open(f"{trial_path}/losses.pkl", "wb") as f:
@@ -168,6 +170,9 @@ def train(
     fig.tight_layout()
     fig.savefig(f"{trial_path}/learning_curve.png")
 
+    plt.clf()
+    plt.close()
+
     print('training done!')
     print(trial_name)
     return trial_name
@@ -177,24 +182,28 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=20
-    datasets = [DatasetName.test_obj]
-    # input_types = [InData.static, InData.with_tap]
-    # input_modalities = [
-    #     [True , False, False],
-    #     [False, True , False],  
-    #     [False, False, True],
-    #     [True , True , False],
-    #     [True , False, True],
-    #     [False, True , True],
-    #     [True , True , True],
-    # ]
-    input_types = [InData.static]
+    datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
+
+    # full training
+    input_types = [InData.static, InData.with_tap]
     input_modalities = [
         [True , False, False],
         [False, True , False],  
         [False, False, True],
+        [True , True , False],
+        [True , False, True],
+        [False, True , True],
         [True , True , True],
     ]
+
+    # quick testing config
+    # input_types = [InData.static]
+    # input_modalities = [
+    #     [True , False, False],
+    #     [False, True , False],  
+    #     [False, False, True],
+    #     [True , True , True],
+    # ]
 
     for dataset in datasets:
         dspath = f"{base_path}/{dataset}"

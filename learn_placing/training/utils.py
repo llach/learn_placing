@@ -16,25 +16,17 @@ class AttrDict(dict):
         self.__dict__ = self
 
 class DatasetName(str, Enum):
-    cuboid="Cuboid"
-    cylinder="Cylinder"
-    object_var="ObjectVar"
     object_var2="ObjectVar2"
-    gripper_var="GripperVar"
     gripper_var2="GripperVar2"
-    combined_var="CombinedVar"
     combined_var2="CombinedVar2"
     opti_gripper_test = "OptiGripperTest"
     test="test"
     test_obj="test_obj"
     cuboid_large="Cuboid500"
     cylinder_large="Cylinder500"
+    combined_large="Combined1000"
 
 ds2name = {
-    DatasetName.cuboid: "second",
-    DatasetName.cylinder: "third",
-    DatasetName.object_var: "four",
-    DatasetName.gripper_var: "five",
     DatasetName.object_var2: "six",
     DatasetName.gripper_var2: "seven",
     DatasetName.opti_gripper_test: "opti_test",
@@ -42,16 +34,13 @@ ds2name = {
     DatasetName.test_obj: "test_obj",
     DatasetName.cuboid_large: "cuboid_large",
     DatasetName.cylinder_large: "cylinder_large",
+    DatasetName.combined_large: "combined_large",
 }
 
 
 # we switched to longer record times around the detected touch, so different datasets have different timestamps
 dsLookback = {
-    DatasetName.cuboid: [[-50,None], [-100,-50]],
-    DatasetName.cylinder: [[-50,None], [-100,-50]],
-    DatasetName.object_var: [[-80,-30], [-130,-80]],
     DatasetName.object_var2: [[-80,-30], [-130,-80]],
-    DatasetName.gripper_var: [[-80,-30], [-130,-80]],
     DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
     DatasetName.combined_var2: [[-80,-30], [-130,-80]],
     DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
@@ -62,11 +51,7 @@ dsLookback = {
 }
 
 ftLookback = {
-    DatasetName.cuboid: [[-15,None], [-30,-15]],
-    DatasetName.cylinder: [[-15,None], [-30,-15]],
-    DatasetName.object_var: [[-20,-5], [-35,-20]],
     DatasetName.object_var2: [[-20,-5], [-35,-20]],
-    DatasetName.gripper_var: [[-20,-5], [-35,-20]],
     DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
     DatasetName.combined_var2: [[-20,-5], [-35,-20]],
     DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
@@ -123,11 +108,11 @@ def load_train_params(trial_path):
 def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8, random=True):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
-    if dsname in [DatasetName.combined_var, DatasetName.combined_var2]:
-        if dsname == DatasetName.combined_var:
-            ds1, ds2 = ds2name[DatasetName.object_var], ds2name[DatasetName.gripper_var]
-        elif dsname == DatasetName.combined_var2:
+    if dsname in [DatasetName.combined_var2, DatasetName.combined_large]:
+        if dsname == DatasetName.combined_var2:
             ds1, ds2 = ds2name[DatasetName.object_var2], ds2name[DatasetName.gripper_var2]
+        elif dsname == DatasetName.combined_large:
+            ds1, ds2 = ds2name[DatasetName.cuboid_large], ds2name[DatasetName.cylinder_large]
 
         _,_, ovar_ds = get_dataset_loaders(ds1, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
         _,_, gvar_ds = get_dataset_loaders(ds2, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
