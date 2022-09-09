@@ -27,6 +27,8 @@ class DatasetName(str, Enum):
     opti_gripper_test = "OptiGripperTest"
     test="test"
     test_obj="test_obj"
+    cuboid_large="Cuboid500"
+    cylinder_large="Cylinder500"
 
 ds2name = {
     DatasetName.cuboid: "second",
@@ -38,6 +40,40 @@ ds2name = {
     DatasetName.opti_gripper_test: "opti_test",
     DatasetName.test: "test",
     DatasetName.test_obj: "test_obj",
+    DatasetName.cuboid_large: "cuboid_large",
+    DatasetName.cylinder_large: "cylinder_large",
+}
+
+
+# we switched to longer record times around the detected touch, so different datasets have different timestamps
+dsLookback = {
+    DatasetName.cuboid: [[-50,None], [-100,-50]],
+    DatasetName.cylinder: [[-50,None], [-100,-50]],
+    DatasetName.object_var: [[-80,-30], [-130,-80]],
+    DatasetName.object_var2: [[-80,-30], [-130,-80]],
+    DatasetName.gripper_var: [[-80,-30], [-130,-80]],
+    DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
+    DatasetName.combined_var2: [[-80,-30], [-130,-80]],
+    DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
+    DatasetName.test: [[-80,-40], [-120,-80]],
+    DatasetName.test_obj: [[-80,-40], [-120,-80]],
+    DatasetName.cuboid_large: [[-80,-40], [-120,-80]],
+    DatasetName.cylinder_large: [[-80,-40], [-120,-80]],
+}
+
+ftLookback = {
+    DatasetName.cuboid: [[-15,None], [-30,-15]],
+    DatasetName.cylinder: [[-15,None], [-30,-15]],
+    DatasetName.object_var: [[-20,-5], [-35,-20]],
+    DatasetName.object_var2: [[-20,-5], [-35,-20]],
+    DatasetName.gripper_var: [[-20,-5], [-35,-20]],
+    DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
+    DatasetName.combined_var2: [[-20,-5], [-35,-20]],
+    DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
+    DatasetName.test: [[-20,-5], [-35,-20]],
+    DatasetName.test_obj: [[-20,-5], [-35,-20]],
+    DatasetName.cuboid_large: [[-20,-5], [-35,-20]],
+    DatasetName.cylinder_large: [[-20,-5], [-35,-20]],
 }
 
 class RotRepr(str, Enum):

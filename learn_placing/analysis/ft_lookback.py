@@ -10,7 +10,7 @@ ds = load_dataset(dataset_path)
 
 this_path = __file__.replace(__file__.split('/')[-1], '')
 plot_path = f"{this_path}/../plots/"
-store_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
+# store_path = f"{__file__.replace(__file__.split('/')[-1], '')}/test_samples"
 
 Ns = []
 L = 30

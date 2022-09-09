@@ -1,13 +1,13 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <root>
- <tabbed_widget name="Main Window" parent="main_window">
+ <tabbed_widget parent="main_window" name="Main Window">
   <Tab containers="1" tab_name="Forces&amp;Positions">
    <Container>
-    <DockSplitter sizes="0.500873;0.499127" count="2" orientation="-">
+    <DockSplitter orientation="-" sizes="0.501832;0.498168" count="2">
      <DockArea name="...">
-      <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-       <range left="2.980087" top="0.800000" bottom="-0.001000" right="37.979706"/>
-       <limitY max="0.8" min="-0.001"/>
+      <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+       <range left="2.019970" bottom="-0.001000" top="1.200000" right="37.009983"/>
+       <limitY max="1.2" min="-0.001"/>
        <curve name="/myrmex_controller_debug/f.0" color="#1f77b4"/>
        <curve name="/myrmex_controller_debug/f.1" color="#d62728"/>
        <curve name="/myrmex_controller_debug/f_thresholds.0" color="#1ac938"/>
@@ -15,10 +15,10 @@
        <curve name="/myrmex_controller_debug/f_sum" color="#ff7f0e"/>
       </plot>
      </DockArea>
-     <DockSplitter sizes="0.500678;0.499322" count="2" orientation="|">
+     <DockSplitter orientation="|" sizes="0.502638;0.497362" count="2">
       <DockArea name="...">
-       <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-        <range left="2.980087" top="0.050000" bottom="-0.010000" right="37.982458"/>
+       <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+        <range left="2.019970" bottom="-0.010000" top="0.050000" right="37.009983"/>
         <limitY max="0.05" min="-0.01"/>
         <curve name="/myrmex_controller_debug/des_q.0" color="#ff7f0e"/>
         <curve name="/myrmex_controller_debug/des_q.1" color="#f14cc1"/>
@@ -26,17 +26,17 @@
         <curve name="/myrmex_gripper_controller/state/actual/positions.1" color="#17becf"/>
        </plot>
       </DockArea>
-      <DockSplitter sizes="0.500876;0.499124" count="2" orientation="-">
+      <DockSplitter orientation="-" sizes="0.501229;0.498771" count="2">
        <DockArea name="...">
-        <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-         <range left="2.980087" top="0.000577" bottom="0.000573" right="37.979706"/>
+        <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+         <range left="2.019970" bottom="-0.000786" top="0.051142" right="37.009983"/>
          <limitY/>
          <curve name="/myrmex_controller_debug/delta_q" color="#1f77b4"/>
         </plot>
        </DockArea>
        <DockArea name="...">
-        <plot mode="TimeSeries" flip_x="false" flip_y="false" style="Lines">
-         <range left="2.980087" top="0.100000" bottom="-0.100000" right="37.979706"/>
+        <plot flip_x="false" flip_y="false" style="Lines" mode="TimeSeries">
+         <range left="2.019970" bottom="-0.000068" top="0.002799" right="37.009983"/>
          <limitY/>
          <curve name="/myrmex_controller_debug/error_integral" color="#d62728"/>
         </plot>
@@ -53,7 +53,7 @@
  <!-- - - - - - - - - - - - - - - -->
  <Plugins>
   <plugin ID="DataLoad CSV">
-   <default delimiter="0" time_axis=""/>
+   <default time_axis="" delimiter="0"/>
   </plugin>
   <plugin ID="DataLoad ROS bags">
    <use_header_stamp value="false"/>

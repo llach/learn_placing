@@ -8,35 +8,7 @@ from learn_placing.common.label_processing import normalize, rotate_v
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, inverse_matrix, Ry
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
-from learn_placing.training.utils import DatasetName, InRot, ds2name
-
-
-# we switched to longer record times around the detected touch, so different datasets have different timestamps
-dsLookback = {
-    DatasetName.cuboid: [[-50,None], [-100,-50]],
-    DatasetName.cylinder: [[-50,None], [-100,-50]],
-    DatasetName.object_var: [[-80,-30], [-130,-80]],
-    DatasetName.object_var2: [[-80,-30], [-130,-80]],
-    DatasetName.gripper_var: [[-80,-30], [-130,-80]],
-    DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
-    DatasetName.combined_var2: [[-80,-30], [-130,-80]],
-    DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
-    DatasetName.test: [[-80,-40], [-120,-80]],
-    DatasetName.test_obj: [[-80,-40], [-120,-80]],
-}
-
-ftLookback = {
-    DatasetName.cuboid: [[-15,None], [-30,-15]],
-    DatasetName.cylinder: [[-15,None], [-30,-15]],
-    DatasetName.object_var: [[-20,-5], [-35,-20]],
-    DatasetName.object_var2: [[-20,-5], [-35,-20]],
-    DatasetName.gripper_var: [[-20,-5], [-35,-20]],
-    DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
-    DatasetName.combined_var2: [[-20,-5], [-35,-20]],
-    DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
-    DatasetName.test: [[-20,-5], [-35,-20]],
-    DatasetName.test_obj: [[-20,-5], [-35,-20]],
-}
+from learn_placing.training.utils import DatasetName, InRot, ds2name, dsLookback, ftLookback
 
 def myrmex_transform(left, right, dd):
     ler = preprocess_myrmex(left)
@@ -78,7 +50,7 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.test_obj]
+    dsnames = [DatasetName.cylinder_large]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
