@@ -17,14 +17,21 @@ def ds_analysis_plot(dsname, savepath):
     imms = np.array([d for d in list(ds["inputs"].values())])
     smms = np.array([d for d in list(ds["static_inputs"].values())])
 
+    # average over dataset
     mms = np.concatenate([imms, smms], axis=0)
     mmms = np.mean(mms, axis=(0,2))
     mmax = np.max(mmms)
     mmms /= mmax
-
     lm = upscale_repeat(np.expand_dims(mmms[0,:,:], 0), 10)
-    lm = mm2img(lm)
     rm = upscale_repeat(np.expand_dims(mmms[1,:,:], 0), 10)
+
+    # just take a single frame from dataset
+    # mmax = np.max(smms[0,0,0,:])
+    # smms /= mmax
+    # lm = upscale_repeat(np.expand_dims(smms[0,0,0,:], 0), 10)
+    # rm = upscale_repeat(np.expand_dims(smms[0,1,0,:], 0), 10)
+
+    lm = mm2img(lm)
     rm = mm2img(rm)
 
     div_h = rm.shape[1]
@@ -50,7 +57,8 @@ def ds_analysis_plot(dsname, savepath):
     axm.set_title(f"Mean Myrmex Activation [max={mmax:.4f}]")
 
     fig.suptitle(f"Dataset: {dsname}")
-    axp.store(f"{savepath}/analysis_{dsname}.png")
+    # axp.store(f"{savepath}/analysis_{dsname}.png")
+    axp.show()
 
 if __name__ == "__main__":
     datasets = [
