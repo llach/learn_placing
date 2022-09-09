@@ -152,8 +152,6 @@ def train(
 
             print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
             print()
-            break
-        break
     torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
     with open(f"{trial_path}/losses.pkl", "wb") as f:
