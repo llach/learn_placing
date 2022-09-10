@@ -1,5 +1,6 @@
 import os
 import json
+from posixpath import split
 import torch
 import numpy as np
 import torch.nn as nn
@@ -105,39 +106,50 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8, random=True):
+def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
     if dsname in [DatasetName.combined_var2, DatasetName.combined_large]:
         if dsname == DatasetName.combined_var2:
-            ds1, ds2 = ds2name[DatasetName.object_var2], ds2name[DatasetName.gripper_var2]
+            dss = [
+                ds2name[DatasetName.object_var2], 
+                ds2name[DatasetName.gripper_var2]
+            ]
         elif dsname == DatasetName.combined_large:
-            ds1, ds2 = ds2name[DatasetName.cuboid_large], ds2name[DatasetName.cylinder_large]
+            dss = [
+                ds2name[DatasetName.cuboid_large], 
+                ds2name[DatasetName.cylinder_large]
+            ]
 
-        _,_, ovar_ds = get_dataset_loaders(ds1, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
-        _,_, gvar_ds = get_dataset_loaders(ds2, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, random=random)
-
-        cds = ConcatDataset([ovar_ds, gvar_ds])
-
-        N_train = int(len(cds)*train_ratio)
-        N_test = len(cds)-N_train
-        train, test = torch.utils.data.random_split(
-            cds, 
-            [N_train, N_test], 
-            generator=torch.Generator().manual_seed(seed)
-        )
-
-        train_l = DataLoader(train, shuffle=True, batch_size=batch_size)
-        test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
-
+        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        train_l, test_l, _ = get_dataset_loaders(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, batch_size=batch_size, random=random)
+        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+
+    train_l = DataLoader(trainds, shuffle=True, batch_size=batch_size)
+    test_l = DataLoader(testds, shuffle=False, batch_size=batch_size) if testds is not None else None
 
     return train_l, test_l, seed
 
+def split_tds(tds, seed, train_ratio):
+    N_train = int(len(tds)*train_ratio)
+    N_test = len(tds)-N_train
+    if train_ratio != 0.0: 
+        return torch.utils.data.random_split(
+            tds, 
+            [N_train, N_test], 
+            generator=torch.Generator().manual_seed(seed)
+        )
+    return tds, None
 
-def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, batch_size=8, shuffle=True, random=True):
+def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8):
+    tdss = []
+    for ds in dsnames:
+        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0)[0])
+    return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
+ 
+def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -145,7 +157,7 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     for mod, dat in ds.items():
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
-    
+
     ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
     X =  [v for _, v in ds[indata2key[input_data]].items()]
@@ -156,27 +168,19 @@ def get_dataset_loaders(name, seed, target_type=InRot.w2o, input_data=InData.wit
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
     if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
 
-    N_train = int(len(X)*train_ratio)
-    N_test = len(X)-N_train
-
     X =  torch.Tensor(np.array(X))
     Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
     
     tds = TensorDataset(X, GR, FT, Y)
-    if not random: return None, DataLoader(tds, shuffle=False, batch_size=batch_size), None
+    return split_tds(tds, seed=seed, train_ratio=train_ratio)
 
-    train, test = torch.utils.data.random_split(
-        tds, 
-        [N_train, N_test], 
-        generator=torch.Generator().manual_seed(seed)
-    )
-
-    train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size) if N_train > 0 else None
+def get_dataset_loaders(tds, batch_size=8, shuffle=True):
+    train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
     test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
 
-    return train_l, test_l, tds
+    return train_l, test_l
 
 def rep2loss(loss_type):
     if loss_type == LossType.quaternion:

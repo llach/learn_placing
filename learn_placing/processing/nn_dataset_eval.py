@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     criterion = rep2loss(a.loss_type)
 
-    _, test_ds, _ = get_dataset("gripper_trial", a, seed=a.dataset_seed, train_ratio=0.0, batch_size=16, random=False)
+    test_ds, _, _ = get_dataset("gripper_trial", a, seed=a.dataset_seed, train_ratio=1.0, batch_size=16, random=False)
     dsout, dslbl, dsloss = [], [], []
     batch = list(test_ds)[0]
     for sample in zip(*batch):
