@@ -41,6 +41,7 @@ def train(
     dataset: DatasetName,
     input_type: InData,
     input_modalities: List[bool],
+    target_type: InRot,
     trial_path: str,
     Neps: int = 10,
     other_ax = None
@@ -60,7 +61,7 @@ def train(
         batch_size = 32,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
-        target_type = InRot.w2o,
+        target_type = target_type,
         validate = False,
         store_training = True,
         gripper_repr = RotRepr.quat,
@@ -181,6 +182,7 @@ if __name__ == "__main__":
 
     Neps=20
     datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
+    target_type = InRot.g2o
 
     # full training
     input_types = [InData.static, InData.with_tap]
@@ -219,10 +221,11 @@ if __name__ == "__main__":
                     dataset=dataset,
                     input_type=input_type,
                     input_modalities=input_mod,
+                    target_type=target_type,
                     trial_path=dspath,
                     Neps=Neps,
                     other_ax=oax
                 )
-        fig.suptitle(f"Dataset '{dataset}'")
+        fig.suptitle(f"Dataset '{dataset}' - [{target_type}]")
         fig.tight_layout()
-        fig.savefig(f"{dspath}/trainings_{dataset.lower()}.png")
+        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{target_type}.png")
