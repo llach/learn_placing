@@ -180,7 +180,7 @@ if __name__ == "__main__":
     t_path = f"{training_path}/../batch_trainings"
     base_path = f"{t_path}/{now()}"
 
-    Neps=20
+    Neps=40
     datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
     target_type = InRot.g2o
 
