@@ -44,6 +44,7 @@ def train(
     input_modalities: List[bool],
     target_type: InRot,
     trial_path: str,
+    ## TODO add parameters as input parameters
     Neps: int = 10,
     other_ax = None
 ):
@@ -70,7 +71,8 @@ def train(
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
-        preproc_type = ConvProc.SINGLETRL,
+        preproc_type = ConvProc.SINGLETRL, ### NOTE set 3DConv here
+        ## TODO add bool here for post-network trafo multiplication
         output_type = a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
@@ -230,6 +232,7 @@ if __name__ == "__main__":
                     input_modalities=input_mod,
                     target_type=target_type,
                     trial_path=dspath,
+                    ## TODO add parameters for 3dconv preproc & trafo multiplication
                     Neps=Neps,
                     other_ax=oax
                 )

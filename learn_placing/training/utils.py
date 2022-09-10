@@ -176,12 +176,6 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
 
-def get_dataset_loaders(tds, batch_size=8, shuffle=True):
-    train_l = DataLoader(train, shuffle=shuffle, batch_size=batch_size)
-    test_l = DataLoader(test, shuffle=False, batch_size=batch_size)
-
-    return train_l, test_l
-
 def rep2loss(loss_type):
     if loss_type == LossType.quaternion:
         # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 

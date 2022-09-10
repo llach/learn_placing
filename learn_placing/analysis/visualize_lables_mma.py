@@ -62,7 +62,7 @@ def ds_analysis_plot(dsname, savepath):
 
 if __name__ == "__main__":
     datasets = [
-        DatasetName.cylinder_large,
+        DatasetName.gripper_var2,
         DatasetName.cuboid_large
     ]
     this_path = __file__.replace(__file__.split('/')[-1], '')

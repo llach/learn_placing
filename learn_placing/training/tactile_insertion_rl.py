@@ -20,6 +20,7 @@ def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilatio
 class ConvProc(str, Enum):
     TRL = "trl"
     SINGLETRL = "SINGLETRL"
+    TDCONV = "3DConv"
 
 class TactilePlacingNet(nn.Module):
     
@@ -99,6 +100,8 @@ class TactilePlacingNet(nn.Module):
                 self.conv, self.rnn = self._conv_pre("conv_proc")
 
                 self.tactile_input_size = self.rnn_neurons
+            elif self.preproc_type == ConvProc.TDCONV:
+                print("empty") # TODO
 
         if self.with_ft:
             self.ftrnn = nn.LSTM(
@@ -124,6 +127,10 @@ class TactilePlacingNet(nn.Module):
         * we have to pass each sensor sequence to their respective CNN-RNN pre-processors
         -> select xs[:,S,:], where S is the sensors index in {0,1}
         * then we loop over each image in the sequence, pass it into the CNN individually, concatenate the result and pass it into the RNN
+
+        gr has dimensions [batch, 4] and contains the world to gripper transformations represented as quaternion
+
+        ft has dimensions [batch, 6] and contains raw FT sensor readings
         """
         if not isinstance(x, Tensor) and x is not None: x = torch.Tensor(x)
 
@@ -133,6 +140,8 @@ class TactilePlacingNet(nn.Module):
                 tacout = self.trl_proc(x, gr)
             elif self.preproc_type == ConvProc.SINGLETRL:
                 tacout = self.single_trl_proc(x, gr)
+            elif self.preproc_type == ConvProc.TDCONV:
+                print("3dconv forwarding") # TODO
             mlp_inputs.append(tacout)
 
         if self.with_gripper:
@@ -153,6 +162,8 @@ class TactilePlacingNet(nn.Module):
 
         if self.output_type == RotRepr.ortho6d: mlpout = compute_rotation_matrix_from_ortho6d(mlpout)
         elif self.output_type == RotRepr.sincos: mlpout = torch.tanh(mlpout)
+
+        ## TODO insert trafo multiplication
 
         return mlpout
 
