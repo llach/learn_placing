@@ -7,6 +7,7 @@ import numpy as np
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
+from datetime import datetime
 from typing import List
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
 from tactile_insertion_rl import TactilePlacingNet, ConvProc
@@ -118,6 +119,8 @@ def train(
     with open(f"{trial_path}parameters.json", "w") as f:
         json.dump(a, f, indent=2)
 
+    print(f"starting training for {trial_name}")
+
     # code adapted from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
     nbatch = 0
     save_batches = int(a.N_episodes*len(train_l)*a.save_freq)
@@ -205,6 +208,7 @@ if __name__ == "__main__":
     #     [True , True , True],
     # ]
 
+    trial_times = []
     for dataset in datasets:
         dspath = f"{base_path}/{dataset}"
         os.makedirs(dspath, exist_ok=True)
@@ -214,9 +218,12 @@ if __name__ == "__main__":
         fig, axs = plt.subplots(nrows,ncols,figsize=(4.3*ncols, 3.3*nrows))
 
         trials = {}
+        train_start = datetime.now()
         for i, input_type in enumerate(input_types):
             for j, input_mod in enumerate(input_modalities):
                 oax = axs[j,i] if ncols>1 else axs[j]
+
+                trial_start = datetime.now()
                 trialname = train(
                     dataset=dataset,
                     input_type=input_type,
@@ -226,6 +233,15 @@ if __name__ == "__main__":
                     Neps=Neps,
                     other_ax=oax
                 )
+                trial_times.append(datetime.now() - trial_start)
+                print(f"trial took {trial_times[-1]}")
+
         fig.suptitle(f"Dataset '{dataset}' - [{target_type}]")
         fig.tight_layout()
         fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{target_type}.png")
+        
+    print(f"trial times")
+    for trt in trial_times: print(trt)
+
+    train_end = datetime.now()-train_start
+    print(f"training took {train_end}")
