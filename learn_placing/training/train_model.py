@@ -71,14 +71,14 @@ def train(
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
-        preproc_type = ConvProc.SINGLETRL, ### NOTE set 3DConv here
+        preproc_type = ConvProc.ONEFRAMESINGLETRL, ### NOTE set 3DConv here
         ## TODO add bool here for post-network trafo multiplication
         output_type = a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
         with_ft = a.with_ft,
         kernel_sizes = [(3,3), (3,3)],
-        cnn_out_channels = [32, 64],
+        cnn_out_channels = [16, 32],
         conv_stride = (2,2),
         conv_padding = (0,0),
         conv_output = 128,
@@ -89,7 +89,7 @@ def train(
         fc_neurons = [64, 32],
     ))
     a.__setattr__("adamp", AttrDict(
-        lr=1e-3, 
+        lr=1e-3,
         betas=(0.9, 0.999), 
         eps=1e-8, 
         weight_decay=0, 
@@ -187,17 +187,20 @@ if __name__ == "__main__":
 
     Neps=40
     datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
+    # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
+    # target_type = InRot.g2o
 
     # full training
-    input_types = [InData.static, InData.with_tap]
+    # input_types = [InData.static, InData.with_tap]
+    input_types = [InData.static]
     input_modalities = [
         [True , False, False],
-        [False, True , False],  
-        [False, False, True],
+        # [False, True , False],
+        # [False, False, True],
         [True , True , False],
         [True , False, True],
-        [False, True , True],
+        # [False, True , True],
         [True , True , True],
     ]
 
