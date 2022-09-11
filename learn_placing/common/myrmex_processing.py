@@ -1,4 +1,6 @@
+import torch
 import numpy as np
+import torch.nn.functional as F
 
 def remove_outer(data, B=0):
     """
@@ -48,3 +50,26 @@ def mm2img(data, cidx=2):
 def upscale_repeat(frames, factor=10):
     if len(frames.shape)==2: frames = np.expand_dims(frames, axis=0)
     return np.squeeze(frames.repeat(factor, axis=1).repeat(factor, axis=2))
+
+def get_pad_and_slice(shift):
+         if shift <= 0:
+            return [-shift, 0], slice(0, shift)
+         else:
+            return [0, shift], slice(shift, 1000)
+
+def shift_columns(frames, pad, sli):
+    """ 
+
+    frames.shape = [16,16] = [H,W] (single frame)
+    OR 
+    frames.shape = [N,16,16] = [batch,H,W] (sequence)
+
+    pad: how many columns we need to pad
+    shift: how many columns we'll shift
+    """
+    if len(frames.shape)==2: frames = np.expand_dims(frames, 0)
+    return F.pad(torch.Tensor(frames), pad=pad+[0,0,0,0])[:,:,:,sli].numpy()
+
+def random_shift_seq(seq):
+    pad, sli = get_pad_and_slice(np.random.randint(-4,5))
+    return shift_columns(seq, pad, sli)
