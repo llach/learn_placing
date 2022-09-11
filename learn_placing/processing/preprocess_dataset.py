@@ -50,7 +50,7 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.cylinder_large]
+    dsnames = [DatasetName.cylinder_large, DatasetName.cuboid_large]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
@@ -92,7 +92,7 @@ if __name__ == "__main__":
                     k: {
                         InRot.w2g: Qwg,
                         InRot.w2o: Qwo,
-                        InRot.g2o: Qwg,
+                        InRot.g2o: Qgo,
                     }
                 })
         elif "object_state" in list(ds.values())[0]:
