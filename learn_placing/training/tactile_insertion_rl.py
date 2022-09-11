@@ -20,6 +20,7 @@ def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilatio
 class ConvProc(str, Enum):
     TRL = "trl"
     SINGLETRL = "SINGLETRL"
+    ONEFRAMESINGLETRL = "ONEFRAMESINGLETRL"
     TDCONV = "3DConv"
 
 class TactilePlacingNet(nn.Module):
@@ -100,6 +101,11 @@ class TactilePlacingNet(nn.Module):
                 self.conv, self.rnn = self._conv_pre("conv_proc")
 
                 self.tactile_input_size = self.rnn_neurons
+            elif self.preproc_type == ConvProc.ONEFRAMESINGLETRL:
+                self.cnn_in_channels = [2] + self.cnn_out_channels[:-1]
+                self.conv = self._oneframe_conv_pre("oneframe_conv_proc")
+                self.tactile_input_size = self.conv_output
+
             elif self.preproc_type == ConvProc.TDCONV:
                 print("empty") # TODO
 
@@ -140,6 +146,8 @@ class TactilePlacingNet(nn.Module):
                 tacout = self.trl_proc(x, gr)
             elif self.preproc_type == ConvProc.SINGLETRL:
                 tacout = self.single_trl_proc(x, gr)
+            elif self.preproc_type == ConvProc.ONEFRAMESINGLETRL:
+                tacout = self.one_frame_single_trl_proc(x, gr)
             elif self.preproc_type == ConvProc.TDCONV:
                 print("3dconv forwarding") # TODO
             mlp_inputs.append(tacout)
@@ -178,6 +186,13 @@ class TactilePlacingNet(nn.Module):
         cnnout = torch.stack(cnnout).transpose_(0,1)
         rnnout, (_, _) = self.rnn(cnnout, None)
         return rnnout[:,-1,:]
+
+    def one_frame_single_trl_proc(self, x: Tensor, gr: Tensor):
+        """ x has shape [batch,sensor,sequence,H,W]
+            compare with above - we just bruteforcely select 10th frame
+        """
+        cnnout = self.conv(x[:,:,10,:,:])
+        return cnnout
 
     def trl_proc(self, x: Tensor, gr: Tensor):
         cnnout1 = []
@@ -248,3 +263,39 @@ class TactilePlacingNet(nn.Module):
             batch_first=True
         )
         return nn.Sequential(OrderedDict(layers)), rnn
+
+
+    def _oneframe_conv_pre(self, name):
+        # same as above, only without using any rnn
+        layers = []
+        conv_outshape = None
+        for i, (kern, inc, outc) in enumerate(zip(
+                self.kernel_sizes,
+                self.cnn_in_channels,
+                self.cnn_out_channels
+            )):
+
+            layers.append((f"conv2d_{i}_{name}", nn.Conv2d(
+                    in_channels=inc,
+                    out_channels=outc,
+                    kernel_size=kern,
+                    stride=self.conv_stride,
+                    padding=self.conv_padding)
+            ))
+            layers.append((f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)))
+            layers.append((f"relu_conv_{i}_{name}", nn.ReLU(inplace=True)))# why inplace?
+            conv_outshape = conv2D_outshape(
+                self.input_dim if conv_outshape is None else conv_outshape,
+                Cout=outc,
+                padding=self.conv_padding,
+                kernel=kern,
+                stride=self.conv_stride
+            )
+        layers.append((f"flatten_{name}", nn.Flatten()))
+
+        # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
+        # the authors use two FC layers that they don't mention in the paper
+        layers.append((f"post_cnn_linear_{name}", nn.Linear(np.prod(conv_outshape), self.conv_output)))
+        layers.append((f"post_cnn_relu_{name}", nn.ReLU()))
+
+        return nn.Sequential(OrderedDict(layers))
