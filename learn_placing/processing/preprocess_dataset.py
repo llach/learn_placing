@@ -3,12 +3,17 @@ import pickle
 
 import numpy as np
 from datetime import timedelta
-from learn_placing.common.label_processing import normalize, rotate_v
 
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, inverse_matrix, Ry
+from learn_placing.common.label_processing import normalize, rotate_v
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
 from learn_placing.training.utils import DatasetName, InRot, ds2name, dsLookback, ftLookback
+
+def Tf2T(pos, rot):
+    T = quaternion_matrix(rot)
+    T[:3,3] = pos
+    return T
 
 def myrmex_transform(left, right, dd):
     ler = preprocess_myrmex(left)
@@ -66,33 +71,62 @@ if __name__ == "__main__":
         ### NOTE this will only be excuted for camera-setup-based dataset
         os = {}
         labels = {}
+        labels_seq = {}
         if "opti_state" in list(ds.values())[0]:
             """
             OPTITRACK PREPROCESSING
             """
             for k, v in ds.items():
-                opti = v["opti_state"][1]
+                # [0] are timestamps, [1] the optitrack data
+                # optiseq is the sequence of opti state messages during one sample collection
+                optiseq = v["opti_state"][1]
 
-                # opti is the sequence of opti state messages during one sample collection
-                Qwg, Qwo, Qgo = None, None, None
+                # we extract the time series of tf data
+                Twg, Two, Tgo = [], [], []
+                for l, opti in enumerate(optiseq):
 
-                # we just take the first frame here, trusting optitrac to be stable enough
-                # to not need averaging over samples
-                for op in opti[0]:
-                    if op["parent_frame"] == basef and op["child_frame"] == gripf:
-                        Qwg = op["rotation"]
-                    elif op["parent_frame"] == basef and op["child_frame"] == objf:
-                        Qwo = op["rotation"]
-                    elif op["parent_frame"] == gripf and op["child_frame"] == objf:
-                        Qgo = op["rotation"]
-                    else: 
-                        print(f"unknown transform: {op['parent_frame']} to {op['child_frame']}")
-                if np.any([q is None for q in[Qwg, Qwo, Qgo]]): print("missing transform ...")
-                labels.update({
+                    # initialize quaternion and translation variables
+                    Qwg, Qwo, Qgo = None, None, None
+                    twg, two, tgo = None, None, None
+
+                    # loop over transforms in optistate message, fill variable according to the frame names
+                    for op in opti:    
+                        if op["parent_frame"] == basef and op["child_frame"] == gripf:
+                            Qwg = op["rotation"]
+                            twg = op["translation"]
+                        elif op["parent_frame"] == basef and op["child_frame"] == objf:
+                            Qwo = op["rotation"]
+                            two = op["translation"]
+                        elif op["parent_frame"] == gripf and op["child_frame"] == objf:
+                            Qgo = op["rotation"]
+                            tgo = op["translation"]
+                        else: 
+                            print(f"unknown transform: {op['parent_frame']} to {op['child_frame']}")
+                    
+                    # if there a transform missing, we skip this sample
+                    if np.any([q is None for q in[Qwg, Qwo, Qgo, twg, two, tgo]]): 
+                        print("missing transform ...")
+                        continue
+
+                    # the first sample is stored for the single lable case ...
+                    if l == 0:
+                        labels.update({
+                            k: {
+                                InRot.w2g: Qwg,
+                                InRot.w2o: Qwo,
+                                InRot.g2o: Qgo,
+                            }
+                        })
+                    
+                    # ... and the homogeneous transformation matrix is stored as a sequence
+                    Twg.append(Tf2T(twg, Qwg))
+                    Two.append(Tf2T(two, Qwo))
+                    Tgo.append(Tf2T(tgo, Qgo))
+                labels_seq.update({
                     k: {
-                        InRot.w2g: Qwg,
-                        InRot.w2o: Qwo,
-                        InRot.g2o: Qgo,
+                        InRot.w2g: Twg,
+                        InRot.w2o: Two,
+                        InRot.g2o: Tgo,
                     }
                 })
         elif "object_state" in list(ds.values())[0]:
@@ -261,6 +295,7 @@ if __name__ == "__main__":
         with open(dataset_file, "wb") as f:
             pickle.dump({
                 "labels": labels, 
+                # "labels_seq": labels_seq,
                 "inputs": inputs,
                 "static_inputs": static_inputs,
                 "ft": ft,
