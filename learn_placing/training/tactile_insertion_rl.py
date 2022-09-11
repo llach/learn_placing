@@ -121,8 +121,10 @@ class TactilePlacingNet(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(self.mlpindim, self.fc_neurons[0]),
             nn.ReLU(),
+            # nn.Dropout(0.2),
             nn.Linear(self.fc_neurons[0], self.fc_neurons[1]),
             nn.ReLU(),
+            # nn.Dropout(0.2),
             nn.Linear(self.fc_neurons[1], self.output_size),
         )
 
@@ -282,7 +284,7 @@ class TactilePlacingNet(nn.Module):
                     stride=self.conv_stride,
                     padding=self.conv_padding)
             ))
-            layers.append((f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)))
+            # layers.append((f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)))
             layers.append((f"relu_conv_{i}_{name}", nn.ReLU(inplace=True)))# why inplace?
             conv_outshape = conv2D_outshape(
                 self.input_dim if conv_outshape is None else conv_outshape,
