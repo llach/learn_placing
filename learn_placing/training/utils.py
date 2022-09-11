@@ -1,6 +1,6 @@
 import os
 import json
-from posixpath import split
+
 import torch
 import numpy as np
 import torch.nn as nn
@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
 from learn_placing.common.data import load_dataset_file
+from learn_placing.common.myrmex_processing import random_shift_seq
 from learn_placing.common.transformations import quaternion_matrix
 
 class AttrDict(dict):
@@ -132,7 +133,7 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
+def get_dataset(dsname, a, seed=None, train_ratio=0.8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
     if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all]:
@@ -163,14 +164,14 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
                 ds2name[DatasetName.salt]
             ]
 
-        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment)
         
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
+        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment)
 
-    train_l = DataLoader(trainds, shuffle=True, batch_size=batch_size)
-    test_l = DataLoader(testds, shuffle=False, batch_size=batch_size) if testds is not None else None
+    train_l = DataLoader(trainds, shuffle=True, batch_size=a.batch_size)
+    test_l = DataLoader(testds, shuffle=False, batch_size=a.batch_size) if testds is not None else None
 
     return train_l, test_l, seed
 
@@ -185,13 +186,13 @@ def split_tds(tds, seed, train_ratio):
         )
     return tds, None
 
-def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8):
+def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None):
     tdss = []
     for ds in dsnames:
-        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0)[0])
+        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0, augment=augment)[0])
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
  
-def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8):
+def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -214,7 +215,21 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
-    
+
+    if augment is not None and augment > 0:
+        XSshape = np.array(X.shape)
+        XSshape[0] *= augment
+        XS = np.zeros(XSshape)
+
+        for a in range(augment):
+            for i, x in enumerate(X):
+                sseq = random_shift_seq(x)
+                XS[a*X.shape[0]+i] = sseq
+        X = torch.cat([X, torch.Tensor(XS)], axis=0)
+        Y = Y.repeat(augment+1,1,1)
+        GR = GR.repeat(augment+1,1)
+        FT = FT.repeat(augment+1,1,1)
+
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
 

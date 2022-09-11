@@ -51,6 +51,7 @@ def train(
     target_type: InRot,
     trial_path: str,
     ## TODO add parameters as input parameters
+    augment: int = None,
     Neps: int = 10,
     other_ax = None
 ):
@@ -66,6 +67,7 @@ def train(
         with_gripper = with_gripper,
         with_ft = with_ft,
 
+        augment = augment,
         batch_size = 32,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
@@ -130,7 +132,7 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    train_l, test_l, seed = get_dataset(a.dsname, a, batch_size=a.batch_size)
+    train_l, test_l, seed = get_dataset(a.dsname, a)
     a.__setattr__("dataset_seed", seed)
 
     model = TactilePlacingNet(**a.netp)
@@ -226,7 +228,7 @@ if __name__ == "__main__":
     datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
-    # target_type = InRot.w2o
+    augment = 3 
 
     # full training
     # input_types = [InData.static, InData.with_tap]
@@ -274,6 +276,7 @@ if __name__ == "__main__":
                     target_type=target_type,
                     trial_path=dspath,
                     ## TODO add parameters for 3dconv preproc & trafo multiplication
+                    augment=augment,
                     Neps=Neps,
                     other_ax=oax
                 )
