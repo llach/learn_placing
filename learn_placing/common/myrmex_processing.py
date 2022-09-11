@@ -2,6 +2,8 @@ import torch
 import numpy as np
 import torch.nn.functional as F
 
+from numpy.random import randint, choice
+
 def remove_outer(data, B=0):
     """
     expects an array of (N, 16, 16), with N = number of samples
@@ -67,9 +69,9 @@ def shift_columns(frames, pad, sli):
     pad: how many columns we need to pad
     shift: how many columns we'll shift
     """
-    if len(frames.shape)==2: frames = np.expand_dims(frames, 0)
-    return F.pad(torch.Tensor(frames), pad=pad+[0,0,0,0])[:,:,:,sli].numpy()
+    # if len(frames.shape)==2: frames = np.expand_dims(frames, 0)
+    return F.pad(frames, pad=pad+[0,0,0,0])[:,:,:,sli].numpy()
 
 def random_shift_seq(seq):
-    pad, sli = get_pad_and_slice(np.random.randint(-4,5))
+    pad, sli = get_pad_and_slice(choice([randint(-4,0), randint(1,5)]))
     return shift_columns(seq, pad, sli)
