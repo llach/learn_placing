@@ -49,6 +49,7 @@ dsLookback = {
     DatasetName.test_obj: [[-80,-40], [-120,-80]],
     DatasetName.cuboid_large: [[-80,-40], [-120,-80]],
     DatasetName.cylinder_large: [[-80,-40], [-120,-80]],
+    DatasetName.combined_large: [[-80,-40], [-120,-80]],
 }
 
 ftLookback = {
@@ -60,6 +61,7 @@ ftLookback = {
     DatasetName.test_obj: [[-20,-5], [-35,-20]],
     DatasetName.cuboid_large: [[-20,-5], [-35,-20]],
     DatasetName.cylinder_large: [[-20,-5], [-35,-20]],
+    DatasetName.combined_large: [[-20,-5], [-35,-20]],
 }
 
 class RotRepr(str, Enum):
