@@ -68,7 +68,7 @@ def train(
         with_ft = with_ft,
 
         augment = augment,
-        batch_size = 32,
+        batch_size = 48,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
         target_type = target_type,
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
-    augment = 3 
+    augment = 1
 
     # full training
     # input_types = [InData.static, InData.with_tap]
