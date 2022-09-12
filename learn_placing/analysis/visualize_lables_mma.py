@@ -62,10 +62,11 @@ def ds_analysis_plot(dsname, savepath):
 
 if __name__ == "__main__":
     datasets = [
-        DatasetName.cylinder_extreme,
-        DatasetName.cuboid_extreme,
+        # DatasetName.cylinder_extreme,
+        # DatasetName.cuboid_extreme,
         # DatasetName.cylinder_large,
         # DatasetName.cuboid_large
+        DatasetName.vinegar
     ]
     this_path = __file__.replace(__file__.split('/')[-1], '')
     plot_path = f"{this_path}/../plots/"

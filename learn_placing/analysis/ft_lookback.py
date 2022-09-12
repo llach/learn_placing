@@ -3,7 +3,7 @@ import numpy as np
 
 from learn_placing.common import load_dataset
 
-dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_cylinder_extreme"
+dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_salt"
 # dataset_path = f"{os.environ['HOME']}/placing_data_pkl"
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
