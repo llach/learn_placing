@@ -26,6 +26,8 @@ class DatasetName(str, Enum):
     cuboid_large="Cuboid500"
     cylinder_large="Cylinder500"
     combined_large="Combined1000"
+    cuboid_extreme="CuboidExtreme400"
+    cylinder_extreme="CylidnerExtreme400"
 
 ds2name = {
     DatasetName.object_var2: "six",
@@ -36,6 +38,8 @@ ds2name = {
     DatasetName.cuboid_large: "cuboid_large",
     DatasetName.cylinder_large: "cylinder_large",
     DatasetName.combined_large: "combined_large",
+    DatasetName.cuboid_extreme: "cuboid_extreme",
+    DatasetName.cylinder_extreme: "cylinder_extreme",
 }
 
 
@@ -50,6 +54,8 @@ dsLookback = {
     DatasetName.cuboid_large: [[-80,-40], [-120,-80]],
     DatasetName.cylinder_large: [[-80,-40], [-120,-80]],
     DatasetName.combined_large: [[-80,-40], [-120,-80]],
+    DatasetName.cuboid_extreme: [[-80,-40], [-120,-80]],
+    DatasetName.cylinder_extreme: [[-80,-40], [-120,-80]],
 }
 
 ftLookback = {
@@ -62,6 +68,8 @@ ftLookback = {
     DatasetName.cuboid_large: [[-20,-5], [-35,-20]],
     DatasetName.cylinder_large: [[-20,-5], [-35,-20]],
     DatasetName.combined_large: [[-20,-5], [-35,-20]],
+    DatasetName.cuboid_extreme: [[-20,-5], [-35,-20]],
+    DatasetName.cylinder_extreme: [[-20,-5], [-35,-20]],
 }
 
 class RotRepr(str, Enum):
