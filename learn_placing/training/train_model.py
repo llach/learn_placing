@@ -15,12 +15,12 @@ from tactile_insertion_rl import TactilePlacingNet, ConvProc
 from learn_placing import now, training_path
 from learn_placing.training.utils import rep2loss
 
-def plot_learning_curve(train_loss, test_loss, a, ax, small_title=False):
+def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     lastN = int(len(train_loss)*0.05)
 
     xs = np.arange(len(test_loss)).astype(int)+1
-    ax.plot(xs, train_loss, label=f"training loss | {np.mean(train_loss[-lastN:]):.5f}")
-    ax.plot(xs, test_loss, label=f"test loss | {np.mean(test_loss[-lastN:]):.5f}")
+    ax.plot(xs, train_loss, label=f"training loss | {train_loss[min_test_i]:.5f}")
+    ax.plot(xs, test_loss, label=f"test loss | {test_loss[min_test_i]:.5f}")
 
     if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
         ax.set_ylim([0.0,np.pi])
@@ -29,6 +29,7 @@ def plot_learning_curve(train_loss, test_loss, a, ax, small_title=False):
         ax.set_ylim([-0.05,1.0])
         ax.set_ylabel("loss")
 
+    ax.scatter(min_test_i, min_test, c="green", marker="X", linewidths=0.7)
     ax.set_xlabel("#batches")
 
     if not small_title:
@@ -136,6 +137,10 @@ def train(
     test_losses = []
     val_losses = []
 
+    N_test_avg = 10
+    min_test_loss = np.inf
+    min_test_loss_i = 0
+
     os.makedirs(trial_path, exist_ok=True)
     os.makedirs(f"{trial_path}/weights", exist_ok=True)
     with open(f"{trial_path}parameters.json", "w") as f:
@@ -171,6 +176,13 @@ def train(
             if a.validate:
                 print("validation not supported atm")
 
+            test_avg = np.mean(test_losses[-N_test_avg:])
+            if len(test_losses) >= N_test_avg and test_avg < min_test_loss:
+                print(f"new best model with {test_avg:.5f}")
+                torch.save(model.state_dict(), f"{trial_path}/weights/best.pth")
+                min_test_loss_i = nbatch
+                min_test_loss = test_avg
+
             # store model weights
             if nbatch % save_batches == save_batches-1:
                 torch.save(model.state_dict(), f"{trial_path}/weights/batch_{nbatch}.pth")
@@ -184,12 +196,13 @@ def train(
         pickle.dump({
             "train": train_losses,
             "test": test_losses,
-            "validation": val_losses
+            "validation": val_losses,
+            "min_test": [min_test_loss, min_test_loss_i]
         }, f)
 
     fig, ax = plt.subplots(figsize=(8.71, 6.61))
     plot_learning_curve(train_losses, test_losses, a, ax)
-    if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax, small_title=True)
+    if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax, min_test=min_test_loss, min_test_i=min_test_loss_i, small_title=True)
 
     fig.tight_layout()
     fig.savefig(f"{trial_path}/learning_curve.png")
