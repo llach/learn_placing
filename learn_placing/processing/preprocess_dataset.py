@@ -55,7 +55,7 @@ if __name__ == "__main__":
     MAX_DEV = 0.005
     MIN_N = 10 # per camera
 
-    dsnames = [DatasetName.cylinder_extreme]
+    dsnames = [DatasetName.salt]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
