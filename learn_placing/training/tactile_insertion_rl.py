@@ -17,6 +17,18 @@ def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilatio
     Wout = np.int(np.floor(((Win+2*padding[1]-dilation[1]*(kernel[1]-1)-1)/(stride[1]))+1))
     return (Cout, Hout, Wout)
 
+def conv3D_outshape(in_shape, Cout, kernel, padding=(0,0,0), stride=(1,1,1), dilation=(1,1,1)):
+    if len(in_shape)==3:
+        Din, Hin, Win = in_shape
+    else:
+        _, Din, Hin, Win = in_shape
+
+    Dout = np.int(np.floor(((Din+2*padding[0]-dilation[0]*(kernel[0]-1)-1)/(stride[0]))+1))
+    Hout = np.int(np.floor(((Hin+2*padding[1]-dilation[1]*(kernel[1]-1)-1)/(stride[1]))+1))
+    Wout = np.int(np.floor(((Win+2*padding[2]-dilation[2]*(kernel[2]-1)-1)/(stride[2]))+1))
+    return (Cout, Dout, Hout, Wout)
+
+
 class ConvProc(str, Enum):
     TRL = "trl"
     SINGLETRL = "SINGLETRL"
@@ -32,7 +44,7 @@ class TactilePlacingNet(nn.Module):
     """
 
     def __init__(self, 
-        input_dim = [16,16], 
+        input_dim = [16,16],
         kernel_sizes = [(5,5), (3,3)],
         cnn_out_channels = [32, 64],
         conv_stride = (2,2),
@@ -101,13 +113,18 @@ class TactilePlacingNet(nn.Module):
                 self.conv, self.rnn = self._conv_pre("conv_proc")
 
                 self.tactile_input_size = self.rnn_neurons
+
             elif self.preproc_type == ConvProc.ONEFRAMESINGLETRL:
                 self.cnn_in_channels = [2] + self.cnn_out_channels[:-1]
                 self.conv = self._oneframe_conv_pre("oneframe_conv_proc")
                 self.tactile_input_size = self.conv_output
 
             elif self.preproc_type == ConvProc.TDCONV:
-                print("empty") # TODO
+                self.cnn_in_channels = [2] + self.cnn_out_channels[:-1]
+
+                self.conv, self.rnn, self.last_flatten_layer = self._conv_pre_3D("conv_proc_3D")
+
+                self.tactile_input_size = self.rnn_neurons
 
         if self.with_ft:
             self.ftrnn = nn.LSTM(
@@ -121,10 +138,10 @@ class TactilePlacingNet(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(self.mlpindim, self.fc_neurons[0]),
             nn.ReLU(),
-            # nn.Dropout(0.2),
+            nn.Dropout(0.2),
             nn.Linear(self.fc_neurons[0], self.fc_neurons[1]),
             nn.ReLU(),
-            # nn.Dropout(0.2),
+            nn.Dropout(0.2),
             nn.Linear(self.fc_neurons[1], self.output_size),
         )
 
@@ -151,7 +168,7 @@ class TactilePlacingNet(nn.Module):
             elif self.preproc_type == ConvProc.ONEFRAMESINGLETRL:
                 tacout = self.one_frame_single_trl_proc(x, gr)
             elif self.preproc_type == ConvProc.TDCONV:
-                print("3dconv forwarding") # TODO
+                tacout = self.threed_trl_proc(x, gr)
             mlp_inputs.append(tacout)
 
         if self.with_gripper:
@@ -195,6 +212,18 @@ class TactilePlacingNet(nn.Module):
         """
         cnnout = self.conv(x[:,:,10,:,:])
         return cnnout
+
+    def threed_trl_proc(self, x: Tensor, gr: Tensor):
+        """ x has shape [batch,sensor,sequence,H,W]
+        """
+        threed_cnnout = self.conv(x)
+
+        # cnnout to [batch,sequence,cnn_out_neurons]
+        threed_cnnout = self.last_flatten_layer((threed_cnnout).transpose(1,2))
+
+        rnnout, (_, _) = self.rnn(threed_cnnout, None)
+        return rnnout[:,-1,:]
+
 
     def trl_proc(self, x: Tensor, gr: Tensor):
         cnnout1 = []
@@ -301,3 +330,50 @@ class TactilePlacingNet(nn.Module):
         layers.append((f"post_cnn_relu_{name}", nn.ReLU()))
 
         return nn.Sequential(OrderedDict(layers))
+
+
+    def _conv_pre_3D(self, name):
+        layers = []
+        conv_outshape = None
+        for i, (kern, inc, outc) in enumerate(zip(
+                self.kernel_sizes,
+                self.cnn_in_channels,
+                self.cnn_out_channels
+            )):
+
+            layers.append((f"conv2d_{i}_{name}", nn.Conv3d(
+                    in_channels=inc,
+                    out_channels=outc,
+                    kernel_size=kern,
+                    stride=self.conv_stride,
+                    padding=self.conv_padding)
+            ))
+            # layers.append((f"batch_norm_{i}_{name}", nn.BatchNorm2d(outc, momentum=0.01)))
+            layers.append((f"relu_conv_{i}_{name}", nn.ReLU(inplace=True)))# why inplace?
+            conv_outshape = conv3D_outshape(
+                self.input_dim if conv_outshape is None else conv_outshape,
+                Cout=outc,
+                padding=self.conv_padding,
+                kernel=kern,
+                stride=self.conv_stride
+            )
+            print (conv_outshape)
+        layers.append((f"flatten_{name}", nn.Flatten(-2,-1)))
+
+        # TODO do we need this FC layer here or do we just pass the flattened conv output onwards?
+        # the authors use two FC layers that they don't mention in the paper
+        layers.append((f"post_cnn_linear_{name}", nn.Linear(conv_outshape[-2]*conv_outshape[-1], self.conv_output)))
+        self.conv_output = conv_outshape[0]*self.conv_output
+        layers.append((f"post_cnn_relu_{name}", nn.ReLU()))
+
+        rnn = nn.LSTM(
+            input_size=self.conv_output,
+            hidden_size=self.rnn_neurons,
+            num_layers=self.rnn_layers,
+            batch_first=True
+        )
+
+        last_layer = nn.Flatten(-2,-1)
+
+        return nn.Sequential(OrderedDict(layers)), rnn, last_layer
+
