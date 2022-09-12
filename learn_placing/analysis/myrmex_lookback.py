@@ -3,8 +3,8 @@ import numpy as np
 
 from learn_placing.common import load_dataset, preprocess_myrmex
 
-# dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_six"
-dataset_path = f"{os.environ['HOME']}/placing_data_pkl"
+dataset_path = f"{os.environ['HOME']}/tud_datasets/placing_data_pkl_cylinder_extreme"
+# dataset_path = f"{os.environ['HOME']}/placing_data_pkl"
 # sample timestamp -> sample
 ds = load_dataset(dataset_path)
 

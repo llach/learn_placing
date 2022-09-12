@@ -8,7 +8,7 @@ from learn_placing.training.utils import InRot
 rospy.init_node("w2o_debug")
 br = TransformBroadcaster()
 
-name = "cylinder_large"
+name = "cuboid_large"
 dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
 ds = load_dataset_file(dataset_file_path)
 Y =  [d[InRot.w2o] for d in list(ds["labels"].values())]
