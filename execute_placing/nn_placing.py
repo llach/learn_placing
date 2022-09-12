@@ -233,9 +233,13 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_19-11-16/test_obj/test_obj_Neps20_static_tactile_gripper_ft_2022.09.08_19-12-35"
+    # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_19-11-16/test_obj/test_obj_Neps20_static_tactile_gripper_ft_2022.09.08_19-12-35"
     # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_16-42-27/OptiGripperTest/OptiGripperTest_Neps20_static_tactile_2022.09.08_16-42-28"
     # netname = "/home/llach/tud_datasets/batch_trainings/2022.09.08_17-56-42/OptiGripperTest/OptiGripperTest_Neps20_with_tap_tactile_2022.09.08_17-56-42"
+
+    netname = "/home/llach/tud_datasets/batch_trainings/w_dropout_large/2022.09.12_09-47-58/Combined1000/Combined1000_Neps40_static_tactile_2022.09.12_09-47-58"
+    # netname = "/home/llach/tud_datasets/batch_trainings/w_dropout_large/2022.09.12_09-47-58/Cuboid500/Cuboid500_Neps40_static_tactile_2022.09.12_09-49-28"
+    # netname = "/home/llach/tud_datasets/batch_trainings/wo_dropout_small/2022.09.11_16-03-24_cnn_chann_5_10_fc_10_10_conv_output_5/Cuboid500/Cuboid500_Neps100_static_tactile_2022.09.11_16-06-51"
     weights = "final"
 
     nnp = NNPlacing(netname, weights)
