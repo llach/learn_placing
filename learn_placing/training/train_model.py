@@ -88,6 +88,26 @@ def train(
         ft_rnn_layers = 1,
         fc_neurons = [64, 32],
     ))
+
+    # a.__setattr__("netp", AttrDict(
+    #     preproc_type = ConvProc.TDCONV, ### NOTE set 3DConv here
+    #     ## TODO add bool here for post-network trafo multiplication
+    #     output_type = a.out_repr,
+    #     with_tactile = a.with_tactile,
+    #     with_gripper = a.with_gripper,
+    #     with_ft = a.with_ft,
+    #     input_dim=[40, 16, 16],
+    #     kernel_sizes = [(10,3,3), (4,3,3)],
+    #     cnn_out_channels = [16, 32],
+    #     conv_stride = (4,2,2),
+    #     conv_padding = (0,0,0),
+    #     conv_output = 1, # NOTE: the final output is this * cnn_out_channels
+    #     rnn_neurons = 128,
+    #     rnn_layers = 1,
+    #     ft_rnn_neurons = 16,
+    #     ft_rnn_layers = 1,
+    #     fc_neurons = [64, 32],
+    # ))
     a.__setattr__("adamp", AttrDict(
         lr=1e-3,
         betas=(0.9, 0.999), 
@@ -189,11 +209,12 @@ if __name__ == "__main__":
     datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
-    # target_type = InRot.g2o
+    # target_type = InRot.w2o
 
     # full training
     # input_types = [InData.static, InData.with_tap]
     input_types = [InData.static]
+    # input_types = [InData.with_tap]
     input_modalities = [
         [True , False, False],
         # [False, True , False],
