@@ -9,7 +9,7 @@ import numpy as np
 from tf import TransformListener, TransformBroadcaster
 from threading import Lock
 from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
-from execute_placing.placing_planner import PlacingPlanner
+from execute_placing.placing_planner import PlacingPlanner, Tf2T
 from learn_placing import now
 from learn_placing.analysis.myrmex_gifs import store_mm_sample_gif
 from learn_placing.training.utils import InRot, load_train_params, InData, rep2loss
@@ -68,22 +68,7 @@ class NNPlacing:
                 "base_footprint"
             )
 
-    def place(self, req):
-        print("placing object with NN ...")
-
-        try:
-            (_, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        except Exception as e:
-            print(f"[ERROR] couldn't get gripper TF: {e}")
-            return
-
-        tleft = [msg2matrix(m) for m in req.tactile_left]
-        tright = [msg2matrix(m) for m in req.tactile_right]
-        ft = [msg2ft(m) for m in req.ft]
-
-        tinp, tinp_static = myrmex_transform(tleft, tright, self.params.dsname)
-        ftinp, ftinp_static = ft_transform(ft, self.params.dsname)
-
+    def predict(self, xs, Qwg):
         """
         x.shape
         torch.Size([8, 2, 50, 16, 16])
@@ -97,12 +82,7 @@ class NNPlacing:
         torch.Size([8, 15, 6])
         -> [batch, sequence, FT]
         """
-        if self.params.input_data == InData.static:
-            print(self.params.input_data)
-            xs = [[tinp_static], [Qwg], [ftinp_static]]
-        elif self.params.input_data == InData.with_tap:
-            print(self.params.input_data)
-            xs = [[tinp], [Qwg], [ftinp]]
+
         prediction = self.model(*[torch.Tensor(np.array(x)) for x in xs])
         prediction = np.squeeze(prediction.detach().numpy())
 
@@ -122,6 +102,34 @@ class NNPlacing:
             loss = None
             Qwo = None
             Two = None
+        
+        return prediction, loss
+
+
+    def place(self, req):
+        print("placing object with NN ...")
+
+        try:
+            (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+        except Exception as e:
+            print(f"[ERROR] couldn't get gripper TF: {e}")
+            return
+
+        tleft = [msg2matrix(m) for m in req.tactile_left]
+        tright = [msg2matrix(m) for m in req.tactile_right]
+        ft = [msg2ft(m) for m in req.ft]
+
+        tinp, tinp_static = myrmex_transform(tleft, tright, self.params.dsname)
+        ftinp, ftinp_static = ft_transform(ft, self.params.dsname)
+
+        if self.params.input_data == InData.static:
+            print(self.params.input_data)
+            xs = [[tinp_static], [Qwg], [ftinp_static]]
+        elif self.params.input_data == InData.with_tap:
+            print(self.params.input_data)
+            xs = [[tinp], [Qwg], [ftinp]]
+
+        prediction, loss = self.predict(xs, Qwg)
 
         if self.store_samples:
             sname = req.sample_name
@@ -139,11 +147,15 @@ class NNPlacing:
 
         Tpred = np.eye(4)
         Tpred[:3,:3] = prediction
+
         print(Tpred)
         print(quaternion_from_matrix(Tpred))
 
         with self.olock:
             self.object_tf = copy.deepcopy(Tpred)
+
+        self.planner.align(prediction)
+        if self.planner.input_or_quit("place?"): self.planner.place()
 
         # input sanity checks
         # self.plot_input(tinp, tinp_static, ftinp, ftinp_static)
