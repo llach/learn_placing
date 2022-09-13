@@ -230,7 +230,7 @@ if __name__ == "__main__":
     datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
-    augment = 1
+    augment = [True, True]
     aug_n = 1
 
     # full training
@@ -246,7 +246,11 @@ if __name__ == "__main__":
         # [False, True , True],
         [True , True , True],
     ]
-
+    augment = [
+        [True, True],
+        [True, False],
+        [False, True]
+    ]
     # quick testing config
     # input_types = [InData.static]
     # input_modalities = [
@@ -267,19 +271,19 @@ if __name__ == "__main__":
 
         trials = {}
         train_start = datetime.now()
-        for i, input_type in enumerate(input_types):
+        for i, au in enumerate(augment):
             for j, input_mod in enumerate(input_modalities):
                 oax = axs[j,i] if ncols>1 else axs[j]
 
                 trial_start = datetime.now()
                 trialname = train(
                     dataset=dataset,
-                    input_type=input_type,
+                    input_type=input_types[0],
                     input_modalities=input_mod,
                     target_type=target_type,
                     trial_path=dspath,
                     ## TODO add parameters for 3dconv preproc & trafo multiplication
-                    augment=augment,
+                    augment=au,
                     aug_n = aug_n,
                     Neps=Neps,
                     other_ax=oax
