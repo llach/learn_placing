@@ -223,7 +223,7 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=40
-    datasets = [DatasetName.combined_large, DatasetName.cylinder_large, DatasetName.cuboid_large]
+    datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
     # target_type = InRot.w2o
