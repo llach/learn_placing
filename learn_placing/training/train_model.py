@@ -16,11 +16,16 @@ from learn_placing import now, training_path
 from learn_placing.training.utils import rep2loss
 
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
-    lastN = int(len(train_loss)*0.05)
-
     xs = np.arange(len(test_loss)).astype(int)+1
+
+    tl_mean = np.mean(test_loss, axis=1)
+    tl_upper = np.percentile(test_loss, 0.95, axis=1)
+    tl_lower = np.percentile(test_loss, 0.05, axis=1)
+
     ax.plot(xs, train_loss, label=f"training loss | {train_loss[min_test_i]:.5f}")
-    ax.plot(xs, test_loss, label=f"test loss | {test_loss[min_test_i]:.5f}")
+    ax.plot(xs, tl_mean, label=f"test loss | {tl_mean[min_test_i]:.5f}")
+
+    ax.fill_between(xs, tl_mean+tl_upper, tl_mean-tl_lower, color="#A9A9A9", alpha=0.3, label="test loss 95%ile")
 
     if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
         ax.set_ylim([0.0,np.pi])
@@ -29,7 +34,7 @@ def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=
         ax.set_ylim([-0.05,1.0])
         ax.set_ylabel("loss")
 
-    ax.scatter(min_test_i, min_test, c="green", marker="X", linewidths=0.7)
+    ax.scatter(min_test_i, min_test, c="green", marker="X", linewidths=0.7, label="best avg. test loss")
     ax.set_xlabel("#batches")
 
     if not small_title:
@@ -170,7 +175,6 @@ def train(
             train_losses.append(train_loss)
 
             test_out, test_lbl, test_loss, _ = test_net(model, criterion, test_l)
-            test_loss = np.mean(test_loss)
             test_losses.append(test_loss)
 
             if a.validate:
@@ -188,7 +192,7 @@ def train(
                 torch.save(model.state_dict(), f"{trial_path}/weights/batch_{nbatch}.pth")
             nbatch += 1
 
-            print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {test_loss:.5f}", end="")
+            print(f"[{epoch + 1}, {i + 1:5d}] loss: {train_loss:.5f} | test loss: {np.mean(test_loss):.5f}", end="")
             print()
     torch.save(model.state_dict(), f"{trial_path}/weights/final.pth")
 
@@ -201,7 +205,7 @@ def train(
         }, f)
 
     fig, ax = plt.subplots(figsize=(8.71, 6.61))
-    plot_learning_curve(train_losses, test_losses, a, ax)
+    plot_learning_curve(train_losses, test_losses, a, ax, min_test=min_test_loss, min_test_i=min_test_loss_i)
     if other_ax is not None: plot_learning_curve(train_losses, test_losses, a, other_ax, min_test=min_test_loss, min_test_i=min_test_loss_i, small_title=True)
 
     fig.tight_layout()
