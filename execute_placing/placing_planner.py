@@ -118,20 +118,25 @@ class PlacingPlanner:
             return False
         return True
 
-    def align(self, Two):
+    def align(self, Rwo):
         (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, "pot", rospy.Time(0))
+        # (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, "pot", rospy.Time(0))
         Twg = Tf2T(twg, Qwg)
         Tgw = inverse_matrix(Twg)
 
-        # Tgo2 = quaternion_matrix(
-        #         quaternion_multiply(
-        #             quaternion_inverse(Qwg), 
-        #             quaternion_from_matrix(Two)
-        #         )
-        #     )
+        Two = np.eye(4)
+        Two[:3,:3] = Rwo
+
+        Tgo2 = quaternion_matrix(
+            quaternion_multiply(
+                quaternion_inverse(Qwg), 
+                quaternion_from_matrix(Two)
+            )
+        )
         # print(np.linalg.norm(quaternion_from_matrix(Two)))
-        Tgo = Tf2T([0,0,0], Qgo)
+        # Tgo = Tf2T([0,0,0], quaternion_from_matrix(Two))
+
+        
         Tow = inverse_matrix(Two)
 
         # print(Tgo2)
@@ -144,31 +149,35 @@ class PlacingPlanner:
         angle = np.arccos(np.dot(u,w))
 
         Toocorr = rotation_matrix(angle, axis)
-        Tgocorr = Tgo@Toocorr
+        Tgocorr = Tgo2@Toocorr
 
-        start_frame = frame(Twg@Tgo, ns="start_frame")
+        start_frame = frame(Twg@Tgo2, ns="start_frame")
         target_frame = frame(Twg@Tgocorr, ns="target_frame")
 
         ma = MarkerArray(markers=[
             *start_frame,
-            *target_frame
+            # *target_frame
         ])
         self.marker_pub.publish(ma)
 
-        tr, failed = self.ro.plan_random(
-            Tgo,
-            Twg@Tgocorr,
-            publish_traj=True, 
-            check_validity=True,
-            table_height=0.4, 
-        )
+        while True:
+            tr, failed = self.ro.plan_random(
+                Tgo2,
+                Twg@Tgocorr,
+                publish_traj=True, 
+                check_validity=True,
+                table_height=0.4, 
+            )
 
-        print("planning done")
+            print("planning done")
 
-        if self.input_or_quit("execute?"):
-            print("EXECUTE")
-            self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
-        
+            if self.input_or_quit("execute?"):
+                print("EXECUTE")
+                self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
+            else:
+                break
+            if not self.input_or_quit("repeat?"): break
+            
     def place(self):
         
         self.activate_torso()

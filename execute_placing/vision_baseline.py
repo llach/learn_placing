@@ -59,13 +59,16 @@ class PlacingOracle:
 
             if self.optitrack:
                 try:
-                    (_, Qwp) = self.li.lookupTransform(self.world_frame, "pot", rospy.Time(0))
+                    (_, Qwo) = self.li.lookupTransform(self.world_frame, "object", rospy.Time(0))
                 except Exception as e:
                     print(f"[ERROR] couldn't get pot TF: {e}")
                     return
             if inp == "a":
                 if self.optitrack:
-                    self.planner.align(quaternion_matrix(Qwp))
+                    print("optitrack placing")
+                    Two = quaternion_matrix(Qwo)
+                    Rwo = Two[:3,:3]
+                    self.planner.align(Rwo)
                 else:
                     # self.oslock.acquire()
                     qdiff = q2l(self.os.finalq)
