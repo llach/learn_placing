@@ -38,7 +38,8 @@ mms /= mmax
 
 # we take a sequence of tactile frames
 seq = mms[0]
-sseq = random_shift_seq(seq)
+augment = [True, True] # rows, clumns
+sseq = random_shift_seq(seq, augment)
 
 mm = frames2img(seq[0,0,:], seq[1,0,:])
 smm = frames2img(sseq[0,0,:], sseq[1,0,:])
