@@ -164,11 +164,11 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8):
                 ds2name[DatasetName.salt]
             ]
 
-        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment)
+        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
         
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment)
+        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
 
     train_l = DataLoader(trainds, shuffle=True, batch_size=a.batch_size)
     test_l = DataLoader(testds, shuffle=False, batch_size=a.batch_size) if testds is not None else None
@@ -186,13 +186,13 @@ def split_tds(tds, seed, train_ratio):
         )
     return tds, None
 
-def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None):
+def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
     tdss = []
     for ds in dsnames:
-        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0, augment=augment)[0])
+        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
  
-def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None):
+def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -216,19 +216,20 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
 
-    if augment is not None and augment > 0:
+    if augment is not None and aug_n > 0:
+        print(f"augmenting dataset: {aug_n} times, rows and cloumns: {augment}")
         XSshape = np.array(X.shape)
-        XSshape[0] *= augment
+        XSshape[0] *= aug_n
         XS = np.zeros(XSshape)
 
-        for a in range(augment):
+        for a in range(aug_n):
             for i, x in enumerate(X):
-                sseq = random_shift_seq(x)
+                sseq = random_shift_seq(x, augment)
                 XS[a*X.shape[0]+i] = sseq
         X = torch.cat([X, torch.Tensor(XS)], axis=0)
-        Y = Y.repeat(augment+1,1,1)
-        GR = GR.repeat(augment+1,1)
-        FT = FT.repeat(augment+1,1,1)
+        Y = Y.repeat(aug_n+1,1,1)
+        GR = GR.repeat(aug_n+1,1)
+        FT = FT.repeat(aug_n+1,1,1)
 
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
