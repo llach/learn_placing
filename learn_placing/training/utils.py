@@ -30,6 +30,8 @@ class DatasetName(str, Enum):
     cylinder_extreme="CylidnerExtreme400"
     vinegar="Vinegar400"
     salt="Salt400"
+    combined_all="CombinedAll"
+    combined_3d="Combined3D"
 
 ds2name = {
     DatasetName.object_var2: "six",
@@ -44,6 +46,8 @@ ds2name = {
     DatasetName.cylinder_extreme: "cylinder_extreme",
     DatasetName.vinegar: "vinegar",
     DatasetName.salt: "salt",
+    DatasetName.combined_all: "combined_all",
+    DatasetName.combined_3d: "combined_3d",
 }
 
 
@@ -62,6 +66,8 @@ dsLookback = {
     DatasetName.cylinder_extreme: [[-80,-40], [-120,-80]],
     DatasetName.vinegar: [[-80,-40], [-120,-80]],
     DatasetName.salt: [[-80,-40], [-120,-80]],
+    DatasetName.combined_all: [[-80,-40], [-120,-80]],
+    DatasetName.combined_3d: [[-80,-40], [-120,-80]],
 }
 
 ftLookback = {
@@ -78,6 +84,8 @@ ftLookback = {
     DatasetName.cylinder_extreme: [[-20,-5], [-35,-20]],
     DatasetName.vinegar: [[-20,-5], [-35,-20]],
     DatasetName.salt: [[-20,-5], [-35,-20]],
+    DatasetName.combined_all: [[-20,-5], [-35,-20]],
+    DatasetName.combined_3d: [[-20,-5], [-35,-20]],
 }
 
 class RotRepr(str, Enum):
@@ -137,6 +145,22 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8, batch_size=8):
             dss = [
                 ds2name[DatasetName.cuboid_large], 
                 ds2name[DatasetName.cylinder_large]
+            ]
+        elif dsname == DatasetName.combined_3d:
+            dss = [
+                ds2name[DatasetName.cuboid_large], 
+                ds2name[DatasetName.cylinder_large],
+                ds2name[DatasetName.cuboid_extreme], 
+                ds2name[DatasetName.cylinder_extreme],
+            ]
+        elif dsname == DatasetName.combined_all:
+            dss = [
+                ds2name[DatasetName.cuboid_large], 
+                ds2name[DatasetName.cylinder_large],
+                ds2name[DatasetName.cuboid_extreme], 
+                ds2name[DatasetName.cylinder_extreme],
+                ds2name[DatasetName.vinegar], 
+                ds2name[DatasetName.salt]
             ]
 
         trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data)
