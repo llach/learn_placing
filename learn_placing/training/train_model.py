@@ -230,7 +230,6 @@ if __name__ == "__main__":
     datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
-    augment = [True, True]
     aug_n = 1
 
     # full training
@@ -266,7 +265,7 @@ if __name__ == "__main__":
         os.makedirs(dspath, exist_ok=True)
 
         nrows=len(input_modalities)
-        ncols=len(input_types) 
+        ncols=len(augment)
         fig, axs = plt.subplots(nrows,ncols,figsize=(4.3*ncols, 3.3*nrows))
 
         trials = {}
