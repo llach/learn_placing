@@ -29,10 +29,9 @@ int main(int argc, char **argv)
         cin >> n;
 
         if (n==0) return 0;
-        if (n == 6) {
+        if (n == 6 || n == 7) {
             ROS_INFO("\n--- static sample ---"); 
             pm->staticSample();
-        } else if (n == 7) {
             ROS_INFO("\n--- sending sample ---"); 
             pm->sendSample();
         } else if (n==8) {
