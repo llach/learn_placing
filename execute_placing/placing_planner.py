@@ -94,7 +94,8 @@ class PlacingPlanner:
             print("torso stop controller running!")
 
     def open_gripper(self): self.gripper_traj(self.JT_MAX)
-    def gripper_traj(self, to):
+    def close_gripper(self): self.gripper_traj(self.JT_MIN)
+    def gripper_traj(self, to, secs=1.5):
         jt = JointTrajectory()
         jt.joint_names = ['gripper_left_right_finger_joint', 'gripper_left_left_finger_joint']
         jt.points.append(JointTrajectoryPoint(positions=[to, to], time_from_start=rospy.Time(1.5)))
@@ -102,7 +103,7 @@ class PlacingPlanner:
         self.mmAC.send_goal(FollowJointTrajectoryGoal(trajectory=jt))
         self.mmAC.wait_for_result()
 
-    def torso_up(self): self.torso_traj(self.TO_MAX, 3)
+    def torso_up(self): self.torso_traj(self.TO_MAX, 2)
     def torso_to(self, goal, secs): self.torso_traj(goal, secs)
     def torso_traj(self, goal, secs):
         up_goal = FollowJointTrajectoryGoal()
@@ -186,22 +187,25 @@ class PlacingPlanner:
             print("no torso state yet ...")
             return
 
+        time.sleep(0.1)
         try:
+            print("clibrating FT")
             self.ftCalib()
         except:
             print("ERROR calibrating FT sensor, quitting")
             return
+        time.sleep(0.1)
 
         print("killing mm goal")
         self.mmKill()
 
-        (tG, _) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        torso_diff = np.min([self.TO_MAX, tG[2]-self.table_height])
-        torso_goal = self.TO_MAX-torso_diff
-        torso_secs = self.torso_vel*(torso_diff*100)
+        # (tG, _) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+        # torso_diff = np.min([self.TO_MAX, tG[2]-self.table_height])
+        # torso_goal = self.TO_MAX-torso_diff
+        torso_secs = self.torso_vel*(0.35*100)
         
         print("moving torso down")
-        self.torso_to(torso_goal, torso_secs)
+        self.torso_to(0.0, torso_secs)
         self.torso_to(self.t_current, 0.5)
 
         # wait a bit to settle
@@ -209,7 +213,8 @@ class PlacingPlanner:
         print("opening gripper")
         self.open_gripper()
 
-        # print("moving torso up")
-        # self.torso_up()
+        i = input("torso up ...")
+        print("moving torso up")
+        self.torso_up()
         
         print("placing done! :)")
