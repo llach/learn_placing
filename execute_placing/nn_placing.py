@@ -240,7 +240,8 @@ if __name__ == "__main__":
     # netname = "/home/llach/tud_datasets/batch_trainings/w_dropout_large/2022.09.12_09-47-58/Combined1000/Combined1000_Neps40_static_tactile_2022.09.12_09-47-58"
     # netname = "/home/llach/tud_datasets/batch_trainings/w_dropout_large/2022.09.12_09-47-58/Cuboid500/Cuboid500_Neps40_static_tactile_2022.09.12_09-49-28"
     # netname = "/home/llach/tud_datasets/batch_trainings/wo_dropout_small/2022.09.11_16-03-24_cnn_chann_5_10_fc_10_10_conv_output_5/Cuboid500/Cuboid500_Neps100_static_tactile_2022.09.11_16-06-51"
-    netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/CombinedAll/CombinedAll_Neps40_static_tactile_2022.09.13_10-37-35"
+    # netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/CombinedAll/CombinedAll_Neps40_static_tactile_2022.09.13_10-37-35"
+    netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
     weights = "best"
 
     nnp = NNPlacing(netname, weights)
