@@ -59,7 +59,7 @@ def get_pad_and_slice(shift):
          else:
             return [0, shift], slice(shift, 1000)
 
-def shift_columns(frames, pad, sli):
+def shift_columns(frames, rpad, rsli, cpad, csli):
     """ 
 
     frames.shape = [16,16] = [H,W] (single frame)
@@ -68,10 +68,21 @@ def shift_columns(frames, pad, sli):
 
     pad: how many columns we need to pad
     shift: how many columns we'll shift
-    """
-    # if len(frames.shape)==2: frames = np.expand_dims(frames, 0)
-    return F.pad(frames, pad=pad+[0,0,0,0])[:,:,:,sli].numpy()
 
-def random_shift_seq(seq):
-    pad, sli = get_pad_and_slice(choice([randint(-4,0), randint(1,5)]))
-    return shift_columns(seq, pad, sli)
+    padding list: [left, right, top, bottom, front, back]
+    -> indices 0,1 are columns, indices 2,3 are rows
+    """
+    if isinstance(frames, np.ndarray): frames = torch.Tensor(frames)
+    return F.pad(frames, pad=cpad+rpad+[0,0])[:,:,rsli,csli].numpy()
+
+def random_shift_seq(seq, augment):
+    rows, cols = augment
+    if rows: 
+        rpad, rsli = get_pad_and_slice(choice([randint(-4,0), randint(1,5)]))
+    else:
+        rpad, rsli = [0,0], slice(-100000, 100000)
+    if cols: 
+        cpad, csli = get_pad_and_slice(choice([randint(-4,0), randint(1,5)]))
+    else:
+        cpad, csli = [0,0], slice(-100000, 100000)
+    return shift_columns(seq, rpad=rpad, rsli=rsli, cpad=cpad, csli=csli)

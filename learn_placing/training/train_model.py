@@ -51,7 +51,8 @@ def train(
     target_type: InRot,
     trial_path: str,
     ## TODO add parameters as input parameters
-    augment: int = None,
+    augment: list = None,
+    aug_n: int = 1,
     Neps: int = 10,
     other_ax = None
 ):
@@ -68,6 +69,7 @@ def train(
         with_ft = with_ft,
 
         augment = augment,
+        aug_n = aug_n,
         batch_size = 48,
         loss_type = LossType.pointarccos,
         out_repr = RotRepr.ortho6d,
@@ -229,6 +231,7 @@ if __name__ == "__main__":
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
     augment = 1
+    aug_n = 1
 
     # full training
     # input_types = [InData.static, InData.with_tap]
@@ -277,6 +280,7 @@ if __name__ == "__main__":
                     trial_path=dspath,
                     ## TODO add parameters for 3dconv preproc & trafo multiplication
                     augment=augment,
+                    aug_n = aug_n,
                     Neps=Neps,
                     other_ax=oax
                 )
