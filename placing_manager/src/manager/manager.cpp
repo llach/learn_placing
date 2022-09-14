@@ -315,10 +315,6 @@ bool PlacingManager::collectSample(){
 bool PlacingManager::staticSample(){
     ROS_INFO("### collecting data sample no. %d ###", nSamples_);
 
-    ROS_INFO("recalibrating FT");
-    std_srvs::Empty e;
-    ftCalibrationSrv_.call(e);
-
     // make sure we have fresh data
     if (not checkLastTimes(ros::Time::now()-ros::Duration(1))) {
         ROS_ERROR("data not fresh");
