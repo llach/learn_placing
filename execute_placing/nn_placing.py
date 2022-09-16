@@ -245,8 +245,8 @@ class NNPlacing:
 if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
-    # netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
-    netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_ft_2022.09.13_10-42-33"
+    netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    # netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_ft_2022.09.13_10-42-33"
 
     weights = "best"
 
