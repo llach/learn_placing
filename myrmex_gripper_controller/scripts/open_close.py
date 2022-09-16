@@ -1,4 +1,5 @@
 # !/usr/bin/python
+import time
 import rospy
 import actionlib
 import numpy as np
@@ -10,6 +11,8 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
 ridx, lidx = 8, 7
+tidx = 19
+tpos = None
 rpos, lpos = None, None
 rname, lname = 'gripper_left_right_finger_joint', 'gripper_left_left_finger_joint'
 
@@ -20,8 +23,9 @@ JT_MAX = 0.045
 JOINT_NAMES = [rname, lname]
 
 def js_cb(msg):
-    global ridx, lidx, rpos, lpos
+    global ridx, lidx, rpos, lpos, tidx, tpos
     rpos, lpos = msg.position[ridx], msg.position[lidx]
+    tpos = msg.position[tidx]
 
 def send_trajectory(to):
     global mmAC
@@ -36,19 +40,29 @@ def send_trajectory(to):
 def open_gripper(): send_trajectory(JT_MAX)
 def close_gripper(): send_trajectory(JT_MIN)
 
+def set_torso(pos=None, secs=7, wait=True):
+    global torsoAC, tpos
+    
+    if pos == None: pos = tpos 
+
+    goal = FollowJointTrajectoryGoal()
+    goal.trajectory.joint_names = ["torso_lift_joint"]
+    goal.trajectory.points.append(JointTrajectoryPoint(positions=[pos], time_from_start=rospy.Duration(secs)))
+    torsoAC.send_goal(goal)
+    if wait: torsoAC.wait_for_result()
+
 rospy.init_node("oc")
 rospy.Subscriber("/joint_states", JointState, js_cb)
 kill_service = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
 calib_service = rospy.ServiceProxy("/myrmex_gripper_controller/calibrate", Empty)
 
-# USE_MM = True
-_pre = ""
-# if USE_MM:
-#     _pre = "myrmex_"
-#     safe_switch("gripper_controller", "myrmex_gripper_controller")
-
 cpub = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 cpub.wait_for_server()
+
+ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
+
+torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+torsoAC.wait_for_server()
 
 try:
     while True:
@@ -63,6 +77,19 @@ try:
             kill_service()
         elif inp == "cal":
             calib_service()
+        elif inp== "u":
+            print("torso up")
+            ftCalib()
+
+            set_torso(0.35, secs=3)
+            print("done")
+
+        elif inp== "d":
+            print("torso down")
+            ftCalib()
+            set_torso(0.0)
+            set_torso(wait=False)
+
 except KeyboardInterrupt:
     pass
 print("bye")
