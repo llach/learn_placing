@@ -57,7 +57,7 @@ def get_PCA(sample):
     eigsort = np.argsort(evl)[::-1]
     evl, evec = evl[eigsort], evec[:,eigsort]
 
-    np.array([meanx, meany]), evl, evec
+    return np.array([meanx, meany]), evl, evec
 
 def plot_PCA(ax, means, evl, evec, scale=1):
     """ 
@@ -107,9 +107,15 @@ if __name__ == "__main__":
     sample = samples[64][1]["tactile_left"][1]
     s = preprocess_myrmex(sample)[10,:] # Nx16x16 array 
 
-    simg = upscale_repeat(s, factor=10)
-    simg = mm2img(s)
+    means, evl, evec = get_PCA(s)
 
-    plt.imshow(simg)
+    scale = 10
+    simg = upscale_repeat(s, factor=scale)
+    simg = mm2img(simg)
+
+    fig, ax = plt.subplots()
+    
+    ax.imshow(simg)
+    plot_PCA(ax, means, evl, evec, scale=scale)
 
     plt.show()
