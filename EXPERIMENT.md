@@ -67,3 +67,19 @@ arm_7:
 
 * sometimes optitrack didn't detect the markers. the data collection node recognized this. keeping an eye on the optitrack state publisher terminal allows to detect vanished markers quickly
 * in one specifc arm position, TIAGo's arm was shaking while moving which led to false positive table contacts. samples were flagged (manually)
+
+
+# Experiment Procedure UPC
+
+1. Connect switch to power
+2. Power on OptiTrack PC, check calibration and re-calibrate if needed
+3. TIAGo
+   1. Connect Ethernet
+   2. Start robot (if battery is depleted: F1; F10; ENTER, keyboard LEDs should indicate booting)
+   3. `sudo ntpdate -u tiago-72c`; otherwise transforms won't work
+   4. `rosrun optitrack_publisher ot_node.py`
+   5. `roslaunch vrpn_client_ros sample.launch server:=192.168.141.20 ~broadcast_tf:=False`
+   6. check TFs in rviz
+4. Mac 
+   1. Connect Ethernet, make sure it's connected in Settings
+   2. 

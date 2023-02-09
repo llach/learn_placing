@@ -330,6 +330,10 @@ def rotation_from_matrix(matrix):
 
     """
     R = numpy.array(matrix, dtype=numpy.float64, copy=False)
+    if R.shape == (3,3):
+        T = numpy.eye(4)
+        T[:3,:3] = R
+        R=T
     R33 = R[:3, :3]
     # direction: unit eigenvector of R33 corresponding to eigenvalue of 1
     l, W = numpy.linalg.eig(R33.T)

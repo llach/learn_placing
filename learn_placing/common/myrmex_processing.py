@@ -37,10 +37,14 @@ def sync_mm_sample(m1, m2):
     ])
 
 def mm2img(data, cidx=2):
+    if type(data) == list: data = np.array(data)
+    if len(data.shape)==2: data = np.expand_dims(data, axis=0)
+    
     imgs = np.zeros(list(data.shape) + [3])
     imgs[:,:,:,cidx] = data
     imgs *= 255
-    return imgs.astype(np.uint8)
+    return np.squeeze(imgs.astype(np.uint8))
 
 def upscale_repeat(frames, factor=10):
-    return frames.repeat(factor, axis=1).repeat(factor, axis=2)
+    if len(frames.shape)==2: frames = np.expand_dims(frames, axis=0)
+    return np.squeeze(frames.repeat(factor, axis=1).repeat(factor, axis=2))
