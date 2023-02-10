@@ -73,6 +73,10 @@ They should be identical, otherwise the hashes will mismatch and ROS will throw 
   * [geometric_shapes@0.6.3](https://github.com/ros-planning/geometric_shapes/tree/0.6.3)
   * [random_numbers@0.3.2](https://github.com/ros-planning/random_numbers/tree/0.3.2)
   * [srdfdom@0.5.2](https://github.com/ros-planning/srdfdom/tree/0.5.2)
+  * [OMPL@main](https://github.com/ompl/ompl) (TIAGo version's tag has no `package.xml`, main worked on 10.02.2023)
+  * [eigenpy@v2.5.0](https://github.com/stack-of-tasks/eigenpy/tree/v2.5.0)
+  * [warehouse_ros@0.9.4](https://github.com/ros-planning/warehouse_ros/tree/0.9.4)
+  * `catkin config --blacklist moveit_servo`
 * [moveit_msgs@0.10.1](https://github.com/ros-planning/moveit_msgs/tree/0.10.1)
   * [object_rec_msgs@0.4.1](https://github.com/wg-perception/object_recognition_msgs)
   * [octomap_msgs@0.3.5](https://github.com/OctoMap/octomap_msgs/tree/0.3.5)
