@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import learn_placing.common.transformations as tf
 
 from PIL import Image
 from learn_placing.common.data import load_dataset
@@ -132,13 +133,17 @@ if __name__ == "__main__":
     """
     
     frame_no = 10
-    sample_no = 100
+    sample_no = 64
     
     sample = ds[sample_no][1]
-    mm = preprocess_myrmex(sample["tactile_left"][1])[frame_no,:] # Nx16x16 array 
+    mm = preprocess_myrmex(sample["tactile_right"][1])[frame_no,:] # Nx16x16 array 
+    for os in sample["opti_state"][1][0]:
+        if os["parent_frame"] == "gripper_left_grasping_frame" and os["child_frame"] == "pot":
+            lbl = tf.euler_from_quaternion(os["rotation"])[1]
 
     means, evl, evec, evth = get_PCA(mm)
-    print(evth)
+    print(evth, lbl)
+
 
     scale = 10
     mmimg = upscale_repeat(mm, factor=scale)
@@ -148,6 +153,9 @@ if __name__ == "__main__":
     
     ax.imshow(mmimg)
     plot_PCA(ax, means, evl, evec, scale=scale)
-    plot_line(ax, evth[0])
+    plot_line(ax, evth[0], label="PC1")
+    plot_line(ax, np.pi-lbl, label="target", c="green", lw=2)
+
+    ax.legend()
 
     plt.show()
