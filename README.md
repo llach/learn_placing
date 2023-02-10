@@ -4,6 +4,7 @@
   - [Case I: Deploying on the robot](#case-i-deploying-on-the-robot)
   - [Case II: Running on an external PC](#case-ii-running-on-an-external-pc)
 - [Components and Experiment Procedures](#components-and-experiment-procedures)
+- [Dependencies](#dependencies)
 
 ## Building and Execution Code for/on TIAGo
 
@@ -59,3 +60,11 @@ They should be identical, otherwise the hashes will mismatch and ROS will throw 
   <img style="width: 60%" src="_resources/Experiment%20Procedures.jpg" />
 </p>
 
+## Dependencies
+
+* [urdf](https://github.com/ubi-agni/urdf) 
+* [urdfdom](https://github.com/ubi-agni/urdfdom) 
+* [urdfdom headers](https://github.com/ubi-agni/urdfdom_headers)
+* [tactile_filters](https://github.com/ubi-agni/tactile_filters)
+* [tactile_toolbox](https://github.com/ubi-agni/tactile_toolbox)
+* 
