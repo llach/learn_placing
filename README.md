@@ -67,4 +67,18 @@ They should be identical, otherwise the hashes will mismatch and ROS will throw 
 * [urdfdom headers](https://github.com/ubi-agni/urdfdom_headers)
 * [tactile_filters](https://github.com/ubi-agni/tactile_filters)
 * [tactile_toolbox](https://github.com/ubi-agni/tactile_toolbox)
-* 
+  
+* [moveit@1.0.6](https://github.com/ros-planning/moveit/tree/1.0.6)
+  * [eigen_stl_containers](https://github.com/ros/eigen_stl_containers)
+  * [geometric_shapes@0.6.3](https://github.com/ros-planning/geometric_shapes/tree/0.6.3)
+  * [random_numbers@0.3.2](https://github.com/ros-planning/random_numbers/tree/0.3.2)
+  * [srdfdom@0.5.2](https://github.com/ros-planning/srdfdom/tree/0.5.2)
+* [moveit_msgs@0.10.1](https://github.com/ros-planning/moveit_msgs/tree/0.10.1)
+  * [object_rec_msgs@0.4.1](https://github.com/wg-perception/object_recognition_msgs)
+  * [octomap_msgs@0.3.5](https://github.com/OctoMap/octomap_msgs/tree/0.3.5)
+  * [pal_common_msgs@0.13.2]
+
+rviz
+* [pmb2_robot@3.0.13](https://github.com/pal-robotics/pmb2_robot/tree/3.0.13)
+* [tiago_robot@2.0.54](https://github.com/pal-robotics/tiago_robot/tree/2.0.54)
+* [pal_gripper@1.0.3](https://github.com/pal-robotics/pal_gripper/tree/1.0.3)
