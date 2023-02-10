@@ -47,8 +47,8 @@ def get_cov(arr):
 def get_PCA(sample):
     """
     """
-    meanx, meany = marginal_mean(sample, axis=0), marginal_mean(s, axis=1)
-    sdx, sdy = marginal_sd(sample, axis=0), marginal_sd(s, axis=1)
+    meanx, meany = marginal_mean(sample, axis=0), marginal_mean(sample, axis=1)
+    sdx, sdy = marginal_sd(sample, axis=0), marginal_sd(sample, axis=1)
     cov = get_cov(sample)
     C = np.array([[sdx**2, cov],
                   [cov,    sdy**2]])
@@ -57,31 +57,50 @@ def get_PCA(sample):
     eigsort = np.argsort(evl)[::-1]
     evl, evec = evl[eigsort], evec[:,eigsort]
 
-    return np.array([meanx, meany]), evl, evec
+    # slope of eigenvectors as angle theta
+    # axes in mpl are flipped, hence the PI offset
+    means = [meanx, meany]
+    evth = np.array([
+        np.pi-get_line_angle(means, get_PC_point(means, evl, evec, 0)),
+        np.pi-get_line_angle(means, get_PC_point(means, evl, evec, 1)),
+    ])
+
+    return np.array([meanx, meany]), evl, evec, evth
+
+def get_line_y(x, theta=np.pi/4, b=0):
+    return np.tan(theta) * x + b
+
+def get_PC_point(means, evl, evec, pci):
+    return means-2*np.sqrt(evl[pci])*evec[:,pci]
+
+def get_line_angle(p1, p2):
+    if p1[0]>p2[0]: p1, p2 = p2, p1
+    th = np.arctan2(p2[1]-p1[1], p2[0]-p1[0])
+    return th if th>0 else np.pi+th
+
+def plot_line(ax, theta, **kw):
+    # axes in mpl are flipped, hence the PI offset
+    ax.axline([.5,.5], slope=np.tan(np.pi-theta), transform=ax.transAxes, **kw)
 
 def plot_PCA(ax, means, evl, evec, scale=1):
     """ 
     scale: upscaling factor for imshow
     """
     means *= scale
-    meanx, meany = means
-    evllen = np.sqrt(evl)
 
-    ax.text(meanx,meany,"X",color="cyan")
+    ax.text(*means,"X",color="cyan")
     ax.annotate("",
                 fontsize=20,
-                xytext = (meanx,meany),
-                xy     = ((meanx-2*evllen[0]*evec[0,0]),
-                          (meany-2*evllen[0]*evec[1,0])),
+                xytext = means,
+                xy     = get_PC_point(means, evl, evec, 0),
                 arrowprops = {"arrowstyle":"<->",
                               "color":"magenta",
                               "linewidth":2}
                 )
     ax.annotate("",
                 fontsize=20,
-                xytext = (meanx,meany),
-                xy     = ((meanx-2*evllen[1]*evec[0,1]),
-                          (meany-2*evllen[1]*evec[1,1])),
+                xytext = means,
+                xy     = get_PC_point(means, evl, evec, 1),
                 arrowprops = {"arrowstyle":"<->",
                               "color":"green",
                               "linewidth":2}
@@ -102,20 +121,33 @@ if __name__ == "__main__":
 
     # sample timestamp -> sample
     ds = load_dataset(dataset_path)
-    samples = list(ds.items())
+    ds = list(ds.items())
 
-    sample = samples[64][1]["tactile_left"][1]
-    s = preprocess_myrmex(sample)[10,:] # Nx16x16 array 
+    """
+    dataset:
+    timestamp - sample (i.e. dict of time series)
+        |-> tactile_left
+            |-> [timestamps]
+            |-> [myrmex samples]
+    """
+    
+    frame_no = 10
+    sample_no = 100
+    
+    sample = ds[sample_no][1]
+    mm = preprocess_myrmex(sample["tactile_left"][1])[frame_no,:] # Nx16x16 array 
 
-    means, evl, evec = get_PCA(s)
+    means, evl, evec, evth = get_PCA(mm)
+    print(evth)
 
     scale = 10
-    simg = upscale_repeat(s, factor=scale)
-    simg = mm2img(simg)
+    mmimg = upscale_repeat(mm, factor=scale)
+    mmimg = mm2img(mmimg)
 
     fig, ax = plt.subplots()
     
-    ax.imshow(simg)
+    ax.imshow(mmimg)
     plot_PCA(ax, means, evl, evec, scale=scale)
+    plot_line(ax, evth[0])
 
     plt.show()
