@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>optitrack_publisher</name>
+  <version>0.0.1</version>
+  
+  <description>Publish OptiTrack trackers in ROS</description>
+  <maintainer email="luca.lach@pal-robotics.com">Luca Lach</maintainer>
+
+  <license>BSD</license>
+  <author>Luca Lach</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>geometry_msgs</depend>
+</package>
