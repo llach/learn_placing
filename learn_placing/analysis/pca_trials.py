@@ -1,4 +1,5 @@
 import os
+import torch
 import numpy as np
 import learn_placing.common.transformations as tf
 
@@ -7,6 +8,9 @@ from learn_placing.common.data import load_dataset
 from learn_placing.common.myrmex_processing import preprocess_myrmex, mm2img, upscale_repeat
 
 import matplotlib.pyplot as plt
+from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
+
+from learn_placing.training.utils import load_train_params, rep2loss
 
 def marginal_mean(arr, axis):
     '''
@@ -107,6 +111,32 @@ def plot_PCA(ax, means, evl, evec, scale=1):
                               "linewidth":2}
                 )
 
+def try_sample(model, sample, frame_no):
+    """
+    x.shape
+    torch.Size([8, 2, 50, 16, 16])
+    -> [batch, sensors, sequence, H, W]
+
+    gr.shape
+    torch.Size([8, 4])
+    -> [batch, Q]
+
+    ft.shape
+    torch.Size([8, 15, 6])
+    -> [batch, sequence, FT]
+    """
+
+
+    if params.input_data == InData.static:
+        print(params.input_data)
+        xs = [[tinp_static], [Qwg], [ftinp_static]]
+    elif params.input_data == InData.with_tap:
+        print(params.input_data)
+        xs = [[tinp], [Qwg], [ftinp]]
+    prediction = model(*[torch.Tensor(np.array(x)) for x in xs])
+    prediction = np.squeeze(prediction.detach().numpy())
+
+
 
 if __name__ == "__main__":
     """ NOTE interesting samples
@@ -137,13 +167,19 @@ if __name__ == "__main__":
     
     sample = ds[sample_no][1]
     mm = preprocess_myrmex(sample["tactile_right"][1])[frame_no,:] # Nx16x16 array 
-    for os in sample["opti_state"][1][0]:
-        if os["parent_frame"] == "gripper_left_grasping_frame" and os["child_frame"] == "pot":
-            lbl = tf.euler_from_quaternion(os["rotation"])[1]
+    for ops in sample["opti_state"][1][0]:
+        if ops["parent_frame"] == "gripper_left_grasping_frame" and ops["child_frame"] == "pot":
+            lbl = tf.euler_from_quaternion(ops["rotation"])[1]
 
     means, evl, evec, evth = get_PCA(mm)
     print(evth, lbl)
 
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2022.09.08_19-11-16/test_obj/test_obj_Neps20_static_tactile_gripper_ft_2022.09.08_19-12-35"
+    trial_weights = f"{trial_path}/weights/final.pth"
+    
+    params = load_train_params(trial_path)
+    model = TactilePlacingNet(**params.netp)
+    criterion = rep2loss(params.loss_type)
 
     scale = 10
     mmimg = upscale_repeat(mm, factor=scale)
@@ -153,7 +189,7 @@ if __name__ == "__main__":
     
     ax.imshow(mmimg)
     plot_PCA(ax, means, evl, evec, scale=scale)
-    plot_line(ax, evth[0], label="PC1")
+    plot_line(ax, np.pi-evth[0], label="PC1")
     plot_line(ax, np.pi-lbl, label="target", c="green", lw=2)
 
     ax.legend()
