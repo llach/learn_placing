@@ -72,6 +72,26 @@ def get_PCA(sample):
 
     return np.array([meanx, meany]), evl, evec, evth
 
+def predict_PCA(mm):
+    """
+    mm: (2x16x16) myrmex array, first dimension holds (left, right)
+    """
+
+    meansl, evll, evecl, evthl = get_PCA(mm[0,:])
+    meansr, evlr, evecr, evthr = get_PCA(mm[1,:])
+
+    # fusing both PCA angle estimates: weigh angles by their eigenvalues
+    # TODO should we take sqrt(ev)?
+    # weights = np.array([np.sqrt(evll[0]), np.sqrt(evlr[0])])
+    # weights /= np.sum(weights)
+    # weighted_th = (weights[0]*evthl+weights[1]*evthr)/2
+    mean_th = (evthl+evthr)/2
+
+    return np.stack([meansl, meansr]), \
+        np.stack([evll, evlr]), \
+        np.stack([evecl, evecr]), \
+        np.array([mean_th[0], 0])
+
 def get_line_y(x, theta=np.pi/4, b=0):
     return np.tan(theta) * x + b
 
@@ -83,14 +103,21 @@ def get_line_angle(p1, p2):
     th = np.arctan2(p2[1]-p1[1], p2[0]-p1[0])
     return th if th>0 else np.pi+th
 
-def plot_line(ax, theta, **kw):
+def plot_line(ax, theta, point=None, **kw):
     # axes in mpl are flipped, hence the PI offset
-    ax.axline([.5,.5], slope=np.tan(np.pi-theta), transform=ax.transAxes, **kw)
 
-def plot_PCA(ax, means, evl, evec, scale=1):
+    # if no point (in data coordinates) is given, we just use the axis' center
+    if point is None:
+        point = [.5,.5]
+        kw |= {"transform", ax.transAxes}
+
+    ax.axline(point, slope=np.tan(np.pi-theta), **kw)
+
+def plot_PCs(ax, means, evl, evec, scale=1):
     """ 
     scale: upscaling factor for imshow
     """
+    means = means.copy()
     means *= scale
 
     ax.text(*means,"X",color="cyan")
@@ -100,7 +127,8 @@ def plot_PCA(ax, means, evl, evec, scale=1):
                 xy     = get_PC_point(means, evl, evec, 0),
                 arrowprops = {"arrowstyle":"<->",
                               "color":"magenta",
-                              "linewidth":2}
+                              "linewidth":2},
+                label="PC1"
                 )
     ax.annotate("",
                 fontsize=20,
@@ -112,30 +140,33 @@ def plot_PCA(ax, means, evl, evec, scale=1):
                 )
 
 def try_sample(model, sample, frame_no):
-    """
-    x.shape
-    torch.Size([8, 2, 50, 16, 16])
-    -> [batch, sensors, sequence, H, W]
-
-    gr.shape
-    torch.Size([8, 4])
-    -> [batch, Q]
-
-    ft.shape
-    torch.Size([8, 15, 6])
-    -> [batch, sequence, FT]
-    """
-
-
-    if params.input_data == InData.static:
-        print(params.input_data)
-        xs = [[tinp_static], [Qwg], [ftinp_static]]
-    elif params.input_data == InData.with_tap:
-        print(params.input_data)
-        xs = [[tinp], [Qwg], [ftinp]]
     prediction = model(*[torch.Tensor(np.array(x)) for x in xs])
     prediction = np.squeeze(prediction.detach().numpy())
 
+def extract_sample(s, frame_no=10):
+    """
+    given a sample sequence, extract 
+    mm: [left, right] myrmex samples (2x16x16)
+    gr: T_world_gripper as quaternion (1x4)
+    ft: F/T sensor readings (1x6)
+    lbl: target rotation as quaternion (1x6)
+
+    TODO return label based on
+    """
+
+    mmleft  = preprocess_myrmex(sample["tactile_left"][1])[frame_no,:]  # 16x16 array
+    mmright = preprocess_myrmex(sample["tactile_right"][1])[frame_no,:] # 16x16 array
+    
+    w2o, g2o, w2g = None, None, None
+    for ops in sample["opti_state"][1][0]:
+        if ops["parent_frame"] == "gripper_left_grasping_frame" and ops["child_frame"] == "pot":
+            g2o = ops["rotation"]
+        if ops["parent_frame"] == "base_footprint" and ops["child_frame"] == "pot":
+            w2o = ops["rotation"]
+        if ops["parent_frame"] == "base_footprint" and ops["child_frame"] == "gripper_left_grasping_frame":
+            w2g = ops["rotation"]
+
+    return np.array([mmleft, mmright]), w2g, None, g2o
 
 
 if __name__ == "__main__":
@@ -162,36 +193,49 @@ if __name__ == "__main__":
             |-> [myrmex samples]
     """
     
+    # load sample 
     frame_no = 10
     sample_no = 64
     
     sample = ds[sample_no][1]
-    mm = preprocess_myrmex(sample["tactile_right"][1])[frame_no,:] # Nx16x16 array 
-    for ops in sample["opti_state"][1][0]:
-        if ops["parent_frame"] == "gripper_left_grasping_frame" and ops["child_frame"] == "pot":
-            lbl = tf.euler_from_quaternion(ops["rotation"])[1]
+    mm, w2g, ft, lbl = extract_sample(sample)
+    lblth = tf.euler_from_quaternion(lbl)[1] # line angle is 
 
-    means, evl, evec, evth = get_PCA(mm)
-    print(evth, lbl)
-
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2022.09.08_19-11-16/test_obj/test_obj_Neps20_static_tactile_gripper_ft_2022.09.08_19-12-35"
-    trial_weights = f"{trial_path}/weights/final.pth"
+    # load neural net
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
+    trial_weights = f"{trial_path}/weights/best.pth"
     
     params = load_train_params(trial_path)
     model = TactilePlacingNet(**params.netp)
     criterion = rep2loss(params.loss_type)
 
+    # perform PCA
+    means, evl, evec, evth = predict_PCA(mm)
+
     scale = 10
     mmimg = upscale_repeat(mm, factor=scale)
     mmimg = mm2img(mmimg)
 
-    fig, ax = plt.subplots()
-    
-    ax.imshow(mmimg)
-    plot_PCA(ax, means, evl, evec, scale=scale)
-    plot_line(ax, np.pi-evth[0], label="PC1")
-    plot_line(ax, np.pi-lbl, label="target", c="green", lw=2)
+    fig, axes = plt.subplots(ncols=2, figsize=0.8*np.array([16,9]))
 
-    ax.legend()
+    axes[0].imshow(mmimg[0])
+    axes[1].imshow(mmimg[1])
 
+    for i in range(2):
+        plot_PCs(axes[i], means[i], evl[i], evec[i], scale=scale)
+
+    for th, label, col in zip(evth, ["mean theta"], ["blue"]):
+        plot_line(axes[0], th, point=scale*means[0], label=label, c=col, lw=2)
+        plot_line(axes[1], np.pi-th, point=scale*means[1], label=label, c=col, lw=2) # right sensor image is "flipped", hence we use PI-theta
+
+    # plot target lines at means. NOTE means are estimates, lines will be slightly off!
+    plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
+    plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
+
+    for ax in axes:
+        ax.legend()
+
+    fig.tight_layout()
+    plt.legend()
     plt.show()
