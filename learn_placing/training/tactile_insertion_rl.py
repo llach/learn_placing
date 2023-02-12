@@ -13,8 +13,8 @@ def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilatio
     else:
         _, Hin, Win = in_shape
 
-    Hout = np.int(np.floor(((Hin+2*padding[0]-dilation[0]*(kernel[0]-1)-1)/(stride[0]))+1))
-    Wout = np.int(np.floor(((Win+2*padding[1]-dilation[1]*(kernel[1]-1)-1)/(stride[1]))+1))
+    Hout = np.int8(np.floor(((Hin+2*padding[0]-dilation[0]*(kernel[0]-1)-1)/(stride[0]))+1))
+    Wout = np.int8(np.floor(((Win+2*padding[1]-dilation[1]*(kernel[1]-1)-1)/(stride[1]))+1))
     return (Cout, Hout, Wout)
 
 def conv3D_outshape(in_shape, Cout, kernel, padding=(0,0,0), stride=(1,1,1), dilation=(1,1,1)):
@@ -152,6 +152,10 @@ class TactilePlacingNet(nn.Module):
         * we have to pass each sensor sequence to their respective CNN-RNN pre-processors
         -> select xs[:,S,:], where S is the sensors index in {0,1}
         * then we loop over each image in the sequence, pass it into the CNN individually, concatenate the result and pass it into the RNN
+        * SENSORS dimension: [left, right]
+
+        ALTERNATIVE x dimensions: (batch, sensors, H, W):
+        for network types like ONEFRAMESINGLETRL that only use single frames for inference
 
         gr has dimensions [batch, 4] and contains the world to gripper transformations represented as quaternion
 
@@ -207,10 +211,14 @@ class TactilePlacingNet(nn.Module):
         return rnnout[:,-1,:]
 
     def one_frame_single_trl_proc(self, x: Tensor, gr: Tensor):
-        """ x has shape [batch,sensor,sequence,H,W]
-            compare with above - we just bruteforcely select 10th frame
+        """ 
+        x has shape [batch,sensor,sequence,H,W]
+        compare with above - we just bruteforcely select 10th frame
+        OR 
+        x has shape [batch,sensor,H,W]
+        in which case we don't do frame selection
         """
-        cnnout = self.conv(x[:,:,10,:,:])
+        cnnout = self.conv(x[:,:,10,:,:] if len(x.shape)==5 else x)
         return cnnout
 
     def threed_trl_proc(self, x: Tensor, gr: Tensor):
