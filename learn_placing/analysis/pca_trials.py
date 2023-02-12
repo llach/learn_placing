@@ -139,10 +139,6 @@ def plot_PCs(ax, means, evl, evec, scale=1):
                               "linewidth":2}
                 )
 
-def try_sample(model, sample, frame_no):
-    prediction = model(*[torch.Tensor(np.array(x)) for x in xs])
-    prediction = np.squeeze(prediction.detach().numpy())
-
 def extract_sample(s, frame_no=10):
     """
     given a sample sequence, extract 
@@ -168,6 +164,16 @@ def extract_sample(s, frame_no=10):
 
     return np.array([mmleft, mmright]), w2g, None, g2o
 
+
+def single_pred_loss(pred, label, f):
+    """
+    pred    (3x3) network output, rotation matrix
+    label   (1x4) label, quaternion
+    f       loss function
+    """
+    p = np.expand_dims(pred, 0)
+    l = np.expand_dims(tf.quaternion_matrix(label), 0)
+    return f(torch.Tensor(p), torch.Tensor(l))
 
 if __name__ == "__main__":
     """ NOTE interesting samples
@@ -210,6 +216,12 @@ if __name__ == "__main__":
     model = TactilePlacingNet(**params.netp)
     criterion = rep2loss(params.loss_type)
 
+    pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
+    pred = np.squeeze(pred.detach().numpy())
+    loss = single_pred_loss(pred, lbl, criterion)
+    nnth = tf.euler_from_matrix(pred)[1]
+    print(loss)
+
     # perform PCA
     means, evl, evec, evth = predict_PCA(mm)
 
@@ -232,6 +244,9 @@ if __name__ == "__main__":
     # plot target lines at means. NOTE means are estimates, lines will be slightly off!
     plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
     plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
+
+    plot_line(axes[0], nnth, point=scale*means[0], label="NN", c="red", lw=2)
+    plot_line(axes[1], np.pi-nnth, point=scale*means[1], label="NN", c="red", lw=2)
 
     for ax in axes:
         ax.legend()
