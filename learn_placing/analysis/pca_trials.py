@@ -166,6 +166,18 @@ def extract_sample(s, frame_no=10):
 
     return np.array([mmleft, mmright]), w2g, None, g2o
 
+def label_to_line_angle(y):
+    if type(y) == list: y=np.array(y)
+    if y.shape == (4,4): y = y[:3,:3]
+    if y.shape == (3,3):
+        th = tf.euler_from_matrix(y)[1]
+    elif y.shape == (4,) or y.shape == (1,4):
+        th = tf.euler_from_quaternion(y)[1]
+    else:
+        print(f"ERROR shape mismatch: {y.shape}")
+    
+    return th if th>0 else np.pi+th
+
 def angle_loss(th, lblth, f):
     return single_pred_loss(tf.Ry(th), tf.quaternion_from_euler(0,lblth,0), f)
 
@@ -187,6 +199,7 @@ if __name__ == "__main__":
     50/50: [58]
     hard: [188]
 
+    NN  good: 100
     PCA good: 64
     PCA bad : 188
     """
@@ -212,7 +225,8 @@ if __name__ == "__main__":
     
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
-    lblth = tf.euler_from_quaternion(lbl)[1] # line angle is 
+    lblth = label_to_line_angle(lbl)
+    # lblth = tf.euler_from_quaternion(lbl)[1]
 
     # load neural net
     trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
@@ -229,6 +243,7 @@ if __name__ == "__main__":
     pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
     pred = np.squeeze(pred.detach().numpy())
     nnerr = single_pred_loss(pred, lbl, criterion)
+    # nnth = label_to_line_angle(pred)
     nnth = tf.euler_from_matrix(pred)[1]
 
     """ NOTE this evaluation only respects the NN's accuracy of the rotation about the gripper frame's y-axis
@@ -263,8 +278,8 @@ if __name__ == "__main__":
     plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
     plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
 
-    plot_line(axes[0], nnth, point=scale*means[0], label="NN", c="red", lw=2)
-    plot_line(axes[1], np.pi-nnth, point=scale*means[1], label="NN", c="red", lw=2)
+    plot_line(axes[0], np.pi-nnth, point=scale*means[0], label="NN ()", c="red", lw=2)
+    plot_line(axes[1], nnth, point=scale*means[1], label="NN", c="red", lw=2)
 
     for ax in axes:
         ax.legend()
