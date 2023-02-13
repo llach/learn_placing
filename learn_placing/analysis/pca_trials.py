@@ -8,6 +8,8 @@ from learn_placing.common.data import load_dataset
 from learn_placing.common.myrmex_processing import preprocess_myrmex, mm2img, upscale_repeat
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 
 from learn_placing.training.utils import load_train_params, rep2loss
@@ -128,7 +130,7 @@ def plot_PCs(ax, means, evl, evec, scale=1):
                 arrowprops = {"arrowstyle":"<->",
                               "color":"magenta",
                               "linewidth":2},
-                label="PC1"
+                # label="PC1"
                 )
     ax.annotate("",
                 fontsize=20,
@@ -164,7 +166,6 @@ def extract_sample(s, frame_no=10):
 
     return np.array([mmleft, mmright]), w2g, None, g2o
 
-
 def single_pred_loss(pred, label, f):
     """
     pred    (3x3) network output, rotation matrix
@@ -182,6 +183,9 @@ if __name__ == "__main__":
     good: [64, 69]
     50/50: [58]
     hard: [188]
+
+    PCA good: 64
+    PCA bad : 188
     """
     
     dsname = "placing_data_pkl_cuboid_large"
@@ -215,15 +219,23 @@ if __name__ == "__main__":
     params = load_train_params(trial_path)
     model = TactilePlacingNet(**params.netp)
     criterion = rep2loss(params.loss_type)
+    checkp = torch.load(trial_weights)
+    model.load_state_dict(checkp)
+    model.eval()
+
 
     pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
     pred = np.squeeze(pred.detach().numpy())
-    loss = single_pred_loss(pred, lbl, criterion)
+    nnerr = single_pred_loss(pred, lbl, criterion)
     nnth = tf.euler_from_matrix(pred)[1]
-    print(loss)
 
     # perform PCA
     means, evl, evec, evth = predict_PCA(mm)
+    evth = evth[0]
+    pcaerr = single_pred_loss(tf.Ry(evth), lbl, criterion)
+
+    print(f"PCA err {np.pi-pcaerr:.4f} | NN  err {nnerr:.4f}")
+    print(f"PCA th  {evth:.4f} | NN  th {nnth:.4f} | LBL th {lblth:.4f}")
 
     scale = 10
     mmimg = upscale_repeat(mm, factor=scale)
@@ -237,16 +249,15 @@ if __name__ == "__main__":
     for i in range(2):
         plot_PCs(axes[i], means[i], evl[i], evec[i], scale=scale)
 
-    for th, label, col in zip(evth, ["mean theta"], ["blue"]):
-        plot_line(axes[0], th, point=scale*means[0], label=label, c=col, lw=2)
-        plot_line(axes[1], np.pi-th, point=scale*means[1], label=label, c=col, lw=2) # right sensor image is "flipped", hence we use PI-theta
+    plot_line(axes[0], evth, point=scale*means[0], label="mean theta", c="blue", lw=2)
+    plot_line(axes[1], np.pi-evth, point=scale*means[1], label="mean theta", c="blue", lw=2) # right sensor image is "flipped", hence we use PI-theta
 
     # plot target lines at means. NOTE means are estimates, lines will be slightly off!
     plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
     plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
 
-    plot_line(axes[0], nnth, point=scale*means[0], label="NN", c="red", lw=2)
-    plot_line(axes[1], np.pi-nnth, point=scale*means[1], label="NN", c="red", lw=2)
+    plot_line(axes[0], np.pi-nnth, point=scale*means[0], label="NN", c="red", lw=2)
+    plot_line(axes[1], nnth, point=scale*means[1], label="NN", c="red", lw=2)
 
     for ax in axes:
         ax.legend()
