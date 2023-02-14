@@ -136,6 +136,9 @@ def load_train_params(trial_path):
 def get_dataset(dsname, a, seed=None, train_ratio=0.8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
+    if "augment" not in a:
+        a |= {"augment": None, "aug_n": 0}
+
     if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all]:
         if dsname == DatasetName.combined_var2:
             dss = [

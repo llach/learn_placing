@@ -176,10 +176,10 @@ def label_to_line_angle(y):
     else:
         print(f"ERROR shape mismatch: {y.shape}")
     
-    return th if th>0 else np.pi+th
+    return th 
 
-def angle_loss(th, lblth, f):
-    return single_pred_loss(tf.Ry(th), tf.quaternion_from_euler(0,lblth,0), f)
+def angle_error(th, lblth):
+    return np.abs(th-lblth)
 
 def single_pred_loss(pred, label, f):
     """
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     
     # load sample 
     frame_no = 10
-    sample_no = 188
+    sample_no = 64
     
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
@@ -229,8 +229,9 @@ if __name__ == "__main__":
     # lblth = tf.euler_from_quaternion(lbl)[1]
 
     # load neural net
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     trial_weights = f"{trial_path}/weights/best.pth"
     
     params = load_train_params(trial_path)
@@ -242,18 +243,14 @@ if __name__ == "__main__":
 
     pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
     pred = np.squeeze(pred.detach().numpy())
-    nnerr = single_pred_loss(pred, lbl, criterion)
-    # nnth = label_to_line_angle(pred)
-    nnth = tf.euler_from_matrix(pred)[1]
 
-    """ NOTE this evaluation only respects the NN's accuracy of the rotation about the gripper frame's y-axis
-    """
-    nnerr = single_pred_loss(tf.Ry(nnth), tf.quaternion_from_euler(0,lblth,0), criterion)
+    nnth = np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
+    nnerr = angle_error(nnth, lblth)
 
     # perform PCA
     means, evl, evec, evth = predict_PCA(mm)
     evth = evth[0]
-    pcaerr = single_pred_loss(tf.Ry(evth), tf.quaternion_from_euler(0,lblth,0), criterion)
+    pcaerr = angle_error(evth, lblth)
 
     print()
     print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f}")
@@ -271,19 +268,23 @@ if __name__ == "__main__":
     for i in range(2):
         plot_PCs(axes[i], means[i], evl[i], evec[i], scale=scale)
 
-    plot_line(axes[0], evth, point=scale*means[0], label="mean theta", c="blue", lw=2)
-    plot_line(axes[1], np.pi-evth, point=scale*means[1], label="mean theta", c="blue", lw=2) # right sensor image is "flipped", hence we use PI-theta
+    plot_line(axes[0], evth, point=scale*means[0], label=f"mean theta {pcaerr:.3f}", c="blue", lw=2)
+    plot_line(axes[1], np.pi-evth, point=scale*means[1], label=f"mean theta {pcaerr:.3f}", c="blue", lw=2) # right sensor image is "flipped", hence we use PI- theta
 
     # plot target lines at means. NOTE means are estimates, lines will be slightly off!
     plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
     plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
 
-    plot_line(axes[0], np.pi-nnth, point=scale*means[0], label="NN ()", c="red", lw=2)
-    plot_line(axes[1], nnth, point=scale*means[1], label="NN", c="red", lw=2)
+    plot_line(axes[0], nnth, point=scale*means[0], label=f"NN {nnerr:.3f}", c="red", lw=2)
+    plot_line(axes[1], np.pi-nnth, point=scale*means[1], label=f"NN {nnerr:.3f}", c="red", lw=2)
+
+    axes[0].set_title("Left sensor image")
+    axes[1].set_title("Right sensor image")
 
     for ax in axes:
-        ax.legend()
+        ax.legend(loc="lower right")
 
+    fig.suptitle("PCA good example")
     fig.tight_layout()
-    plt.legend()
+    plt.savefig(f"{os.environ['HOME']}/pca_good.png")
     plt.show()
