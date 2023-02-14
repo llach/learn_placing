@@ -233,31 +233,23 @@ if __name__ == "__main__":
     aug_n = 1
 
     # full training
-    # input_types = [InData.static, InData.with_tap]
     input_types = [InData.static]
-    # input_types = [InData.with_tap]
     input_modalities = [
         [True , False, False],
         # [False, True , False],
         # [False, False, True],
         [True , True , False],
-        [True , False, True],
+        # [True , False, True],
         # [False, True , True],
         [True , True , True],
     ]
-    augment = [
-        [True, True],
-        [True, False],
-        [False, True]
-    ]
-    # quick testing config
-    # input_types = [InData.static]
-    # input_modalities = [
-    #     [True , False, False],
-    #     [False, True , False],  
-    #     [False, False, True],
-    #     [True , True , True],
+    # augment = [
+    #     [True, True],
+    #     [True, False],
+    #     [False, True]
     # ]
+
+    augment = [[False, False]]
 
     trial_times = []
     for dataset in datasets:
