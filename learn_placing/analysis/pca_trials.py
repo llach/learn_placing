@@ -178,8 +178,19 @@ def label_to_line_angle(y):
     
     return th 
 
-def angle_error(th, lblth):
-    return np.abs(th-lblth)
+def nn_pred_theta(pred):
+    """ given a NN prediction (3x3 rotation matrix), return the object's angle offset
+    """
+    return np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
+
+def line_similarity(th, lblth):
+    """ 
+    two (intersecting) lines will always have two different angles descirbing the intersection (of both are 90deg).
+    to determine similarity, we take the smaller one.
+    two lines are most dissimilar if their angle(s) are 90deg.
+    """
+    ang_diff = np.abs(th-lblth)
+    return ang_diff if ang_diff < np.pi/2 else np.pi-ang_diff
 
 def single_pred_loss(pred, label, f):
     """
@@ -221,7 +232,7 @@ if __name__ == "__main__":
     
     # load sample 
     frame_no = 10
-    sample_no = 64
+    sample_no = 188
     
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
@@ -229,9 +240,9 @@ if __name__ == "__main__":
     # lblth = tf.euler_from_quaternion(lbl)[1]
 
     # load neural net
-    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     trial_weights = f"{trial_path}/weights/best.pth"
     
     params = load_train_params(trial_path)
@@ -244,13 +255,13 @@ if __name__ == "__main__":
     pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
     pred = np.squeeze(pred.detach().numpy())
 
-    nnth = np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
-    nnerr = angle_error(nnth, lblth)
+    nnth  = nn_pred_theta(pred)
+    nnerr = line_similarity(nnth, lblth)
 
     # perform PCA
     means, evl, evec, evth = predict_PCA(mm)
     evth = evth[0]
-    pcaerr = angle_error(evth, lblth)
+    pcaerr = line_similarity(evth, lblth)
 
     print()
     print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f}")
