@@ -11,15 +11,9 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
-
 from learn_placing.training.utils import DatasetName, get_dataset, load_train_params, rep2loss
 
-
-def rpy_diff(out, lbl):
-    # out = np.where(out<0, np.pi+out, out)
-    # lbl = np.where(lbl<0, np.pi+lbl, lbl)
-    return np.abs(out-lbl)
-
+from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta
 
 if __name__ == "__main__":
      # load neural net
@@ -54,15 +48,12 @@ if __name__ == "__main__":
 
             # test y-axis rotation only loss
             for pred, lbl in zip(outs, lbls):
-                zlbl = lbl.numpy()@[0,0,-1]
-                zpred = pred.numpy()@[0,0,-1]
+                nnth = rotmat_to_theta(pred.numpy())
+                lblth = label_to_theta(lbl.numpy())
 
-                outth = np.arccos(np.dot(zpred, [0,0,-1]))
-                lblth = np.arccos(np.dot(zlbl, [0,0,-1]))
+                nnerr = line_similarity(nnth, lblth)
 
-                outths.append(outth)
-
-                nnerrsy.append(np.abs(outth-lblth))
+                nnerrsy.append(nnerr)
 
             nnerrs = np.concatenate([nnerrs, loss_t])
     nnerrsy = np.array(nnerrsy)
