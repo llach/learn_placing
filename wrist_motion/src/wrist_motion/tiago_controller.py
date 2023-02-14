@@ -150,18 +150,19 @@ TIAGO_IGNORED_JOINTS = [
     "gripper_left_right_finger_joint",
     "suspension_right_joint",
     "suspension_left_joint",
+    "gripper_left_finger_joint"
 ]
 
 TIAGO_DISABLED_JOINTS = [
     "torso_lift_joint",
-    "arm_left_1_joint",
-    "arm_left_2_joint",
-    "arm_left_3_joint",
-    "arm_left_4_joint",
+    "arm_1_joint",
+    "arm_2_joint",
+    "arm_3_joint",
+    # "arm_4_joint",
 ]
 
 GRASP_FRAME_POSE = TransformStamped(
-    header=Header(frame_id='gripper_left_grasping_frame'),
+    header=Header(frame_id='gripper_grasping_frame'),
     child_frame_id='target',
     transform=Transform(rotation=Quaternion(*[0,0,0,0]),translation=Vector3(0, 0, 0))
 )
@@ -183,6 +184,7 @@ class TIAGoController(object):
         self.joint_msg = JointState()
         self.target_link = pose.child_frame_id
 
+        print(disabled_joints)
         for dj in disabled_joints:
             self.robot.disable_joint(dj)
 
@@ -303,7 +305,7 @@ class TIAGoController(object):
 
             result = qpsolvers.solve_qp(P=P[:N+M, :N+M], q=q[:N+M],
                                         G=G[:usedM, :N+M], h=h[:usedM], A=None, b=None,
-                                        lb=lower[:N+M], ub=upper[:N+M])
+                                        lb=lower[:N+M], ub=upper[:N+M], solver="cvxopt")
             if result is None:
                 print("{}: failed  ".format(idx))
                 usedM = oldM  # ignore subtask and continue with subsequent tasks
@@ -365,7 +367,7 @@ class TIAGoController(object):
         eps=0.000005):
 
         self.set_state(initial_state)
-        state = self.joint_msg.position[:] # copy
+        state = self.joint_msg.position.copy() # copy
 
         prev_qdelta = None
         for _ in range(max_steps):

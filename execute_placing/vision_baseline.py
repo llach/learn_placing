@@ -20,6 +20,7 @@ class PlacingOracle:
         self.world_frame = "base_footprint"
         self.oslock = Lock()
 
+        print("creating planner")
         self.planner = PlacingPlanner()
 
         if not optitrack: 
@@ -30,6 +31,7 @@ class PlacingOracle:
         self.alignservice = rospy.Service("/placing_oracle/align", Empty, self.align_object)
 
         self.li = TransformListener()
+        print("waiting for transform to object ...")
         for _ in range(6):
             try:
                 self.li.waitForTransform(self.world_frame, "pot", rospy.Time(0), rospy.Duration(3))
@@ -97,8 +99,12 @@ if __name__ == "__main__":
     # joint_pub.publish(JointState(name=ACTIVE_JOINTS, position=INITIAL_STATE))
 
     po = PlacingOracle(optitrack=True)
-    time.sleep(0.2)
+    time.sleep(0.5)
+
+    # r = rospy.Rate(20)
+    # while not rospy.is_shutdown(): r.sleep()
+
     # po.align_object(0)
-    po.align_object(0)
-    # posrv = rospy.ServiceProxy("/placing_oracle/align", Empty)
-    # posrv()
+    # po.align_object(0)
+    posrv = rospy.ServiceProxy("/placing_oracle/align", Empty)
+    posrv()

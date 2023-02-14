@@ -32,7 +32,7 @@ class PlacingPlanner:
     def __init__(self):
         self.table_height = 0.72
         self.torso_vel = 0.35 # sec/cm
-        self.grasping_frame = "gripper_left_grasping_frame"
+        self.grasping_frame = "gripper_grasping_frame"
         self.world_frame = "base_footprint"
         
         self.t_current = None
@@ -47,28 +47,29 @@ class PlacingPlanner:
         self.mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 
         self.torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
-        print("waiting for torso action ... ")
-        self.torsoAC.wait_for_server()
-        self.activate_torso()
+        # print("waiting for torso action ... ")
+        # self.torsoAC.wait_for_server()
+        # self.activate_torso()
 
-        self.mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
+        # self.mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
 
-        from cm_interface import safe_switch, is_running
-        print("enabling torso controller ...")
-        safe_switch("torso_controller", "torso_stop_controller")
+        # from cm_interface import safe_switch, is_running
+        # print("enabling torso controller ...")
+        # safe_switch("torso_controller", "torso_stop_controller")
 
-        print("enabling myrmex controller ...")
-        safe_switch("gripper_left_controller", "myrmex_gripper_controller")
+        # print("enabling myrmex controller ...")
+        # safe_switch("gripper_left_controller", "myrmex_gripper_controller")
 
-        print("waiting for myrmex controller server ...")
-        self.mmAC.wait_for_server()
+        # print("waiting for myrmex controller server ...")
+        # self.mmAC.wait_for_server()
 
-        print("waiting for myrmex kill service ...")
-        self.mmKill.wait_for_service()
+        # print("waiting for myrmex kill service ...")
+        # self.mmKill.wait_for_service()
 
-        print("waiting for ft calibration service ...")
-        self.ftCalib.wait_for_service()
+        # print("waiting for ft calibration service ...")
+        # self.ftCalib.wait_for_service()
 
+        print("waiting for transforms")
         self.li = TransformListener()
         for _ in range(6):
             try:

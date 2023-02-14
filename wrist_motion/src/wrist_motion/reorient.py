@@ -41,10 +41,10 @@ def sample_random_orientation_southern_hemisphere():
     return tf.quaternion_matrix(tf.quaternion_multiply(Qzt, Qyp))
 
 OBJECT_FRAME = "grasped_object"
-GRIPPER_FRAME = "gripper_left_grasping_frame"
+GRIPPER_FRAME = "gripper_grasping_frame"
 
 class Reorient:
-    JOINTS = ['torso_lift_joint', 'arm_left_1_joint', 'arm_left_2_joint', 'arm_left_3_joint', 'arm_left_4_joint', 'arm_left_5_joint', 'arm_left_6_joint', 'arm_left_7_joint']
+    JOINTS = ['torso_lift_joint', 'arm_1_joint', 'arm_2_joint', 'arm_3_joint', 'arm_4_joint', 'arm_5_joint', 'arm_6_joint', 'arm_7_joint']
 
     def __init__(self) -> None:
         self.Tinit = None
@@ -54,7 +54,7 @@ class Reorient:
         self.c: TIAGoController = TIAGoController(initial_state=len(self.JOINTS)*[0.0])
         # self.mg = moveit_commander.MoveGroupCommander(self.PLANNING_GROUP)
         
-        # tolerances are the box's side length (we pass tolernaces/2 to the planner)
+        # tolerances are the box's side length (we pass tolerances/2 to the planner)
         # the black wagon at PAL measures 40x40x57
         self.tol = np.array(3*[0.1])
         self.eef_axis = np.array([0,0,1])
@@ -161,6 +161,7 @@ class Reorient:
         # self.To = sample_random_orientation_southern_hemisphere()
         # if To is None: To = self.To
 
+        print(self.start_state, len(self.start_state))
         goal_state, failed = self.c.reorientation_trajectory(
             Tgocorr, 
             self.c.T, 
@@ -174,7 +175,7 @@ class Reorient:
             self.pub_markers(Tgocorr, False)
             return None, failed
 
-        Tarm, _ = self.c.fk_for_link("arm_left_7_link")
+        Tarm, _ = self.c.fk_for_link("arm_7_link")
         Thand, _ = self.c.fk_for_link(GRIPPER_FRAME)
 
         # if Tarm[2,3]<Thand[2,3]: 

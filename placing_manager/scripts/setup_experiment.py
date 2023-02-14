@@ -35,7 +35,7 @@ ridx, lidx = 8, 7
 rpos, lpos = None, None
 
 
-rname, lname = 'gripper_left_right_finger_joint', 'gripper_left_left_finger_joint'
+rname, lname = 'gripper_right_finger_joint', 'gripper_left_finger_joint'
 
 N_SECS = 1.2
 N_POINTS = 5
