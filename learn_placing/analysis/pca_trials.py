@@ -166,22 +166,20 @@ def extract_sample(s, frame_no=10):
 
     return np.array([mmleft, mmright]), w2g, None, g2o
 
-def label_to_line_angle(y):
-    if type(y) == list: y=np.array(y)
-    if y.shape == (4,4): y = y[:3,:3]
-    if y.shape == (3,3):
-        th = tf.euler_from_matrix(y)[1]
-    elif y.shape == (4,) or y.shape == (1,4):
-        th = tf.euler_from_quaternion(y)[1]
-    else:
-        print(f"ERROR shape mismatch: {y.shape}")
-    
-    return th 
-
-def nn_pred_theta(pred):
+def rotmat_to_theta(pred):
     """ given a NN prediction (3x3 rotation matrix), return the object's angle offset
     """
     return np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
+
+def label_to_theta(y):
+    if type(y) == list: y=np.array(y)
+    if y.shape == (4,4): y = y[:3,:3]
+    elif y.shape == (4,) or y.shape == (1,4):
+        y = tf.quaternion_matrix(y)
+    else:
+        print(f"ERROR shape mismatch: {y.shape}")
+    
+    return rotmat_to_theta(y)
 
 def line_similarity(th, lblth):
     """ 
