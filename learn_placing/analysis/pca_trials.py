@@ -175,7 +175,8 @@ def label_to_theta(y):
     if type(y) == list: y=np.array(y)
     if y.shape == (4,4): y = y[:3,:3]
     elif y.shape == (4,) or y.shape == (1,4):
-        y = tf.quaternion_matrix(y)
+        y = tf.quaternion_matrix(y)[:3,:3]
+    elif y.shape == (3,3): pass
     else:
         print(f"ERROR shape mismatch: {y.shape}")
     
@@ -230,12 +231,11 @@ if __name__ == "__main__":
     
     # load sample 
     frame_no = 10
-    sample_no = 188
+    sample_no = 64
     
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
-    lblth = label_to_line_angle(lbl)
-    # lblth = tf.euler_from_quaternion(lbl)[1]
+    lblth = label_to_theta(lbl)
 
     # load neural net
     trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     pred = model(*[torch.Tensor(np.array(x)) for x in [np.expand_dims(mm, 0), w2g, 0]])
     pred = np.squeeze(pred.detach().numpy())
 
-    nnth  = nn_pred_theta(pred)
+    nnth  = rotmat_to_theta(pred)
     nnerr = line_similarity(nnth, lblth)
 
     # perform PCA
