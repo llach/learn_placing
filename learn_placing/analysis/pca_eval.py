@@ -13,7 +13,7 @@ import matplotlib.patches as mpatches
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.training.utils import DatasetName, get_dataset, load_train_params, rep2loss
 
-from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta
+from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta, predict_PCA
 
 if __name__ == "__main__":
      # load neural net
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     nnerrs = np.array([])
     nnerrsy = []
     preds = np.array([])
-    pcaerrs = np.array([])
+    pcaerrs = []
     pcapreds = np.array([])
     outths = []
 
@@ -47,20 +47,26 @@ if __name__ == "__main__":
             loss_t = crit(outs, lbls)
 
             # test y-axis rotation only loss
-            for pred, lbl in zip(outs, lbls):
+            for inp, pred, lbl in zip(inputs, outs, lbls):
                 nnth = rotmat_to_theta(pred.numpy())
                 lblth = label_to_theta(lbl.numpy())
 
                 nnerr = line_similarity(nnth, lblth)
 
+                means, evl, evec, evth = predict_PCA(inp.numpy())
+                evth = evth[0]
+                pcaerr = line_similarity(evth, lblth)
+
                 nnerrsy.append(nnerr)
+                pcaerrs.append(pcaerr)
 
             nnerrs = np.concatenate([nnerrs, loss_t])
     nnerrsy = np.array(nnerrsy)
     outths = np.array(outths)
+    pcaerrs = np.array(pcaerrs)
 
-    print(nnerrs.shape, np.mean(nnerrs))
-    print(np.mean(nnerrsy, axis=0))
+    print(np.mean(nnerrsy), np.var(nnerrsy))
+    print(np.mean(pcaerrs), np.var(pcaerrs))
     exit(0)
 
     """
