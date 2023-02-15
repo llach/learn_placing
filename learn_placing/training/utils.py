@@ -219,7 +219,7 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
 
-    if augment is not None and aug_n > 0:
+    if augment is not None and aug_n > 0 and np.any(augment):
         print(f"augmenting dataset: {aug_n} times, rows and cloumns: {augment}")
         XSshape = np.array(X.shape)
         XSshape[0] *= aug_n
