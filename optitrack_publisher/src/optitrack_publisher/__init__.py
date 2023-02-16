@@ -1,1 +1,1 @@
-from optitrack_publisher import OptiTrackPublisher
+from .optitrack_publisher import OptiTrackPublisher
