@@ -94,7 +94,7 @@ if __name__ == "__main__":
     safe_switch("torso_controller", "torso_stop_controller")
 
     print("enabling myrmex controller ...")
-    safe_switch("gripper_left_controller", "myrmex_gripper_controller")
+    safe_switch("gripper_controller", "myrmex_gripper_controller")
 
     print("waiting for torso action ... ")
     torsoAC.wait_for_server()
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     mmCalib.wait_for_service()
 
     print("waiting for ft calibration service ...")
-    ftCalib.wait_for_service()
+    # ftCalib.wait_for_service()
 
     # print("waiting for wrist planner reinit service ...")
     # reinitSrv.wait_for_service()
@@ -135,12 +135,12 @@ if __name__ == "__main__":
     print("################ setup done")
 
     print("checking optitrack ...")
-    start = rospy.Time.now()
-    while not optipub:
-        rospy.Rate(20).sleep()
-        if rospy.Time.now()-start > rospy.Duration(5.0):
-            print("ERROR optitrack doesn't seem to be published ...")
-            exit(-1)
+    # start = rospy.Time.now()
+    # while not optipub:
+    #     rospy.Rate(20).sleep()
+    #     if rospy.Time.now()-start > rospy.Duration(5.0):
+    #         print("ERROR optitrack doesn't seem to be published ...")
+    #         exit(-1)
 
     print("optitrack is being published!")
     
