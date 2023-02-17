@@ -14,11 +14,15 @@ def trafo2homogeneous(pos, quat):
     T[:3,3]  = pos
     return T
 
+placing_object_name = "wood_02"
+
 class TrackerSub:
     robot_frame_name = "tiago"
+    
 
-    def __init__(self, br, tracker_name):
+    def __init__(self, br, otp, tracker_name):
         self.br = br
+        self.otp = otp
         self.tracker_name = tracker_name
         self.ln = tracker_name.lower()
         rospy.Subscriber("/vrpn_client_node/"+self.tracker_name+"/pose", PoseStamped, self._tracker_pose_callback)
@@ -40,12 +44,56 @@ class TrackerSub:
             parent=frames[1]
         )
 
+        if self.ln == placing_object_name: 
+            # these two static TFs are needed by some components for evaluation
+            self.otp.object_gripper_tf()
+            self.br.sendTransform(
+                translation=[0,0,0],
+                rotation=[0,0,0,1],
+                time=rospy.Time.now(),
+                child="pot",
+                parent=frames[0]
+            )
+
+
 class OptiTrackPublisher:
 
     tracker_names = []
     trackers = []
     br = TransformBroadcaster()
+    world_frame = "base_footprint"
+    grasping_frame = "gripper_grasping_frame"
 
+    def __init__(self) -> None:
+        self.li = TransformListener()
+        rospy.loginfo("waiting for transform")
+        for _ in range(6):
+            try:
+                self.li.waitForTransform(self.grasping_frame, self.world_frame, rospy.Time(0), rospy.Duration(3))
+                break
+            except Exception as e: print(e)
+
+    def object_gripper_tf(self):
+        try:
+            (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
+            (two, Qwo) = self.li.lookupTransform(self.world_frame, f"{placing_object_name}_opti", rospy.Time(0))
+            Twg = trafo2homogeneous(twg, Qwg)
+            Two = trafo2homogeneous(two, Qwo)
+        except Exception as e:
+            print(e)
+            return
+
+        Tgo = np.eye(4)
+        Tgo[:3,:3] = np.linalg.inv(Twg)[:3,:3].dot(Two[:3,:3])
+
+        self.br.sendTransform(
+            translation=Tgo[:3,3],
+            rotation=trafo.quaternion_from_matrix(Tgo),
+            time=rospy.Time.now(),
+            child="object",
+            parent=self.grasping_frame
+        )
+     
     def _refresh_tracker_list(self):
         # get topics from vrpn client
         topics = [t[0] for t in rospy.get_published_topics() if "vrpn" in t[0].lower()]
@@ -57,7 +105,7 @@ class OptiTrackPublisher:
 
             print("adding new tracker %s" % tracker_name)
             self.tracker_names.append(tracker_name)
-            self.trackers.append(TrackerSub(self.br, tracker_name))
+            self.trackers.append(TrackerSub(self.br, self, tracker_name))
 
     def run(self):
         print("optitrack_publisher started!")
