@@ -75,7 +75,7 @@ def get_PCA(sample):
 
     return np.array([meanx, meany]), evl, evec, evth
 
-def merge_mm_images(mm, noise_tresh=0.05):
+def merge_mm_samples(mm, noise_tresh=0.05):
     merged = (mm[0]+np.flip(mm[1], 1))/2
     merged = np.where(merged>noise_tresh, merged, 0)
     return merged
@@ -265,7 +265,7 @@ if __name__ == "__main__":
     # perform PCA
     # means, evl, evec, evth = predict_PCA(mm) # PCA on separate sensor images
 
-    mmm = merge_mm_images(mm, noise_tresh=0.15)
+    mmm = merge_mm_samples(mm, noise_tresh=0.15)
     means, evl, evec, evth = get_PCA(mmm)
     evth = evth[0]
     pcaerr = line_similarity(evth, lblth)

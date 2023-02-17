@@ -3,9 +3,11 @@ import cv2
 import numpy as np
 
 from learn_placing.common.data import load_dataset
-from learn_placing.analysis.pca_trials import extract_sample, label_to_theta
+from learn_placing.analysis.pca_trials import extract_sample, label_to_theta, merge_mm_samples
 
 import matplotlib.pyplot as plt
+
+from learn_placing.common.myrmex_processing import upscale_repeat, mm2img
 
 
 
@@ -43,14 +45,18 @@ if __name__ == "__main__":
     
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
+    mmm = merge_mm_samples(mm, noise_tresh=0.15)
+    mmmimg = mm2img(mmm)
     lblth = label_to_theta(lbl)
 
     # Convert the image to gray-scale
-    # gray = cv2.cvtColor(simg, cv2.COLOR_BGR2GRAY)
+    grey = cv2.cvtColor(mmmimg, cv2.COLOR_BGR2GRAY)
     # Find the edges in the image using canny detector
-    # edges = cv2.Canny(gray, 50, 200)
-    cv2.imshow("", mm[0])
-    cv2.waitKey()
+    edges = cv2.Canny(grey, 20, 50)
+    # cv2.imshow("", upscale_repeat(edges, factor=100))
+    # cv2.waitKey()
+    # cv2.imshow("", upscale_repeat(grey, factor=100))
+    # cv2.waitKey()
 
     # Detect points that form a line
     # lines = cv2.HoughLines(edges, 1, np.pi / 180, 150, None, 0, 0)
