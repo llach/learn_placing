@@ -158,11 +158,11 @@ def extract_sample(s, frame_no=10):
     TODO return label based on
     """
 
-    mmleft  = preprocess_myrmex(sample["tactile_left"][1])[frame_no,:]  # 16x16 array
-    mmright = preprocess_myrmex(sample["tactile_right"][1])[frame_no,:] # 16x16 array
+    mmleft  = preprocess_myrmex(s["tactile_left"][1])[frame_no,:]  # 16x16 array
+    mmright = preprocess_myrmex(s["tactile_right"][1])[frame_no,:] # 16x16 array
     
     w2o, g2o, w2g = None, None, None
-    for ops in sample["opti_state"][1][0]:
+    for ops in s["opti_state"][1][0]:
         if ops["parent_frame"] == "gripper_left_grasping_frame" and ops["child_frame"] == "pot":
             g2o = ops["rotation"]
         if ops["parent_frame"] == "base_footprint" and ops["child_frame"] == "pot":
