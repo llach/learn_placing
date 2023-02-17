@@ -26,6 +26,7 @@ class TrackerSub:
     def _tracker_pose_callback(self, m): 
         T = trafo2homogeneous(pos2arr(m.pose.position), quat2arr(m.pose.orientation))
 
+        # to have a valid TF tree, we need to publish the inverse from robot to OptiTrack origin
         frames = ["%s_opti" % self.tracker_name.lower(), "optitrack"]
         if self.tracker_name.lower() == self.robot_frame_name:
             T = np.linalg.inv(T)
@@ -67,6 +68,15 @@ class OptiTrackPublisher:
             # periodically check for new trackers
             if i % 50 == 0: self._refresh_tracker_list()
             i += 1
+
+            # publish static 
+            self.br.sendTransform(
+                translation=[0.235, -0.0625, 0],
+                rotation=trafo.quaternion_from_euler(0, 0, np.pi/2),
+                time=rospy.Time.now(),
+                child="tiago_opti",
+                parent="torso_lift_link"
+            )
 
             r.sleep()
 
