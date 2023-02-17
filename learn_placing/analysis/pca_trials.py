@@ -9,6 +9,7 @@ from learn_placing.common.myrmex_processing import preprocess_myrmex, mm2img, up
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 
@@ -74,7 +75,12 @@ def get_PCA(sample):
 
     return np.array([meanx, meany]), evl, evec, evth
 
-def predict_PCA(mm):
+def merge_mm_images(mm, noise_tresh=0.05):
+    merged = (mm[0]+np.flip(mm[1], 1))/2
+    merged = np.where(merged>noise_tresh, merged, 0)
+    return merged
+
+def double_PCA(mm):
     """
     mm: (2x16x16) myrmex array, first dimension holds (left, right)
     """
@@ -230,7 +236,7 @@ if __name__ == "__main__":
     """
     
     # load sample 
-    frame_no = 10
+    frame_no  = 10
     sample_no = 64
     
     sample = ds[sample_no][1]
@@ -257,7 +263,10 @@ if __name__ == "__main__":
     nnerr = line_similarity(nnth, lblth)
 
     # perform PCA
-    means, evl, evec, evth = predict_PCA(mm)
+    # means, evl, evec, evth = predict_PCA(mm) # PCA on separate sensor images
+
+    mmm = merge_mm_images(mm, noise_tresh=0.15)
+    means, evl, evec, evth = get_PCA(mmm)
     evth = evth[0]
     pcaerr = line_similarity(evth, lblth)
 
@@ -266,34 +275,27 @@ if __name__ == "__main__":
     print(f"PCA th  {evth:.4f} | NN  th {nnth:.4f} | LBL th {lblth:.4f}")
 
     scale = 10
-    mmimg = upscale_repeat(mm, factor=scale)
-    mmimg = mm2img(mmimg)
+    mmimg = upscale_repeat(mmm, factor=scale)
+    # mmimg = mm2img(mmimg)
 
-    fig, axes = plt.subplots(ncols=2, figsize=0.8*np.array([16,9]))
+    fig, axes = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
 
-    axes[0].imshow(mmimg[0])
-    axes[1].imshow(mmimg[1])
+    plot_PCs(axes, means, evl, evec, scale=scale)
+    im = axes.imshow(mmimg)
 
-    for i in range(2):
-        plot_PCs(axes[i], means[i], evl[i], evec[i], scale=scale)
+    # plot lines at means. NOTE means are estimates, lines will be slightly off!
+    plot_line(axes, lblth, point=scale*means, label="target", c="green", lw=2)
+    plot_line(axes, evth, point=scale*means, label=f"mean theta {pcaerr:.3f}", c="blue", lw=2)
+    plot_line(axes, nnth, point=scale*means, label=f"NN {nnerr:.3f}", c="red", lw=2)
 
-    plot_line(axes[0], evth, point=scale*means[0], label=f"mean theta {pcaerr:.3f}", c="blue", lw=2)
-    plot_line(axes[1], np.pi-evth, point=scale*means[1], label=f"mean theta {pcaerr:.3f}", c="blue", lw=2) # right sensor image is "flipped", hence we use PI- theta
+    axes.set_title("Merged sensor image - filtered PCA")
 
-    # plot target lines at means. NOTE means are estimates, lines will be slightly off!
-    plot_line(axes[0], lblth, point=scale*means[0], label="target", c="green", lw=2)
-    plot_line(axes[1], np.pi-lblth, point=scale*means[1], label="target", c="green", lw=2) # right sensor image is "flipped", hence we use PI-theta
+    axes.legend(loc="lower right")
 
-    plot_line(axes[0], nnth, point=scale*means[0], label=f"NN {nnerr:.3f}", c="red", lw=2)
-    plot_line(axes[1], np.pi-nnth, point=scale*means[1], label=f"NN {nnerr:.3f}", c="red", lw=2)
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im, cax=cax)
 
-    axes[0].set_title("Left sensor image")
-    axes[1].set_title("Right sensor image")
-
-    for ax in axes:
-        ax.legend(loc="lower right")
-
-    fig.suptitle("PCA good example")
     fig.tight_layout()
     plt.savefig(f"{os.environ['HOME']}/pca_good.png")
     plt.show()

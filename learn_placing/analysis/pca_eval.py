@@ -13,7 +13,7 @@ import matplotlib.patches as mpatches
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.training.utils import DatasetName, get_dataset, load_train_params, rep2loss
 
-from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta, predict_PCA
+from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta, double_PCA, get_PCA, merge_mm_images
 
 if __name__ == "__main__":
      # load neural net
@@ -53,7 +53,11 @@ if __name__ == "__main__":
 
                 nnerr = line_similarity(nnth, lblth)
 
-                means, evl, evec, evth = predict_PCA(inp.numpy())
+                # means, evl, evec, evth = double_PCA(inp.numpy())
+
+                mmm = merge_mm_images(inp.numpy(), noise_tresh=0.1)
+                means, evl, evec, evth = get_PCA(mmm)
+
                 evth = evth[0]
                 pcaerr = line_similarity(evth, lblth)
 
