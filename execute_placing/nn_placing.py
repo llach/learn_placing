@@ -19,7 +19,7 @@ from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
 from learn_placing.processing.preprocess_dataset import myrmex_transform, ft_transform
 
 class NNPlacing:
-    grasping_frame = "gripper_left_grasping_frame"
+    grasping_frame = "gripper_grasping_frame"
     world_frame = "base_footprint"
 
     def __init__(self, trial_path, weights_name, store_samples = True) -> None:
@@ -246,6 +246,7 @@ if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
     netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    netname = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     # netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_ft_2022.09.13_10-42-33"
 
     weights = "best"
