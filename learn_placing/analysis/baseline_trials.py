@@ -6,6 +6,7 @@ from learn_placing.common import load_dataset, upscale_repeat, plot_line, extrac
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from learn_placing.estimators import PCABaseline, NetEstimator
+from learn_placing.estimators.hough_baseline import HoughEstimator
 
 
 if __name__ == "__main__":
@@ -56,14 +57,15 @@ if __name__ == "__main__":
 
     # create other estimators
     pca = PCABaseline(noise_thresh=noise_thresh)
+    hough = HoughEstimator(noise_thresh=0.15, preproc="binary")
 
     (R_nn, nnth), (nnRerr, nnerr) = nn.estimate_transform(mm, lbl, Qwg=w2g)
     (_, pcath), (_, pcaerr) = pca.estimate_transform(mm, lbl)
+    (_, houth), (_, houerr) = hough.estimate_transform(mm, lbl)
 
     print()
-    print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f}")
-    print(f"PCA th  {pcath:.4f} | NN  th {nnth:.4f} | LBL th {lblth:.4f}")
-
+    print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f} | HOU err {houerr:.4f}")
+    print(f"PCA th  {pcath:.4f} | NN  th {nnth:.4f}  | HOU th {houth:.4f} | LBL th {lblth:.4f}")
     
     mmm = merge_mm_samples(mm, noise_tresh=noise_thresh)
     mmimg = upscale_repeat(mmm, factor=scale)
@@ -76,9 +78,10 @@ if __name__ == "__main__":
 
     # plot lines at means. NOTE means are estimates, lines will be slightly off!
     plot_line(axes, lblth, point=means, label="target", c="green", lw=2)
-    plot_line(axes, pcath, point=means, label=f"PCA {pcaerr:.3f}", c="blue", lw=2)
     plot_line(axes, nnth, point=means, label=f"NN  {nnerr:.3f}", c="red", lw=2)
-
+    plot_line(axes, pcath, point=means, label=f"PCA {pcaerr:.3f}", c="blue", lw=2)
+    plot_line(axes, houth, point=means, label=f"HOU {houerr:.3f}", c="white", lw=2)
+    
     axes.set_title("Merged sensor image - filtered PCA")
 
     axes.legend(loc="lower right")
