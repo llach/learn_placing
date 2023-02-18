@@ -77,3 +77,6 @@ def single_pred_loss(pred, label, f):
 
 def to_tensors(*args):
     return [torch.Tensor(a) for a in args]
+
+def to_numpy(*args):
+    return [a.numpy() for a in args]

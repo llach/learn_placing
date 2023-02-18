@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from learn_placing.common.myrmex_processing import mm2img, upscale_repeat, random_shift_seq
 
-from learn_placing.training.train_utils import InRot, ds2name, DatasetName
+from learn_placing.training.utils import InRot, ds2name, DatasetName
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.transformations import quaternion_matrix
 

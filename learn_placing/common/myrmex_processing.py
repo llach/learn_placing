@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from numpy.random import randint, choice
-from learn_placing.common.utils import marginal_mean
+from learn_placing.common.tools import marginal_mean
 
 def remove_outer(data, B=0):
     """

@@ -5,9 +5,7 @@ from learn_placing.common import load_dataset, upscale_repeat, plot_line, extrac
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from learn_placing.estimators import PCABaseline, NetEstimator
-from learn_placing.estimators.hough_baseline import HoughEstimator
-
+from learn_placing.estimators import PCABaseline, NetEstimator, HoughEstimator
 
 if __name__ == "__main__":
     """ NOTE interesting samples

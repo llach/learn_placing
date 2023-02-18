@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from learn_placing.estimators import TFEstimator
-from learn_placing.common.utils import label_to_theta, line_similarity
+from learn_placing.common.tools import label_to_theta, line_similarity
 from learn_placing.common.myrmex_processing import merge_mm_samples, mm2img, upscale_repeat
 
 class HoughEstimator(TFEstimator):
@@ -52,16 +52,18 @@ class HoughEstimator(TFEstimator):
         we take the first line in the list which will be the one with the highest number of votes (alas the most confident estimate)
         if there's no line, use default values
         """
-        if len(lines)==0: rho, houth = 1, 0
-        else: rho, theta = lines[0][0]
-            
-        houth = np.pi/2-theta # convert angle of line normal to angle between line and x axis
+        if lines is None: 
+            print("WARN no hough line found")
+            return (None, np.nan), (None, np.nan)
+        else: 
+            rho, theta = lines[0][0]
+            houth = np.pi/2-theta # convert angle of line normal to angle between line and x axis
 
-        # calculate line error
-        lblth = label_to_theta(lbl)
-        houerr = line_similarity(houth, lblth)
+            # calculate line error
+            lblth = label_to_theta(lbl)
+            houerr = line_similarity(houth, lblth)
 
-        if show_image: self.show_line_image(mmm, rho, theta)
+            if show_image: self.show_line_image(mmm, rho, theta)
 
         return (None, houth), (None, houerr)
 

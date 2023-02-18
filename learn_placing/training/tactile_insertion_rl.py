@@ -5,7 +5,7 @@ import torch.nn as nn
 from enum import Enum
 from torch import Tensor
 from collections import OrderedDict
-from learn_placing.training.train_utils import compute_rotation_matrix_from_ortho6d, RotRepr
+from learn_placing.training.utils import compute_rotation_matrix_from_ortho6d, RotRepr
 
 def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilation=(1,1)):
     if len(in_shape)==2:

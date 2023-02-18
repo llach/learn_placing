@@ -1,6 +1,6 @@
 import numpy as np
 
-from learn_placing.common.utils import get_cov, marginal_mean, marginal_sd, label_to_theta, line_similarity
+from learn_placing.common.tools import get_cov, marginal_mean, marginal_sd, label_to_theta, line_similarity
 from learn_placing.common.myrmex_processing import merge_mm_samples
 from learn_placing.estimators import TFEstimator
 

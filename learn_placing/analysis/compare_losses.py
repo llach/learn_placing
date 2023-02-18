@@ -2,7 +2,7 @@ import numpy as np
 
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import Rx, Ry, Rz
-from learn_placing.training.train_utils import wrap_torch_fn, compute_geodesic_distance_from_two_matrices, point_loss
+from learn_placing.training.utils import wrap_torch_fn, compute_geodesic_distance_from_two_matrices, point_loss
 
 geodesic_loss = compute_geodesic_distance_from_two_matrices
 

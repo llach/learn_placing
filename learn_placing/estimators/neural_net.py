@@ -2,9 +2,9 @@ import torch
 import numpy as np
 
 from learn_placing.common import tft
-from learn_placing.training.train_utils import load_train_params, rep2loss
+from learn_placing.training.utils import load_train_params, rep2loss
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
-from learn_placing.common.utils import label_to_theta, line_similarity, rotmat_to_theta, to_tensors
+from learn_placing.common.tools import label_to_theta, line_similarity, rotmat_to_theta, to_tensors
 
 from .tf_estimator import TFEstimator
 
@@ -22,6 +22,8 @@ class NetEstimator(TFEstimator):
         self.model.eval()
 
     def estimate_transform(self, mm_imgs: np.ndarray, lbl, Qwg, *a, **kw):
+        if type(lbl)==torch.Tensor: lbl = lbl.numpy()
+        if lbl.shape == (3,3): lbl = tft.quaternion_from_matrix(lbl)
 
         # predict rotation
         pred = self.model(*to_tensors(np.expand_dims(mm_imgs, 0), Qwg, 0))

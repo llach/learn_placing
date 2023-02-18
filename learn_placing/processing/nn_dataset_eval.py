@@ -8,7 +8,7 @@ from learn_placing.common import load_dataset
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.transformations import quaternion_from_matrix, quaternion_inverse
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
-from learn_placing.training.train_utils import DatasetName, get_dataset, load_train_params, rep2loss, test_net
+from learn_placing.training.utils import DatasetName, get_dataset, load_train_params, rep2loss, test_net
 
 
 def l2T(ll): return [torch.Tensor(np.array(l)) for l in ll]
