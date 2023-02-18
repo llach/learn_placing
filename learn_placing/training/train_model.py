@@ -13,7 +13,7 @@ from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, te
 from tactile_insertion_rl import TactilePlacingNet, ConvProc
 
 from learn_placing import now, training_path
-from learn_placing.training.utils import rep2loss
+from learn_placing.training.train_utils import rep2loss
 
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     xs = np.arange(len(test_loss)).astype(int)+1

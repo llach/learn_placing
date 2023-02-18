@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from learn_placing.common.data import load_dataset_file
-from learn_placing.training.utils import DatasetName, ds2name
+from learn_placing.training.train_utils import DatasetName, ds2name
 
 def bias_correct(arr):
     for i in range(arr.shape[0]):

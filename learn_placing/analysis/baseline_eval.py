@@ -3,17 +3,13 @@ import torch
 import numpy as np
 import learn_placing.common.transformations as tf
 
-from PIL import Image
-from learn_placing.common.data import load_dataset
-from learn_placing.common.myrmex_processing import preprocess_myrmex, mm2img, upscale_repeat
-
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
-from learn_placing.training.utils import DatasetName, get_dataset, load_train_params, rep2loss
+from learn_placing.training.train_utils import DatasetName, get_dataset, load_train_params, rep2loss
 
-from learn_placing.analysis.pca_trials import line_similarity, rotmat_to_theta, label_to_theta, double_PCA, get_PCA, merge_mm_images
+from learn_placing.analysis.baseline_trials import line_similarity, rotmat_to_theta, label_to_theta, get_PCA, merge_mm_images
 
 if __name__ == "__main__":
      # load neural net

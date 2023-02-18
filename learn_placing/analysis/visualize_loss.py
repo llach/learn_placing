@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import learn_placing.common.transformations as tf
 
-from learn_placing.training.utils import compute_geodesic_distance_from_two_matrices, compute_rotation_matrix_from_quaternion, point_loss, wrap_torch_fn
+from learn_placing.training.train_utils import compute_geodesic_distance_from_two_matrices, compute_rotation_matrix_from_quaternion, point_loss, wrap_torch_fn
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.label_processing import vecs2quat
 

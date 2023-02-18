@@ -8,7 +8,7 @@ from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import quaternion_conjugate, quaternion_from_matrix, quaternion_matrix, quaternion_multiply, quaternion_inverse, inverse_matrix, Ry
 from learn_placing.common.label_processing import normalize, rotate_v
 from learn_placing.common import load_dataset, cam_stats, qO2qdiff, v_from_qdiff, qavg, preprocess_myrmex, extract_gripper_T
-from learn_placing.training.utils import DatasetName, InRot, ds2name, dsLookback, ftLookback
+from learn_placing.training.train_utils import DatasetName, InRot, ds2name, dsLookback, ftLookback
 
 def Tf2T(pos, rot):
     T = quaternion_matrix(rot)

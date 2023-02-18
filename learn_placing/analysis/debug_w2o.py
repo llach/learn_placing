@@ -3,7 +3,7 @@ import rospy
 
 from tf import TransformBroadcaster
 from learn_placing.common.data import load_dataset_file
-from learn_placing.training.utils import InRot
+from learn_placing.training.train_utils import InRot
 
 rospy.init_node("w2o_debug")
 br = TransformBroadcaster()

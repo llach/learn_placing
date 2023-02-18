@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from learn_placing.common import load_dataset_file
-from learn_placing.training.utils import InRot
+from learn_placing.training.train_utils import InRot
 
 name="four"
 dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"

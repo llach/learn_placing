@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from learn_placing.training.utils import InRot
+from learn_placing.training.train_utils import InRot
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.vecplot import AxesPlot
 from learn_placing.common.transformations import quaternion_matrix
