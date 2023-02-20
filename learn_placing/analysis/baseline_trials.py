@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from learn_placing.common import load_dataset, extract_sample, label_to_theta
+from learn_placing.common import load_dataset, extract_sample, line_angle_from_rotation
 
 import matplotlib.pyplot as plt
 from learn_placing.common.viz_tools import models_theta_plot
@@ -45,12 +45,12 @@ if __name__ == "__main__":
     # select and unpack sample
     sample = ds[sample_no][1]
     mm, w2g, ft, lbl = extract_sample(sample)
-    lblth = label_to_theta(lbl)
+    lblth = line_angle_from_rotation(lbl)
 
     # load neural net
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
-    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     nn = NetEstimator(trial_path)
 
     # create other estimators
