@@ -3,6 +3,9 @@ import numpy as np
 
 from learn_placing.common import tf_tools as tft
 
+def q2l(q): return [q.x, q.y, q.z, q.w]
+def v2l(vec): return [vec.x, vec.y, vec.z]
+
 def marginal_mean(arr, axis):
     '''
     E(x) = int x f(x) dx

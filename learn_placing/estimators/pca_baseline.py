@@ -21,10 +21,10 @@ class PCABaseline(TFEstimator):
         """
         """
         sample = merge_mm_samples(samples, noise_tresh=self.noise_thresh)
-        
         meanx, meany = marginal_mean(sample, axis=0), marginal_mean(sample, axis=1)
         sdx, sdy = marginal_sd(sample, axis=0), marginal_sd(sample, axis=1)
         cov = get_cov(sample)
+        
         C = np.array([[sdx**2, cov],
                     [cov,    sdy**2]])
 

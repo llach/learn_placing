@@ -93,7 +93,7 @@ def merge_mm_samples(mm, noise_tresh=0.0):
     """
     merged = (mm[0]+np.flip(mm[1], 1))/2
     if noise_tresh > 0.0: merged = np.where(merged>noise_tresh, merged, 0)
-    return merged
+    return merged+10**-16 # array might be zero and models complain, thus add small constant
 
 def get_mean_force_xy(mm):
     return np.array([
