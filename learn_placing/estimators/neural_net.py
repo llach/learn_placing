@@ -26,7 +26,7 @@ class NetEstimator(TFEstimator):
         if lbl.shape == (3,3): lbl = tft.quaternion_from_matrix(lbl)
 
         # predict rotation
-        pred = self.model(*to_tensors(np.expand_dims(mm_imgs, 0), Qwg, 0))
+        pred = self.model(*to_tensors(np.expand_dims(mm_imgs, 0), np.expand_dims(Qwg, 0), 0))
         Rgo = np.squeeze(pred.detach().numpy())
 
         # calculate line theta
