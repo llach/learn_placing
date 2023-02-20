@@ -75,8 +75,19 @@ class RunEstimators:
         (_, houth), (_, houerr) = self.hough.estimate_transform(mm, Qgo)
 
         print()
-        print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f} | HOU err {houerr:.4f}")
-        print(f"PCA th  {pcath:.4f} | NN  th  {nnth:.4f} | HOU th  {houth:.4f} | LBL th {lblth:.4f}")
+        print(f"LBL {lblth:.4f}")
+        print(f"NN  {nnth:.4f} | {nnerr:.4f} | {nnRerr:.4f}")
+        print(f"PCA {pcath:.4f} | {pcaerr:.4f}")
+        print(f"HOU {houth:.4f} | {houerr:.4f}")
+
+
+        self.br.sendTransform(
+            [0,0,0],
+            tft.quaternion_from_matrix(tft.ensure_homog(R_nn)),
+            rospy.Time.now(),
+            "object_nn",
+            self.grasping_frame
+        )
 
         if self.publish_image:
             scale=100
