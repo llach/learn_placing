@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from learn_placing.estimators import TFEstimator
-from learn_placing.common.tools import label_to_theta, line_similarity
+from learn_placing.common.tools import line_angle_from_rotation, line_similarity, ensure_positive_angle
 from learn_placing.common.myrmex_processing import merge_mm_samples, mm2img, upscale_repeat
 
 class HoughEstimator(TFEstimator):
@@ -57,10 +57,10 @@ class HoughEstimator(TFEstimator):
             return (None, np.nan), (None, np.nan)
         else: 
             rho, theta = lines[0][0]
-            houth = np.pi/2-theta # convert angle of line normal to angle between line and x axis
+            houth = ensure_positive_angle(np.pi/2-theta) # convert angle of line normal to angle between line and x axis
 
             # calculate line error
-            lblth = label_to_theta(lbl)
+            lblth = line_angle_from_rotation(lbl)
             houerr = line_similarity(houth, lblth)
 
             if show_image: self.show_line_image(mmm, rho, theta)

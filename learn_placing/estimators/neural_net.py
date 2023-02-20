@@ -4,7 +4,7 @@ import numpy as np
 from learn_placing.common import tft
 from learn_placing.training.utils import load_train_params, rep2loss
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
-from learn_placing.common.tools import label_to_theta, line_similarity, rotmat_to_theta, to_tensors
+from learn_placing.common.tools import line_angle_from_rotation, line_similarity, to_tensors
 
 from .tf_estimator import TFEstimator
 
@@ -30,8 +30,8 @@ class NetEstimator(TFEstimator):
         Rgo = np.squeeze(pred.detach().numpy())
 
         # calculate line theta
-        lblth = label_to_theta(lbl)
-        theta  = rotmat_to_theta(Rgo)
+        lblth = line_angle_from_rotation(lbl)
+        theta  = line_angle_from_rotation(Rgo)
         thetaerr = line_similarity(theta, lblth)
 
         # prepare data for loss calculation

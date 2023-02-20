@@ -28,7 +28,6 @@ class TrackerSub:
 
     def _tracker_pose_callback(self, m): 
         T = trafo2homogeneous(pos2arr(m.pose.position), quat2arr(m.pose.orientation))
-        print(self.ln)
 
         # to have a valid TF tree, we need to publish the inverse from robot to OptiTrack origin
         frames = ["%s_opti" % self.tracker_name.lower(), "optitrack"]

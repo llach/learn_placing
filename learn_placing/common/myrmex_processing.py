@@ -89,9 +89,11 @@ def random_shift_seq(seq, augment):
     return shift_columns(seq, rpad=rpad, rsli=rsli, cpad=cpad, csli=csli)
 
 def merge_mm_samples(mm, noise_tresh=0.0):
-    """ merge two myrmex samples by flipping the right sensor image, adding force intensities and normalizing. optionally filter noise.
+    """ 
+    merge two myrmex samples by flipping the right sensor image, adding force intensities and normalizing. optionally filter noise.
+    we rotate the image such that the z-axis points upwards and the x-axis to the right
     """
-    merged = (mm[0]+np.flip(mm[1], 1))/2
+    merged = np.rot90((mm[0]+np.flip(mm[1], 1))/2, axes=(1,0))
     if noise_tresh > 0.0: merged = np.where(merged>noise_tresh, merged, 0)
     return merged+10**-16 # array might be zero and models complain, thus add small constant
 

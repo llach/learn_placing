@@ -43,11 +43,6 @@ def get_cov(arr):
     cov     = np.sum((x_coor_mat - meanx)*(y_coor_mat - meany )*arr)
     return cov
 
-def rotmat_to_theta(pred):
-    """ given a NN prediction (3x3 rotation matrix), return the object's angle offset
-    """
-    return np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
-
 def line_angle_from_rotation(Rgo):
     """
     calculate the angle to draw on a merged sensor image from the quaternion gripper to object
@@ -58,18 +53,9 @@ def line_angle_from_rotation(Rgo):
     Rgo = tft.ensure_rotmat(Rgo)
     zO = Rgo.dot([0,0,1])
     th = np.arctan2(zO[2], zO[0])
-    return th-np.pi/2%np.pi
+    return ensure_positive_angle(th)
 
-def label_to_theta(y):
-    if type(y) == list: y=np.array(y)
-    if y.shape == (4,4): y = y[:3,:3]
-    elif y.shape == (4,) or y.shape == (1,4):
-        y = tft.quaternion_matrix(y)[:3,:3]
-    elif y.shape == (3,3): pass
-    else:
-        print(f"ERROR shape mismatch: {y.shape}")
-    
-    return rotmat_to_theta(y)
+def ensure_positive_angle(th): return th if th>=0 else np.pi+th
 
 def line_similarity(th, lblth):
     """ 
