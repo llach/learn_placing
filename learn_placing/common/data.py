@@ -28,7 +28,7 @@ def extract_sample(s, frame_no=10):
         if ops["parent_frame"] == "base_footprint" and ops["child_frame"] == "gripper_left_grasping_frame":
             w2g = ops["rotation"]
 
-    return np.array([mmleft, mmright]), w2g, None, g2o
+    return np.array([mmleft, mmright]), np.array(w2g), None, np.array(g2o)
 
 def load_dataset(folder):
     ds = {}

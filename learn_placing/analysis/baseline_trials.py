@@ -1,10 +1,10 @@
 import os
 import numpy as np
 
-from learn_placing.common import load_dataset, upscale_repeat, plot_line, extract_sample, label_to_theta, merge_mm_samples, get_mean_force_xy
+from learn_placing.common import load_dataset, extract_sample, label_to_theta
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from learn_placing.common.viz_tools import models_theta_plot
 from learn_placing.estimators import PCABaseline, NetEstimator, HoughEstimator
 
 if __name__ == "__main__":
@@ -64,30 +64,25 @@ if __name__ == "__main__":
     print()
     print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f} | HOU err {houerr:.4f}")
     print(f"PCA th  {pcath:.4f} | NN  th {nnth:.4f}  | HOU th {houth:.4f} | LBL th {lblth:.4f}")
-    
-    mmm = merge_mm_samples(mm, noise_tresh=noise_thresh)
-    mmimg = upscale_repeat(mmm, factor=scale)
 
     fig, axes = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
 
     pca.plot_PCs(axes, mm, scale=scale)
-    means = scale*get_mean_force_xy(mmm)
-    im = axes.imshow(mmimg)
+    models_theta_plot(
+        mm_imgs=mm,
+        noise_thresh=noise_thresh,
+        ax=axes,
+        fig=fig,
+        scale=scale,
+        lines = [
+            [lblth, "target", "green"],
+            [nnth,  f"NN  {nnerr:.3f}", "red"],
+            [pcath, f"PCA {pcaerr:.3f}", "blue"],
+            [houth, f"HOU {houerr:.3f}", "white"],
+        ]
+    )
 
-    # plot lines at means. NOTE means are estimates, lines will be slightly off!
-    plot_line(axes, lblth, point=means, label="target", c="green", lw=2)
-    plot_line(axes, nnth, point=means, label=f"NN  {nnerr:.3f}", c="red", lw=2)
-    plot_line(axes, pcath, point=means, label=f"PCA {pcaerr:.3f}", c="blue", lw=2)
-    plot_line(axes, houth, point=means, label=f"HOU {houerr:.3f}", c="white", lw=2)
-    
-    axes.set_title("Merged sensor image - filtered PCA")
-
-    axes.legend(loc="lower right")
-
-    divider = make_axes_locatable(axes)
-    cax = divider.append_axes('right', size='5%', pad=0.05)
-    fig.colorbar(im, cax=cax)
-
+    axes.set_title("NN Baseline Comparison")
     fig.tight_layout()
     plt.savefig(f"{os.environ['HOME']}/pca_good.png")
     plt.show()
