@@ -18,7 +18,6 @@ placing_object_name = "wood_02"
 
 class TrackerSub:
     robot_frame_name = "tiago"
-    
 
     def __init__(self, br, otp, tracker_name):
         self.br = br
@@ -29,6 +28,7 @@ class TrackerSub:
 
     def _tracker_pose_callback(self, m): 
         T = trafo2homogeneous(pos2arr(m.pose.position), quat2arr(m.pose.orientation))
+        print(self.ln)
 
         # to have a valid TF tree, we need to publish the inverse from robot to OptiTrack origin
         frames = ["%s_opti" % self.tracker_name.lower(), "optitrack"]
@@ -75,8 +75,8 @@ class OptiTrackPublisher:
 
     def object_gripper_tf(self):
         try:
-            (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-            (two, Qwo) = self.li.lookupTransform(self.world_frame, f"{placing_object_name}_opti", rospy.Time(0))
+            (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time())
+            (two, Qwo) = self.li.lookupTransform(self.world_frame, f"{placing_object_name}_opti", rospy.Time())
             Twg = trafo2homogeneous(twg, Qwg)
             Two = trafo2homogeneous(two, Qwo)
         except Exception as e:
