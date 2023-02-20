@@ -48,6 +48,18 @@ def rotmat_to_theta(pred):
     """
     return np.pi-np.arccos(np.dot([0,0,-1], pred.dot([0,0,-1])))
 
+def line_angle_from_rotation(Rgo):
+    """
+    calculate the angle to draw on a merged sensor image from the quaternion gripper to object
+
+    first, we determine the angle between the object's z-axis and the gripper's x-axis
+    then we rotate by PI/2 to (in the sensor images, the z-axis goes off to the left side)
+    """
+    Rgo = tft.ensure_rotmat(Rgo)
+    zO = Rgo.dot([0,0,1])
+    th = np.arctan2(zO[2], zO[0])
+    return th-np.pi/2%np.pi
+
 def label_to_theta(y):
     if type(y) == list: y=np.array(y)
     if y.shape == (4,4): y = y[:3,:3]
