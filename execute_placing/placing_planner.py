@@ -45,26 +45,26 @@ class PlacingPlanner:
         self.ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
         
         self.mmAC = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
-
         self.torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
-        # print("waiting for torso action ... ")
-        # self.torsoAC.wait_for_server()
-        # self.activate_torso()
 
-        # self.mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
+        self.mmKill = rospy.ServiceProxy("/myrmex_gripper_controller/kill", Empty)
 
-        # from cm_interface import safe_switch, is_running
-        # print("enabling torso controller ...")
-        # safe_switch("torso_controller", "torso_stop_controller")
+        from cm_interface import safe_switch, is_running
+        print("enabling torso controller ...")
+        safe_switch("torso_controller", "torso_stop_controller")
 
-        # print("enabling myrmex controller ...")
-        # safe_switch("gripper_left_controller", "myrmex_gripper_controller")
+        print("enabling myrmex controller ...")
+        safe_switch("gripper_controller", "myrmex_gripper_controller")
 
-        # print("waiting for myrmex controller server ...")
-        # self.mmAC.wait_for_server()
+        print("waiting for torso action ... ")
+        self.torsoAC.wait_for_server()
+        self.activate_torso()
 
-        # print("waiting for myrmex kill service ...")
-        # self.mmKill.wait_for_service()
+        print("waiting for myrmex controller server ...")
+        self.mmAC.wait_for_server()
+
+        print("waiting for myrmex kill service ...")
+        self.mmKill.wait_for_service()
 
         # print("waiting for ft calibration service ...")
         # self.ftCalib.wait_for_service()
@@ -74,7 +74,6 @@ class PlacingPlanner:
         for _ in range(6):
             try:
                 self.li.waitForTransform(self.grasping_frame, self.world_frame, rospy.Time(0), rospy.Duration(3))
-                self.li.waitForTransform(self.grasping_frame, "pot", rospy.Time(0), rospy.Duration(3))
                 break
             except Exception as e:
                 print(e)
@@ -121,7 +120,6 @@ class PlacingPlanner:
 
     def align(self, Rwo):
         (twg, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        # (tgo, Qgo) = self.li.lookupTransform(self.grasping_frame, "pot", rospy.Time(0))
         Twg = Tf2T(twg, Qwg)
         Tgw = inverse_matrix(Twg)
 
@@ -199,9 +197,6 @@ class PlacingPlanner:
         print("killing mm goal")
         self.mmKill()
 
-        # (tG, _) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
-        # torso_diff = np.min([self.TO_MAX, tG[2]-self.table_height])
-        # torso_goal = self.TO_MAX-torso_diff
         torso_secs = self.torso_vel*(0.35*100)
         
         print("moving torso down")

@@ -82,14 +82,15 @@ class RunEstimators:
         print(f"HOU {houth:.4f} | {houerr:.4f}")
 
         # broadcast transforms
-        for name, R in zip(["nn", "pca", "hough"], [
-            tft.ensure_homog(R_nn),
-            tft.ensure_homog(R_pca),
-            tft.ensure_homog(R_hou),
-        ]):
+        for name, R in zip(["nn", "pca", "hough"], [R_nn, R_pca, R_hou]):
+            if R is None or np.any(np.isnan(np.array(R))): # handle NaNs / models not detecting lines
+                print(f"skipping {name} due to NaN")
+                continue
+
+            T = tft.ensure_homog(R)
             self.br.sendTransform(
                 [0,0,0],
-                tft.quaternion_from_matrix(R),
+                tft.quaternion_from_matrix(T),
                 rospy.Time.now(),
                 f"object_{name}",
                 self.grasping_frame
