@@ -1,17 +1,16 @@
 import os
 import rospy
-import base64
 import numpy as np
 import matplotlib.pyplot as plt
 
-from io import BytesIO
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from tactile_msgs.msg import TactileState
 from geometry_msgs.msg import WrenchStamped
 
 from tf import TransformListener, TransformBroadcaster
-from learn_placing.common import v2l, line_angle_from_rotation, models_theta_plot, preprocess_myrmex, tft
+from datetime import datetime
+from learn_placing.common import v2l, line_angle_from_rotation, models_theta_plot, preprocess_myrmex, tft, rotation_from_line_angle
 from learn_placing.estimators import NetEstimator, PCABaseline, HoughEstimator
 
 
@@ -41,7 +40,7 @@ class RunEstimators:
 
         self.br = TransformBroadcaster()
         self.li = TransformListener()
-        self.li.waitForTransform(self.world_frame, self.object_frame, rospy.Time(0), rospy.Duration(5))
+        self.li.waitForTransform(self.world_frame, self.grasping_frame, rospy.Time(0), rospy.Duration(5))
         
     def tl_cb(self, m): self.mm_left  = preprocess_myrmex(m.sensors[0].values)
     def tr_cb(self, m): self.mm_right = preprocess_myrmex(m.sensors[0].values)
@@ -53,14 +52,16 @@ class RunEstimators:
             rospy.Rate(1).sleep()
 
         # get gripper and object orientations
+        (_, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame,    rospy.Time())
         try:
             # TODO make this more sensitive to lost TFs while avoiding extrapolation into the future exception
-            (_, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame,    rospy.Time())
             (_, Qwo) = self.li.lookupTransform(self.world_frame, self.object_frame,      rospy.Time())
             (_, Qgo) = self.li.lookupTransform(self.grasping_frame, self.object_frame,   rospy.Time())
+            detected = True
         except Exception as e:
             print(f"ERROR couldn't get transform. ¿is the object being detected?\n{e}")
-            return
+            Qgo = [0,0,0,1]
+            detected = False
 
         Qwg = np.array(Qwg)
         Qgo = np.array(Qgo)
@@ -71,8 +72,8 @@ class RunEstimators:
 
         # run models
         (R_nn, nnth), (nnRerr, nnerr) = self.nn.estimate_transform(mm, Qgo, Qwg=Qwg)
-        (_, pcath), (_, pcaerr) = self.pca.estimate_transform(mm, Qgo)
-        (_, houth), (_, houerr) = self.hough.estimate_transform(mm, Qgo)
+        (R_pca, pcath), (_, pcaerr) = self.pca.estimate_transform(mm, Qgo)
+        (R_hou, houth), (_, houerr) = self.hough.estimate_transform(mm, Qgo)
 
         print()
         print(f"LBL {lblth:.4f}")
@@ -80,35 +81,50 @@ class RunEstimators:
         print(f"PCA {pcath:.4f} | {pcaerr:.4f}")
         print(f"HOU {houth:.4f} | {houerr:.4f}")
 
-
-        self.br.sendTransform(
-            [0,0,0],
-            tft.quaternion_from_matrix(tft.ensure_homog(R_nn)),
-            rospy.Time.now(),
-            "object_nn",
-            self.grasping_frame
-        )
+        # broadcast transforms
+        for name, R in zip(["nn", "pca", "hough"], [
+            tft.ensure_homog(R_nn),
+            tft.ensure_homog(R_pca),
+            tft.ensure_homog(R_hou),
+        ]):
+            self.br.sendTransform(
+                [0,0,0],
+                tft.quaternion_from_matrix(R),
+                rospy.Time.now(),
+                f"object_{name}",
+                self.grasping_frame
+            )
 
         if self.publish_image:
             scale=100
             fig, ax = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
 
             self.pca.plot_PCs(ax, mm, scale=scale)
+
+            if detected:
+                lines = [
+                    [lblth, f"OptiTrack (lblth)", "green"],
+                    [nnth,  f"NN  {nnerr:.3f}", "red"],
+                    [pcath, f"PCA {pcaerr:.3f}", "blue"],
+                    [houth, f"HOU {houerr:.3f}", "white"],
+                ]
+            else:
+                lines = [
+                    [nnth,  f"NN ", "red"],
+                    [pcath, f"PCA", "blue"],
+                    [houth, f"HOU", "white"],
+                ]
+
             models_theta_plot(
                 mm_imgs=mm,
                 noise_thresh=self.noise_thresh,
                 ax=ax,
                 fig=fig,
                 scale=scale,
-                lines = [
-                    [lblth, "target", "green"],
-                    [nnth,  f"NN  {nnerr:.3f}", "red"],
-                    [pcath, f"PCA {pcaerr:.3f}", "blue"],
-                    [houth, f"HOU {houerr:.3f}", "white"],
-                ]
+                lines=lines
             )
 
-            ax.set_title("NN Baseline Comparison")
+            ax.set_title(f"Estimation Results [{datetime.now().strftime('%H:%m:%S')}]")
             fig.tight_layout()
             fig.canvas.draw()
 
@@ -119,6 +135,17 @@ class RunEstimators:
             imgmsg = self.bridge.cv2_to_imgmsg(data, encoding="rgb8")
             self.imgpub.publish(imgmsg)
             plt.close()
+
+        result = dict(zip(["nn", "pca", "hough"],
+            [
+                [tft.ensure_homog(R_nn), nnerr],
+                [R_pca, pcaerr],
+                [R_hou, houerr],
+            ]
+        ))
+        if detected:
+            result.update({"opti": [rotation_from_line_angle(lblth), 0]})
+        return result
 
 if __name__ == "__main__":
     noise_thresh = 0.05

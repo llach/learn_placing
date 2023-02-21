@@ -1,6 +1,6 @@
 import numpy as np
 
-from learn_placing.common.tools import get_cov, marginal_mean, marginal_sd, line_angle_from_rotation, line_similarity
+from learn_placing.common.tools import get_cov, marginal_mean, marginal_sd, line_angle_from_rotation, line_similarity, rotation_from_line_angle
 from learn_placing.common.myrmex_processing import merge_mm_samples
 from learn_placing.estimators import TFEstimator
 
@@ -74,4 +74,4 @@ class PCABaseline(TFEstimator):
         pcath = evth[0]
 
         lblth = line_angle_from_rotation(lbl)
-        return (None, pcath), (None, line_similarity(pcath, lblth))
+        return (rotation_from_line_angle(pcath), pcath), (None, line_similarity(pcath, lblth))

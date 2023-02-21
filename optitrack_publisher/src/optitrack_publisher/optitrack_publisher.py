@@ -14,7 +14,7 @@ def trafo2homogeneous(pos, quat):
     T[:3,3]  = pos
     return T
 
-placing_object_name = "wood_02"
+placing_object_name = "pot2"
 
 class TrackerSub:
     robot_frame_name = "tiago"

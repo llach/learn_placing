@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 from learn_placing.estimators import TFEstimator
-from learn_placing.common.tools import line_angle_from_rotation, line_similarity, ensure_positive_angle
+from learn_placing.common.tools import line_angle_from_rotation, line_similarity, ensure_positive_angle, rotation_from_line_angle
 from learn_placing.common.myrmex_processing import merge_mm_samples, mm2img, upscale_repeat
 
 class HoughEstimator(TFEstimator):
@@ -65,7 +65,7 @@ class HoughEstimator(TFEstimator):
 
             if show_image: self.show_line_image(mmm, rho, theta)
 
-        return (None, houth), (None, houerr)
+        return (rotation_from_line_angle(houth), houth), (None, houerr)
 
 if __name__ == "__main__":
     import os

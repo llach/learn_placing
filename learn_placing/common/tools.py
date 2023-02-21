@@ -55,6 +55,12 @@ def line_angle_from_rotation(Rgo):
     th = np.arctan2(zO[2], zO[0])
     return ensure_positive_angle(th)
 
+def rotation_from_line_angle(th):
+    """ line angle to gripper frame-based rotation of object. the offset of PI stems from us flipping and rotating the image before calculating the baseline angles.
+    """
+    if np.isnan(th): return tft.Ry(-np.pi)
+    return tft.Ry(-th+np.pi/2)
+
 def ensure_positive_angle(th): return th if th>=0 else np.pi+th
 
 def line_similarity(th, lblth):

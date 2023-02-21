@@ -97,7 +97,7 @@ class PlacingPlanner:
     def close_gripper(self): self.gripper_traj(self.JT_MIN)
     def gripper_traj(self, to, secs=1.5):
         jt = JointTrajectory()
-        jt.joint_names = ['gripper_left_right_finger_joint', 'gripper_left_left_finger_joint']
+        jt.joint_names = ['gripper_right_finger_joint', 'gripper_left_finger_joint']
         jt.points.append(JointTrajectoryPoint(positions=[to, to], time_from_start=rospy.Time(1.5)))
 
         self.mmAC.send_goal(FollowJointTrajectoryGoal(trajectory=jt))

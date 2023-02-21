@@ -15,7 +15,7 @@ def plot_line(ax, theta, point=None, **kw):
 
 def models_theta_plot(mm_imgs, noise_thresh, lines, ax, fig, scale=1):
     mmm = merge_mm_samples(mm_imgs, noise_tresh=noise_thresh)
-    mmimg = upscale_repeat(mm_imgs[0], factor=scale)
+    mmimg = upscale_repeat(mmm, factor=scale)
 
     means = scale*get_mean_force_xy(mmm)
     im = ax.imshow(mmimg)
