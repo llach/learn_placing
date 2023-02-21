@@ -186,7 +186,7 @@ if __name__ == "__main__":
     t_path = f"{training_path}/../mnet"
     base_path = f"{t_path}/{now()}"
 
-    Neps=40
+    Neps=100
     datasets = [DatasetName.combined_all, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
 
