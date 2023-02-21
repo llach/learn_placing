@@ -18,9 +18,9 @@ from learn_placing import now, training_path
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     xs = np.arange(len(test_loss)).astype(int)+1
 
-    tl_mean = np.mean(test_loss, axis=1)
-    tl_upper = np.percentile(test_loss, 0.95, axis=1)
-    tl_lower = np.percentile(test_loss, 0.05, axis=1)
+    tl_mean = np.squeeze(np.mean(test_loss, axis=1))
+    tl_upper = np.squeeze(np.percentile(test_loss, 0.95, axis=1))
+    tl_lower = np.squeeze(np.percentile(test_loss, 0.05, axis=1))
 
     ax.plot(xs, train_loss, label=f"training loss | {train_loss[min_test_i]:.5f}")
     ax.plot(xs, tl_mean, label=f"test loss | {tl_mean[min_test_i]:.5f}")
@@ -195,7 +195,7 @@ if __name__ == "__main__":
         [True , False, False],
         # [False, True , False],
         # [False, False, True],
-        [True , True , False],
+        # [True , True , False],
         # [True , False, True],
         # [False, True , True],
         [True , True , True],

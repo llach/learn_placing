@@ -18,7 +18,7 @@ def ensure_homog(r):
     return T
 
 def ensure_rotmat(y):
-    if type(y) != np.array(y): y=np.array(y)
+    if type(y) != np.array: y=np.array(y)
     y = np.squeeze(y)
     if y.shape == (4,4): y = y[:3,:3]
     elif y.shape == (4,) or y.shape == (1,4): y = quaternion_matrix(y)[:3,:3]

@@ -10,6 +10,7 @@ from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.myrmex_processing import random_shift_seq
+from learn_placing.common.tools import line_angle_from_rotation
 from learn_placing.common.transformations import quaternion_matrix
 
 class AttrDict(dict):
@@ -202,10 +203,10 @@ def load_tensords(name, seed, train_ratio=0.8, augment=None, aug_n=None):
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
     
-    X =  [v for _, v in ds["static_inputs"].items()]
-    Y =  [d[InRot.g2o] for d in list(ds["labels"].values())]
+    X =  [v[:,10,:,:] for _, v in ds["static_inputs"].items()]
+    Y =  [[line_angle_from_rotation(d[InRot.g2o])] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
-    FT = [f for _, f in ds["static_ft"].items()]
+    FT = [f[5] for _, f in ds["static_ft"].items()]
 
     # TODO transform myrmex images
     # TODO transform target rots
@@ -282,7 +283,8 @@ def qloss_sqrt(out, lbl):
 
 def line_similarity_th(th, lblth): 
     ang_diff = torch.abs(th-lblth)
-    return ang_diff if ang_diff < torch.pi/2 else torch.pi-ang_diff
+    ang_diff = torch.where(torch.le(ang_diff, torch.pi/2), ang_diff, torch.pi-ang_diff)
+    return ang_diff
 
 """
 matrices batch*3*3

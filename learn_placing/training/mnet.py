@@ -96,12 +96,7 @@ class MyrmexNet(nn.Module):
         else: 
             mlpin = mlp_inputs[0]
 
-        mlpout = self.mlp(mlpin)
-
-        if self.output_type == RotRepr.ortho6d: mlpout = compute_rotation_matrix_from_ortho6d(mlpout)
-        elif self.output_type == RotRepr.sincos: mlpout = torch.tanh(mlpout)
-
-        return mlpout
+        return  self.mlp(mlpin)
 
     def _conv_pre(self):
         layers = []
