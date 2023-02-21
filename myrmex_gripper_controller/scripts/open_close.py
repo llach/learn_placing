@@ -6,6 +6,7 @@ import numpy as np
 
 from std_srvs.srv import Empty
 from sensor_msgs.msg import JointState
+from pal_common_msgs.msg import EmptyAction, EmptyActionGoal
 # from experiment_manager.common.cm_interface import safe_switch
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
@@ -21,6 +22,16 @@ N_POINTS = 5
 JT_MIN = 0.0
 JT_MAX = 0.045
 JOINT_NAMES = [rname, lname]
+
+
+def input_or_quit(text):
+    i = input(text)
+    if i.lower() == "q": 
+        return False
+    elif i.lower() == "s":
+        return False
+    return True
+
 
 def js_cb(msg):
     global ridx, lidx, rpos, lpos, tidx, tpos
@@ -60,13 +71,15 @@ cpub = actionlib.SimpleActionClient(f"/myrmex_gripper_controller/follow_joint_tr
 cpub.wait_for_server()
 
 ftCalib = rospy.ServiceProxy("/table_contact/calibrate", Empty)
-
 torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
 torsoAC.wait_for_server()
 
+gravityAC = actionlib.SimpleActionClient("/gravity_compensation", EmptyAction)
+gravityAC.wait_for_server()
+
 try:
     while True:
-        inp = input("what next?\n")
+        inp = input("o = open; c = close; k = kill myrmex; cal = calibrate; u = torso up; d = torso down\n")
         if inp == "q":
             break
         elif inp == "o":
@@ -89,6 +102,13 @@ try:
             ftCalib()
             set_torso(0.0)
             set_torso(wait=False)
+
+        elif inp=="g":
+            arm_goal = EmptyActionGoal()
+            gravityAC.send_goal(arm_goal)
+
+            input_or_quit("done?")
+            gravityAC.cancel_all_goals()
 
 except KeyboardInterrupt:
     pass

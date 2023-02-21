@@ -159,23 +159,23 @@ class PlacingPlanner:
         ])
         self.marker_pub.publish(ma)
 
-        while True:
-            tr, failed = self.ro.plan_random(
-                Tgo2,
-                Twg@Tgocorr,
-                publish_traj=True, 
-                check_validity=True,
-                table_height=0.4, 
-            )
+        # while True:
+        tr, failed = self.ro.plan_random(
+            Tgo2,
+            Twg@Tgocorr,
+            publish_traj=True, 
+            check_validity=True,
+            table_height=0.4, 
+        )
 
-            print("planning done")
+        print("planning done")
 
-            if self.input_or_quit("execute?"):
-                print("EXECUTE")
-                self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
-            else:
-                break
-            if not self.input_or_quit("repeat?"): break
+            # if self.input_or_quit("execute?"):
+            #     print("EXECUTE")
+        self.execute_ac.send_goal_and_wait(ExecuteTrajectoryGoal(trajectory=tr))
+            # else:
+            #     break
+            # if not self.input_or_quit("repeat?"): break
             
     def place(self):
         

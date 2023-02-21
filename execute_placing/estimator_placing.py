@@ -51,7 +51,7 @@ class EstimatorPlacingService:
             else: break
 
         print("all done, bye")
-        return EstimatorPlacingResponse()
+        return EstimatorPlacingResponse(err=err)
     
 
 if __name__ == "__main__":
