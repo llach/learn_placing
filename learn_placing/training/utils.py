@@ -105,11 +105,9 @@ class InRot(str, Enum):
     local_dotp = "local_dotproduct"
 
 class InData(str, Enum):
-    with_tap = "with_tap"
     static = "static"
 
 indata2key = {
-    InData.with_tap: "inputs",
     InData.static: "static_inputs"
 }
 
@@ -167,11 +165,11 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8):
                 ds2name[DatasetName.salt]
             ]
 
-        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
+        trainds, testds = load_concatds(dss, seed=seed, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
         
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
+        trainds, testds = load_tensords(dname, seed=seed, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
 
     train_l = DataLoader(trainds, shuffle=True, batch_size=a.batch_size)
     test_l = DataLoader(testds, shuffle=False, batch_size=a.batch_size) if testds is not None else None
@@ -189,13 +187,13 @@ def split_tds(tds, seed, train_ratio):
         )
     return tds, None
 
-def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
+def load_concatds(dsnames, seed, train_ratio=0.8, augment=None, aug_n=None):
     tdss = []
     for ds in dsnames:
-        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
+        tdss.append(load_tensords(ds, seed, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
  
-def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
+def load_tensords(name, seed, train_ratio=0.8, augment=None, aug_n=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -203,16 +201,14 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     for mod, dat in ds.items():
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
-
-    ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
-    X =  [v for _, v in ds[indata2key[input_data]].items()]
-    Y =  [d[target_type] for d in list(ds["labels"].values())]
+    X =  [v for _, v in ds["static_inputs"].items()]
+    Y =  [d[InRot.g2o] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
-    FT = [f for _, f in ds[ft_type].items()]
+    FT = [f for _, f in ds["static_ft"].items()]
 
-    if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
-    if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
+    # TODO transform myrmex images
+    # TODO transform target rots
 
     X =  torch.Tensor(np.array(X))
     Y =  torch.Tensor(np.array(Y))
@@ -236,20 +232,6 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
 
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
-
-def rep2loss(loss_type):
-    if loss_type == LossType.quaternion:
-        # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
-        return qloss
-    elif loss_type == LossType.geodesic:
-        return compute_geodesic_distance_from_two_matrices
-    elif loss_type == LossType.msesum:
-        return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
-    elif loss_type == LossType.pointarccos:
-        return lambda x, y: point_loss(x, y)
-    elif loss_type == LossType.pointcos:
-        return lambda x, y: 1-torch.cos(point_loss(x, y))
-
 
 def test_net(model, crit, dataset):
     losses = []
@@ -297,6 +279,10 @@ def qloss(out, lbl):
 
 def qloss_sqrt(out, lbl):
     return torch.sqrt(qloss(out, lbl))
+
+def line_similarity_th(th, lblth): 
+    ang_diff = torch.abs(th-lblth)
+    return ang_diff if ang_diff < torch.pi/2 else torch.pi-ang_diff
 
 """
 matrices batch*3*3
