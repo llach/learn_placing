@@ -46,6 +46,9 @@ class RunEstimators:
     def tr_cb(self, m): self.mm_right = preprocess_myrmex(m.sensors[0].values)
     def ft_cb(self, m): self.ft = np.concatenate([v2l(m.wrench.force), v2l(m.wrench.torque)])
 
+    def reset_data(self):
+        self.mm_left, self.mm_right, self.ft = None, None, None
+
     def estimate(self):
         while np.any([self.mm_left, self.mm_right, self.ft] == None):
             print("waiting for data ...")
@@ -156,6 +159,13 @@ if __name__ == "__main__":
 
     rospy.init_node("run_estimator")
 
+    # normal streaming
+    # re = RunEstimators(trial_path, noise_thresh=noise_thresh, publish_image=True)
+    # while not rospy.is_shutdown(): re.estimate()
 
     re = RunEstimators(trial_path, noise_thresh=noise_thresh, publish_image=True)
-    while not rospy.is_shutdown(): re.estimate()
+    while not rospy.is_shutdown():
+        a = input()
+        if a.lower() == "q": break
+
+        re.estimate()
