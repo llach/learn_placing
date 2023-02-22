@@ -226,7 +226,7 @@ def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=No
     X =  [v for v in ds[indata2key[InData.static]].values()]
     Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
-    FT = [f for f in ds["static_ft"].values()]
+    FT = [[f] for f in ds["static_ft"].values()]
 
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
     if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
