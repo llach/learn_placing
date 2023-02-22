@@ -2,14 +2,16 @@ import cv2
 import numpy as np
 
 from learn_placing.estimators import TFEstimator
-from learn_placing.common.tools import line_angle_from_rotation, line_similarity, ensure_positive_angle, rotation_from_line_angle
+from learn_placing.common.tools import tft, line_angle_from_rotation, line_similarity, ensure_positive_angle, rotation_from_line_angle, to_tensors
 from learn_placing.common.myrmex_processing import merge_mm_samples, mm2img, upscale_repeat
+from learn_placing.training.utils import LossType, get_loss_fn
 
 class HoughEstimator(TFEstimator):
     
     def __init__(self, noise_thresh, preproc="canny") -> None:
         self.noise_thresh = noise_thresh
         self.preproc = preproc
+        self.crit = get_loss_fn(LossType.pointarccos)
 
         assert self.preproc in ["canny", "binary"]
 
@@ -55,17 +57,20 @@ class HoughEstimator(TFEstimator):
         if lines is None: 
             print("WARN no hough line found")
             return (None, np.nan), (None, np.nan)
-        else: 
-            rho, theta = lines[0][0]
-            houth = ensure_positive_angle(np.pi/2-theta) # convert angle of line normal to angle between line and x axis
+            
+        rho, theta = lines[0][0]
+        houth = ensure_positive_angle(np.pi/2-theta) # convert angle of line normal to angle between line and x axis
 
-            # calculate line error
-            lblth = line_angle_from_rotation(lbl)
-            houerr = line_similarity(houth, lblth)
+        # calculate line error
+        lblth = line_angle_from_rotation(lbl)
+        houerr = line_similarity(houth, lblth)
 
-            if show_image: self.show_line_image(mmm, rho, theta)
+        if show_image: self.show_line_image(mmm, rho, theta)
 
-        return (rotation_from_line_angle(houth), houth), (None, houerr)
+        R_hou = np.expand_dims(rotation_from_line_angle(houth)[:3,:3], 0)
+        R_lbl = np.expand_dims(tft.quaternion_matrix(lbl)[:3,:3], 0)
+        errR = float(self.crit(*to_tensors(R_hou, R_lbl)).numpy())
+        return (rotation_from_line_angle(houth), houth), (errR, houerr)
 
 if __name__ == "__main__":
     import os

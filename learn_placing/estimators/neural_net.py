@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from learn_placing.common import tft
-from learn_placing.training.utils import load_train_params, rep2loss
+from learn_placing.training.utils import load_train_params, get_loss_fn
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.common.tools import line_angle_from_rotation, line_similarity, to_tensors
 
@@ -16,7 +16,7 @@ class NetEstimator(TFEstimator):
     
         self.params = load_train_params(self.trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
-        self.crit = rep2loss(self.params.loss_type)
+        self.crit = get_loss_fn(self.params.loss_type)
 
         self.model.load_state_dict(torch.load(self.trial_weights))
         self.model.eval()

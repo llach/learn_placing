@@ -237,7 +237,7 @@ if __name__ == "__main__":
     input_modalities = [
         [True , False, False],
         # [False, True , False],
-        # [False, False, True],
+        [False, False, True],
         # [True , True , False],
         # [True , False, True],
         # [False, True , True],

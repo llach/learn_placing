@@ -1,13 +1,15 @@
 import numpy as np
 
-from learn_placing.common.tools import get_cov, marginal_mean, marginal_sd, line_angle_from_rotation, line_similarity, rotation_from_line_angle
+from learn_placing.common.tools import tft, get_cov, marginal_mean, marginal_sd, line_angle_from_rotation, line_similarity, rotation_from_line_angle, to_tensors
 from learn_placing.common.myrmex_processing import merge_mm_samples
 from learn_placing.estimators import TFEstimator
+from learn_placing.training.utils import LossType, get_loss_fn
 
 class PCABaseline(TFEstimator):
 
     def __init__(self, noise_thresh) -> None:
         self.noise_thresh = noise_thresh
+        self.crit = get_loss_fn(LossType.pointarccos)
 
     def get_PC_point(self, means, evl, evec, pci):
         return means-2*np.sqrt(evl[pci])*evec[:,pci]
@@ -74,4 +76,10 @@ class PCABaseline(TFEstimator):
         pcath = evth[0]
 
         lblth = line_angle_from_rotation(lbl)
-        return (rotation_from_line_angle(pcath), pcath), (None, line_similarity(pcath, lblth))
+
+        R_pca = np.expand_dims(rotation_from_line_angle(pcath)[:3,:3], 0)
+
+        R_lbl = np.expand_dims(tft.quaternion_matrix(lbl)[:3,:3], 0)
+        errR = float(self.crit(*to_tensors(R_pca, R_lbl)).numpy())
+
+        return (R_pca, pcath), (errR, line_similarity(pcath, lblth))

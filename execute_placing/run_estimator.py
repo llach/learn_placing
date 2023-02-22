@@ -74,13 +74,13 @@ class RunEstimators:
         lblth = line_angle_from_rotation(Qgo)
 
         # run models
-        (R_nn, nnth), (nnRerr, nnerr) = self.nn.estimate_transform(mm, Qgo, Qwg=Qwg)
-        (R_pca, pcath), (_, pcaerr) = self.pca.estimate_transform(mm, Qgo)
-        (R_hou, houth), (_, houerr) = self.hough.estimate_transform(mm, Qgo)
+        (R_nn, nnth), (nnerr, _) = self.nn.estimate_transform(mm, Qgo, Qwg=Qwg)
+        (R_pca, pcath), (pcaerr, _) = self.pca.estimate_transform(mm, Qgo)
+        (R_hou, houth), (houerr, _) = self.hough.estimate_transform(mm, Qgo)
 
         print()
         print(f"LBL {lblth:.4f}")
-        print(f"NN  {nnth:.4f} | {nnerr:.4f} | {nnRerr:.4f}")
+        print(f"NN  {nnth:.4f} | {nnerr:.4f}")
         print(f"PCA {pcath:.4f} | {pcaerr:.4f}")
         print(f"HOU {houth:.4f} | {houerr:.4f}")
 
@@ -155,17 +155,19 @@ if __name__ == "__main__":
     noise_thresh = 0.05
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.22_15-25-54/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.22_15-25-54"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.22_16-51-34/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.22_16-51-34"
 
     rospy.init_node("run_estimator")
 
     # normal streaming
-    # re = RunEstimators(trial_path, noise_thresh=noise_thresh, publish_image=True)
-    # while not rospy.is_shutdown(): re.estimate()
-
     re = RunEstimators(trial_path, noise_thresh=noise_thresh, publish_image=True)
-    while not rospy.is_shutdown():
-        a = input()
-        if a.lower() == "q": break
+    while not rospy.is_shutdown(): re.estimate()
 
-        re.estimate()
+    # re = RunEstimators(trial_path, noise_thresh=noise_thresh, publish_image=True)
+    # while not rospy.is_shutdown():
+    #     a = input()
+    #     if a.lower() == "q": break
+
+    #     re.estimate()

@@ -38,6 +38,8 @@ class DatasetName(str, Enum):
     upc1="UPC_v1"
     upc_cyl1 = "UPC Cyliner 1"
     upc_cub1 = "UPC Cuboid 1"
+    upc_cyl2 = "UPC Cyliner 2"
+    upc_cub2 = "UPC Cuboid 2"
 
 
 ds2name = {
@@ -57,6 +59,8 @@ ds2name = {
 
     DatasetName.upc_cyl1: "upc_cylinder",
     DatasetName.upc_cub1: "upc_cuboid",
+    DatasetName.upc_cyl2: "upc_cylinder2",
+    DatasetName.upc_cub2: "upc_cuboid2",
 }
 
 
@@ -178,6 +182,8 @@ def get_dataset(dsname, a, target_type, out_repr, seed=None, train_ratio=0.8):
             dss = [
                 ds2name[DatasetName.upc_cyl1], 
                 ds2name[DatasetName.upc_cub1],
+                ds2name[DatasetName.upc_cyl2], 
+                ds2name[DatasetName.upc_cub2],
             ]
 
         trainds, testds = load_concatds(dss, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
