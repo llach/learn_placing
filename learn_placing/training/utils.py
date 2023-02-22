@@ -35,6 +35,11 @@ class DatasetName(str, Enum):
     combined_all="CombinedAll"
     combined_3d="Combined3D"
 
+    upc1="UPC_v1"
+    upc_cyl1 = "UPC Cyliner 1"
+    upc_cub1 = "UPC Cuboid 1"
+
+
 ds2name = {
     DatasetName.object_var2: "six",
     DatasetName.gripper_var2: "seven",
@@ -49,7 +54,9 @@ ds2name = {
     DatasetName.vinegar: "vinegar",
     DatasetName.salt: "salt",
     DatasetName.combined_all: "combined_all",
-    DatasetName.combined_3d: "combined_3d",
+
+    DatasetName.upc_cyl1: "upc_cyliner",
+    DatasetName.upc_cub1: "upc_cuboid",
 }
 
 
@@ -94,6 +101,7 @@ class RotRepr(str, Enum):
     ortho6d="ortho6d"
     quat="quat"
     sincos="sincos"
+    angle="angle"
 
 class InRot(str, Enum):
     w2o = "world2object"
@@ -118,6 +126,7 @@ class LossType(str, Enum):
     msesum = "msesum"
     pointcos = "pointcos"
     pointarccos = "pointarccos"
+    line_sim = "line_similarity"
 
 def load_train_params(trial_path):
     with open(f"{trial_path}/parameters.json", "r") as f:
@@ -132,13 +141,13 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8):
+def get_dataset(dsname, a, target_type, out_repr, seed=None, train_ratio=0.8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
     if "augment" not in a:
         a.update({"augment": None, "aug_n": 0})
 
-    if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all]:
+    if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all, DatasetName.upc1]:
         if dsname == DatasetName.combined_var2:
             dss = [
                 ds2name[DatasetName.object_var2], 
@@ -165,12 +174,17 @@ def get_dataset(dsname, a, seed=None, train_ratio=0.8):
                 ds2name[DatasetName.vinegar], 
                 ds2name[DatasetName.salt]
             ]
+        elif dsname == DatasetName.upc1:
+            dss = [
+                ds2name[DatasetName.upc_cyl1], 
+                ds2name[DatasetName.upc_cub1],
+            ]
 
-        trainds, testds = load_concatds(dss, seed=seed, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
+        trainds, testds = load_concatds(dss, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
         
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        trainds, testds = load_tensords(dname, seed=seed, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
+        trainds, testds = load_tensords(dname, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
 
     train_l = DataLoader(trainds, shuffle=True, batch_size=a.batch_size)
     test_l = DataLoader(testds, shuffle=False, batch_size=a.batch_size) if testds is not None else None
@@ -188,13 +202,13 @@ def split_tds(tds, seed, train_ratio):
         )
     return tds, None
 
-def load_concatds(dsnames, seed, train_ratio=0.8, augment=None, aug_n=None):
+def load_concatds(dsnames, seed, target_type, out_repr, train_ratio=0.8, augment=None, aug_n=None):
     tdss = []
     for ds in dsnames:
-        tdss.append(load_tensords(ds, seed, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
+        tdss.append(load_tensords(ds, seed, target_type, out_repr, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
- 
-def load_tensords(name, seed, train_ratio=0.8, augment=None, aug_n=None):
+
+def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=None, aug_n=None):
     dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
@@ -203,19 +217,19 @@ def load_tensords(name, seed, train_ratio=0.8, augment=None, aug_n=None):
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
     
-    X =  [v[:,10,:,:] for _, v in ds["static_inputs"].items()]
-    Y =  [[line_angle_from_rotation(d[InRot.g2o])] for d in list(ds["labels"].values())]
+    X =  [v[:,10,:,:]  for _, v in ds[indata2key[InData.static]].items()]
+    Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
     FT = [f[5] for _, f in ds["static_ft"].items()]
 
-    # TODO transform myrmex images
-    # TODO transform target rots
+    if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
+    if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
 
     X =  torch.Tensor(np.array(X))
     Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
-
+    
     if augment is not None and aug_n > 0 and np.any(augment):
         print(f"augmenting dataset: {aug_n} times, rows and cloumns: {augment}")
         XSshape = np.array(X.shape)
@@ -233,6 +247,7 @@ def load_tensords(name, seed, train_ratio=0.8, augment=None, aug_n=None):
 
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
+
 
 def test_net(model, crit, dataset):
     losses = []
@@ -253,6 +268,21 @@ def test_net(model, crit, dataset):
             grip_rots.append(grip.numpy())
     model.train()
     return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0), np.concatenate(grip_rots, axis=0)
+
+def get_loss_fn(loss_type):
+    if loss_type == LossType.quaternion:
+        # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
+        return qloss
+    elif loss_type == LossType.geodesic:
+        return compute_geodesic_distance_from_two_matrices
+    elif loss_type == LossType.msesum:
+        return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
+    elif loss_type == LossType.pointarccos:
+        return lambda x, y: point_loss(x, y)
+    elif loss_type == LossType.pointcos:
+        return lambda x, y: 1-torch.cos(point_loss(x, y))
+    elif loss_type == LossType.line_sim:
+        return line_similarity_th
 
 def bdot(v1, v2):
     batch = v1.shape[0]

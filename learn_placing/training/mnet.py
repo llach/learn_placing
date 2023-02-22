@@ -4,6 +4,7 @@ import torch.nn as nn
 
 from torch import Tensor
 from collections import OrderedDict
+from learn_placing.training.utils import RotRepr, compute_rotation_matrix_from_quaternion
 
 def conv2D_outshape(in_shape, Cout, kernel, padding=(0,0), stride=(1,1), dilation=(1,1)):
     if len(in_shape)==2:
@@ -39,6 +40,7 @@ class MyrmexNet(nn.Module):
         with_tactile = True,
         with_gripper = False,
         with_ft = False,
+        output_type = RotRepr.ortho6d
         ) -> None:
         super().__init__()
         assert np.any([with_tactile, with_gripper, with_ft]), "no input modality"
@@ -59,7 +61,12 @@ class MyrmexNet(nn.Module):
         self.ft_input_size = 6 if self.with_ft else 0
         self.tactile_input_size = 0
 
-        self.output_size = 1
+        self.output_type = output_type
+
+        if self.output_type == RotRepr.angle:
+            self.output_size = 1
+        elif self.output_type == RotRepr.ortho6d:
+            self.output_size = 6
     
         if self.with_tactile:
             self.cnn_in_channels = [2] + self.cnn_out_channels[:-1]
@@ -95,7 +102,10 @@ class MyrmexNet(nn.Module):
         else: 
             mlpin = mlp_inputs[0]
 
-        return  self.mlp(mlpin)
+        mlpout = self.mlp(mlpin)
+
+        if self.output_type == RotRepr.ortho6d: mlpout = compute_rotation_matrix_from_quaternion(mlpout)
+        return mlpout
 
     def _conv_pre(self):
         layers = []

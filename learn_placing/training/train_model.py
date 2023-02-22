@@ -13,7 +13,7 @@ from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, te
 from tactile_insertion_rl import TactilePlacingNet, ConvProc
 
 from learn_placing import now, training_path
-from learn_placing.training.utils import rep2loss
+from learn_placing.training.utils import get_loss_fn
 
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     xs = np.arange(len(test_loss)).astype(int)+1
@@ -134,13 +134,13 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    train_l, test_l, seed = get_dataset(a.dsname, a)
+    train_l, test_l, seed = get_dataset(a.dsname, a, target_type=a.target_type, out_repr=a.out_repr)
     a.__setattr__("dataset_seed", seed)
 
     model = TactilePlacingNet(**a.netp)
     optimizer = optim.Adam(model.parameters(), **a.adamp)
 
-    criterion = rep2loss(a.loss_type)
+    criterion = get_loss_fn(a.loss_type)
 
     train_losses = []
     test_losses = []
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=40
-    datasets = [DatasetName.combined_all, DatasetName.combined_3d]
+    datasets = [DatasetName.combined_all]#, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
     aug_n = 1

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime
 from typing import List
-from learn_placing.training.utils import line_similarity_th
+from learn_placing.training.utils import InRot, RotRepr, get_loss_fn, LossType
 from utils import get_dataset, DatasetName, test_net, AttrDict
 from mnet import MyrmexNet
 
@@ -44,6 +44,9 @@ def train(
     dataset: DatasetName,
     input_modalities: List[bool],
     trial_path: str,
+    out_repr: RotRepr,
+    loss_type: LossType,
+    target_type: RotRepr = InRot.g2o,
     augment: list = None,
     aug_n: int = 1,
     Neps: int = 10,
@@ -61,6 +64,10 @@ def train(
         with_gripper = with_gripper,
         with_ft = with_ft,
 
+        loss_type = loss_type,
+        out_repr = out_repr,
+        target_type = target_type,
+
         augment = augment,
         aug_n = aug_n,
         batch_size = 48,
@@ -70,6 +77,7 @@ def train(
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
+        output_type=a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
         with_ft = a.with_ft,
@@ -95,12 +103,12 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    train_l, test_l, seed = get_dataset(a.dsname, a)
+    train_l, test_l, seed = get_dataset(a.dsname, a, target_type=a.target_type, out_repr=a.out_repr)
     a.__setattr__("dataset_seed", seed)
 
     model = MyrmexNet(**a.netp)
     optimizer = optim.Adam(model.parameters(), **a.adamp)
-    criterion = line_similarity_th
+    criterion = get_loss_fn(a.loss_type)
 
     train_losses = []
     test_losses = []
@@ -187,8 +195,11 @@ if __name__ == "__main__":
     base_path = f"{t_path}/{now()}"
 
     Neps=100
-    datasets = [DatasetName.combined_all, DatasetName.combined_3d]
-    # datasets = [DatasetName.combined_large]
+    datasets = [DatasetName.combined_3d]
+
+    loss_type = LossType.pointarccos
+    out_repr = RotRepr.ortho6d
+    target_type = InRot.g2o
 
     # full training
     input_modalities = [
@@ -221,6 +232,9 @@ if __name__ == "__main__":
                 trialname = train(
                     dataset=dataset,
                     input_modalities=input_mod,
+                    target_type=target_type,
+                    loss_type=loss_type,
+                    out_repr=out_repr,
                     trial_path=dspath,
                     augment=au,
                     aug_n=0,
