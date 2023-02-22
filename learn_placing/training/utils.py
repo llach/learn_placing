@@ -55,7 +55,7 @@ ds2name = {
     DatasetName.salt: "salt",
     DatasetName.combined_all: "combined_all",
 
-    DatasetName.upc_cyl1: "upc_cyliner",
+    DatasetName.upc_cyl1: "upc_cylinder",
     DatasetName.upc_cub1: "upc_cuboid",
 }
 
@@ -217,10 +217,10 @@ def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=No
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
     
-    X =  [v[:,10,:,:]  for _, v in ds[indata2key[InData.static]].items()]
+    X =  [v for v in ds[indata2key[InData.static]].values()]
     Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
-    FT = [f[5] for _, f in ds["static_ft"].items()]
+    FT = [f for f in ds["static_ft"].values()]
 
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
     if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]

@@ -226,8 +226,8 @@ if __name__ == "__main__":
     t_path = f"{training_path}/../batch_trainings"
     base_path = f"{t_path}/{now()}"
 
-    Neps=40
-    datasets = [DatasetName.combined_all]#, DatasetName.combined_3d]
+    Neps=60
+    datasets = [DatasetName.upc1]#, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
     aug_n = 1
@@ -238,10 +238,10 @@ if __name__ == "__main__":
         [True , False, False],
         # [False, True , False],
         # [False, False, True],
-        [True , True , False],
+        # [True , True , False],
         # [True , False, True],
         # [False, True , True],
-        [True , True , True],
+        # [True , True , True],
     ]
     # augment = [
     #     [True, True],
