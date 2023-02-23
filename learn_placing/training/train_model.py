@@ -234,8 +234,10 @@ if __name__ == "__main__":
 
     # full training
     input_types = [InData.static]
+
+    # tactile, gripper, FT
     input_modalities = [
-        [True , False, False],
+        # [True , False, False],
         # [False, True , False],
         [False, False, True],
         # [True , True , False],

@@ -21,12 +21,12 @@ class NetEstimator(TFEstimator):
         self.model.load_state_dict(torch.load(self.trial_weights))
         self.model.eval()
 
-    def estimate_transform(self, mm_imgs: np.ndarray, lbl, Qwg, *a, **kw):
+    def estimate_transform(self, mm_imgs: np.ndarray, lbl, Qwg, ft, *a, **kw):
         if type(lbl)==torch.Tensor: lbl = lbl.numpy()
         if lbl.shape == (3,3): lbl = tft.quaternion_from_matrix(lbl)
 
         # predict rotation
-        pred = self.model(*to_tensors(np.expand_dims(mm_imgs, 0), np.expand_dims(Qwg, 0), 0))
+        pred = self.model(*to_tensors(np.expand_dims(mm_imgs, 0), np.expand_dims(Qwg, 0), np.expand_dims(ft, 0)))
         Rgo = np.squeeze(pred.detach().numpy())
 
         # calculate line theta

@@ -56,7 +56,7 @@ class HoughEstimator(TFEstimator):
         """
         if lines is None: 
             print("WARN no hough line found")
-            return (None, np.nan), (None, np.nan)
+            return (None, np.nan), (np.pi, np.nan)
             
         rho, theta = lines[0][0]
         houth = ensure_positive_angle(np.pi/2-theta) # convert angle of line normal to angle between line and x axis

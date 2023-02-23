@@ -74,7 +74,7 @@ class RunEstimators:
         lblth = line_angle_from_rotation(Qgo)
 
         # run models
-        (R_nn, nnth), (nnerr, _) = self.nn.estimate_transform(mm, Qgo, Qwg=Qwg)
+        (R_nn, nnth), (nnerr, _) = self.nn.estimate_transform(mm, Qgo, Qwg=Qwg, ft=[self.ft.copy()])
         (R_pca, pcath), (pcaerr, _) = self.pca.estimate_transform(mm, Qgo)
         (R_hou, houth), (houerr, _) = self.hough.estimate_transform(mm, Qgo)
 
@@ -128,7 +128,7 @@ class RunEstimators:
                 lines=lines
             )
 
-            ax.set_title(f"Estimation Results [{datetime.now().strftime('%H:%m:%S')}]")
+            ax.set_title(f"Estimation Results [{datetime.now().strftime('%H:%M:%S')}]")
             fig.tight_layout()
             fig.canvas.draw()
 
@@ -157,7 +157,10 @@ if __name__ == "__main__":
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_gripper_2022.09.13_10-42-03"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.22_15-25-54/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.22_15-25-54"
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.22_16-51-34/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.22_16-51-34"
+
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_2023.02.23_09-27-55"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_ft_2023.02.23_14-04-25"
 
     rospy.init_node("run_estimator")
 
