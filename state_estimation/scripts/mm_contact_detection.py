@@ -64,6 +64,7 @@ class MMContactDetector:
                 now =rospy.Time.now()
                 head = Header(stamp=now)
                 if in_contact:
+                    print("contact detected!")
                     self.con_pub.publish(BoolHead(header=head, in_contact=True))
                     self.con_ts_pub.publish(now)
                 else:

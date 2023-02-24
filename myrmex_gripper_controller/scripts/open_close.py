@@ -23,6 +23,19 @@ JT_MIN = 0.0
 JT_MAX = 0.045
 JOINT_NAMES = [rname, lname]
 
+def activate_torso():
+    global torsoAC
+
+    from cm_interface import safe_switch, is_running
+    if not is_running("torso_stop_controller"):
+        print("enabling torso controller ...")
+        safe_switch("torso_controller", "torso_stop_controller")
+        torsoAC = actionlib.SimpleActionClient("/torso_stop_controller/follow_joint_trajectory", FollowJointTrajectoryAction)
+        print("waiting for torso action ... ")
+        torsoAC.wait_for_server()
+    else:
+        print("torso stop controller running!")
+
 
 def input_or_quit(text):
     i = input(text)
@@ -53,6 +66,8 @@ def close_gripper(): send_trajectory(JT_MIN)
 
 def set_torso(pos=None, secs=7, wait=True):
     global torsoAC, tpos
+
+    activate_torso()
     
     if pos == None: pos = tpos 
 
@@ -89,7 +104,7 @@ try:
         elif inp == "k":
             kill_service()
         elif inp == "cal":
-            calib_service()
+            ftCalib()
         elif inp== "u":
             print("torso up")
             ftCalib()
