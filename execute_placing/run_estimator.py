@@ -159,8 +159,10 @@ if __name__ == "__main__":
     # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.22_15-25-54/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.22_15-25-54"
 
     # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_2023.02.23_09-27-55"
-    trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
     # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_ft_2023.02.23_14-04-25"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.24_10-41-09/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.24_10-41-09"
+
 
     rospy.init_node("run_estimator")
 

@@ -12,7 +12,7 @@ from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
 from execute_placing.placing_planner import PlacingPlanner, Tf2T
 from learn_placing import now
 from learn_placing.analysis.myrmex_gifs import store_mm_sample_gif
-from learn_placing.training.utils import InRot, load_train_params, InData, rep2loss
+from learn_placing.training.utils import InRot, load_train_params, InData, get_loss_fn
 from learn_placing.common.transformations import quaternion_from_matrix, quaternion_matrix
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
@@ -35,7 +35,7 @@ class NNPlacing:
 
         self.params = load_train_params(trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
-        self.criterion = rep2loss(self.params.loss_type)
+        self.criterion = get_loss_fn(self.params.loss_type)
 
         self.olock = Lock()
         self.object_tf = None

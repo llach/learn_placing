@@ -226,7 +226,7 @@ if __name__ == "__main__":
     t_path = f"{training_path}/../batch_trainings"
     base_path = f"{t_path}/{now()}"
 
-    Neps=60
+    Neps=40
     datasets = [DatasetName.upc1]#, DatasetName.combined_3d]
     # datasets = [DatasetName.combined_large]
     target_type = InRot.g2o
@@ -237,11 +237,11 @@ if __name__ == "__main__":
 
     # tactile, gripper, FT
     input_modalities = [
-        # [True , False, False],
+        [True , False, False],
         # [False, True , False],
         [False, False, True],
         # [True , True , False],
-        [True , False, True],
+        # [True , False, True],
         # [False, True , True],
         # [True , True , True],
     ]

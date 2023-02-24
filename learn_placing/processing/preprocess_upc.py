@@ -6,7 +6,7 @@ from learn_placing.training.utils import DatasetName, InRot, ds2name
 
 if __name__ == "__main__":
     
-    dsnames = [DatasetName.upc_cub2, DatasetName.upc_cyl2]
+    dsnames = [DatasetName.upc_cub2, DatasetName.upc_cyl2, DatasetName.upc_extreme]
     data_root = f"{os.environ['HOME']}/tud_datasets"
     for dd in dsnames: 
         dsname = ds2name[dd]
