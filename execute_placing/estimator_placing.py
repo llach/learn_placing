@@ -4,7 +4,7 @@ import rospy
 from tf import TransformListener
 from run_estimator import RunEstimators
 from placing_planner import PlacingPlanner
-from placing_manager.srv import EstimatorPlacing, EstimatorPlacingResponse
+from placing_manager.srv import EstimatorPlacing, EstimatorPlacingResponse, EstimatorPlacingRequest
 from learn_placing.common import tft
 
 class EstimatorPlacingService:
@@ -35,6 +35,7 @@ class EstimatorPlacingService:
         Rgo = results[model][0][:3,:3]
         err = results[model][1]
         
+        print(Rgo.shape)
         # planner expects Rwo, so we calculate Rwg x Rgo
         (_, Qwg) = self.li.lookupTransform(self.world_frame, self.grasping_frame, rospy.Time(0))
         Rwo = tft.quaternion_matrix(Qwg)[:3,:3].dot(Rgo)
@@ -56,9 +57,14 @@ class EstimatorPlacingService:
 
 if __name__ == "__main__":
     noise_thresh = 0.05
-    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.24_10-41-09/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.24_10-41-09"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.24_10-41-09/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.24_10-41-09"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
 
     rospy.init_node("estimator_placing")
 
     ep = EstimatorPlacingService(trial_path, noise_thresh=noise_thresh)
-    while not rospy.is_shutdown(): rospy.spin()
+
+    while not rospy.is_shutdown():
+        a = input("place?")
+        if a.lower() == "q": break
+        ep.place(EstimatorPlacingRequest(model=a.lower()))

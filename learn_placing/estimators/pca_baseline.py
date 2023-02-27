@@ -82,4 +82,4 @@ class PCABaseline(TFEstimator):
         R_lbl = np.expand_dims(tft.quaternion_matrix(lbl)[:3,:3], 0)
         errR = float(self.crit(*to_tensors(R_pca, R_lbl)).numpy())
 
-        return (R_pca, pcath), (errR, line_similarity(pcath, lblth))
+        return (np.squeeze(R_pca), pcath), (errR, line_similarity(pcath, lblth))
