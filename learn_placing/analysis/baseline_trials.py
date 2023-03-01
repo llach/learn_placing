@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from learn_placing.common.viz_tools import models_theta_plot
 from learn_placing.estimators import PCABaseline, NetEstimator, HoughEstimator
 
+def cr_plot_setup():
+    plt.rcParams["font.family"] = "Times New Roman"
+
 if __name__ == "__main__":
     """ NOTE interesting samples
 
@@ -65,9 +68,10 @@ if __name__ == "__main__":
     print(f"PCA err {pcaerr:.4f} | NN  err {nnerr:.4f} | HOU err {houerr:.4f}")
     print(f"PCA th  {pcath:.4f} | NN  th {nnth:.4f}  | HOU th {houth:.4f} | LBL th {lblth:.4f}")
 
-    fig, axes = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
+    cr_plot_setup()
+    fig, axes = plt.subplots(ncols=1, figsize=1.5*np.array([10,9]))
 
-    pca.plot_PCs(axes, mm, scale=scale)
+    # pca.plot_PCs(axes, mm, scale=scale)
     models_theta_plot(
         mm_imgs=mm,
         noise_thresh=noise_thresh,
