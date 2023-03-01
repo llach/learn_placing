@@ -57,8 +57,8 @@ class EstimatorPlacingService:
 
 if __name__ == "__main__":
     noise_thresh = 0.05
-    # trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.24_10-41-09/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.24_10-41-09"
-    trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
+    trial_path = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.24_10-41-09/UPC_v1/UPC_v1_Neps60_static_tactile_2023.02.24_10-41-09"
+    # trial_path = f"{os.environ['HOME']}/tud_datasets/chosen_ones/UPC_v1_Neps60_static_tactile_ft_2023.02.23_14-04-41"
 
     rospy.init_node("estimator_placing")
 

@@ -121,7 +121,7 @@ class DataCollector:
 if __name__ == "__main__":
 
     rospy.init_node("colelct_data")
-    save_path = f"{dataset_path}upc_extreme/"
+    save_path = f"{dataset_path}paper_samples/"
     dc = DataCollector(save_path)
 
     print(f"saving data in {save_path}")
