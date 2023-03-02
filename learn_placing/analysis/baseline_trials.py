@@ -9,6 +9,8 @@ from learn_placing.estimators import PCABaseline, NetEstimator, HoughEstimator
 
 def cr_plot_setup():
     plt.rcParams["font.family"] = "Times New Roman"
+    plt.rcParams["font.size"] = "35"
+    plt.rcParams["font.weight"] = "500"
 
 if __name__ == "__main__":
     """ NOTE interesting samples
@@ -60,7 +62,7 @@ if __name__ == "__main__":
     pca = PCABaseline(noise_thresh=noise_thresh)
     hough = HoughEstimator(noise_thresh=0.15, preproc="binary")
 
-    (R_nn, nnth), (nnRerr, nnerr) = nn.estimate_transform(mm, lbl, Qwg=w2g)
+    (R_nn, nnth), (nnRerr, nnerr) = nn.estimate_transform(mm, lbl, Qwg=w2g, ft=[])
     (_, pcath), (_, pcaerr) = pca.estimate_transform(mm, lbl)
     (_, houth), (_, houerr) = hough.estimate_transform(mm, lbl)
 
@@ -69,7 +71,7 @@ if __name__ == "__main__":
     print(f"PCA th  {pcath:.4f} | NN  th {nnth:.4f}  | HOU th {houth:.4f} | LBL th {lblth:.4f}")
 
     cr_plot_setup()
-    fig, axes = plt.subplots(ncols=1, figsize=1.5*np.array([10,9]))
+    fig, axes = plt.subplots(ncols=1, figsize=1.8*np.array([10,9]))
 
     # pca.plot_PCs(axes, mm, scale=scale)
     models_theta_plot(
@@ -79,14 +81,14 @@ if __name__ == "__main__":
         fig=fig,
         scale=scale,
         lines = [
-            [lblth, "target", "green"],
-            [nnth,  f"NN  {nnerr:.3f}", "red"],
-            [pcath, f"PCA {pcaerr:.3f}", "blue"],
-            [houth, f"HOU {houerr:.3f}", "white"],
+            [lblth, "Ground-truth", "green"],
+            [nnth,  f"Tactile-only", "red"],
+            [pcath, f"PCA", "blue"],
+            [houth, f"Hough", "white"],
         ]
     )
 
-    axes.set_title("NN Baseline Comparison")
+    # axes.set_title("NN Baseline Comparison")
     fig.tight_layout()
     plt.savefig(f"{os.environ['HOME']}/pca_good.png")
-    plt.show()
+    # plt.show()
