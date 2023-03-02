@@ -3,15 +3,10 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from learn_placing.common.viz_tools import models_theta_plot
+from learn_placing.common.viz_tools import models_theta_plot, cr_plot_setup
 from learn_placing.estimators import PCABaseline, NetEstimator, HoughEstimator
 from learn_placing.common import line_angle_from_rotation
 
-
-def cr_plot_setup():
-    plt.rcParams["font.family"] = "Times New Roman"
-    plt.rcParams["font.size"] = "53"
-    plt.rcParams["font.weight"] = "500"
 
 if __name__ == "__main__":
     # 66
@@ -41,7 +36,7 @@ if __name__ == "__main__":
         (_, pcath), (pcaRerr, pcaerr) = pca.estimate_transform(mm, lbl)
         (_, houth), (houRerr, houerr) = hough.estimate_transform(mm, lbl)
         
-        cr_plot_setup()
+        cr_plot_setup(fsize=45)
         fig, axes = plt.subplots(ncols=1, figsize=1.8*np.array([10,9]))
 
         # pca.plot_PCs(axes, mm, scale=scale)
@@ -56,7 +51,8 @@ if __name__ == "__main__":
                 [nnth,  f"Tactile-only ", "red"],
                 [pcath, f"PCA ", "#04D9FF"],
                 [houth, f"Hough ", "#41F94A"],
-            ]
+            ],
+            lloc="upper right"
         )
 
         # axes.set_title("NN Baseline Comparison")

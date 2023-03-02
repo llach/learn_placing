@@ -25,7 +25,7 @@ class MMContactDetector:
     left_ref, right_ref = None, None
     
     callock = Lock()
-    contact_thresh = 0.02
+    contact_thresh = 0.01
 
     def __init__(self) -> None:
         self.lsub = rospy.Subscriber("/tactile_left", TactileState, callback=self.lcb, queue_size=1)
@@ -59,7 +59,7 @@ class MMContactDetector:
             else:
                 ldiff = np.abs(self.left_ref-self.left_m)
                 rdiff = np.abs(self.right_ref-self.right_m)
-
+                print(np.round(ldiff, 2), np.round(rdiff, 2))
                 in_contact = ldiff>self.contact_thresh or rdiff>self.contact_thresh
                 now =rospy.Time.now()
                 head = Header(stamp=now)
@@ -102,7 +102,8 @@ if __name__ == "__main__":
     rospy.init_node("mm_contact_detection")
     mmd = MMContactDetector()
 
-    r = rospy.Rate(1000)
+    r = rospy.Rate(100)
+
     while not rospy.is_shutdown():
         mmd.run()
         r.sleep()

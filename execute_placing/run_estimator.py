@@ -10,7 +10,7 @@ from geometry_msgs.msg import WrenchStamped
 
 from tf import TransformListener, TransformBroadcaster
 from datetime import datetime
-from learn_placing.common import v2l, line_angle_from_rotation, models_theta_plot, preprocess_myrmex, tft, rotation_from_line_angle
+from learn_placing.common import v2l, line_angle_from_rotation, models_theta_plot, preprocess_myrmex, tft, rotation_from_line_angle, cr_plot_setup
 from learn_placing.estimators import NetEstimator, PCABaseline, HoughEstimator
 
 
@@ -41,6 +41,8 @@ class RunEstimators:
         self.br = TransformBroadcaster()
         self.li = TransformListener()
         self.li.waitForTransform(self.world_frame, self.grasping_frame, rospy.Time(0), rospy.Duration(5))
+
+        cr_plot_setup()
         
     def tl_cb(self, m): self.mm_left  = preprocess_myrmex(m.sensors[0].values)
     def tr_cb(self, m): self.mm_right = preprocess_myrmex(m.sensors[0].values)
@@ -101,22 +103,27 @@ class RunEstimators:
 
         if self.publish_image:
             scale=100
-            fig, ax = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
+            fig, ax = plt.subplots(ncols=1, figsize=1.8*np.array([10,9]))
 
             self.pca.plot_PCs(ax, mm, scale=scale)
 
             if detected:
                 lines = [
-                    [lblth, f"OptiTrack (lblth)", "green"],
-                    [nnth,  f"NN  {nnerr:.3f}", "red"],
-                    [pcath, f"PCA {pcaerr:.3f}", "blue"],
-                    [houth, f"HOU {houerr:.3f}", "white"],
+                    # [lblth, f"OptiTrack (lblth)", "green"],
+                    # [nnth,  f"NN  {nnerr:.3f}", "red"],
+                    # [pcath, f"PCA {pcaerr:.3f}", "blue"],
+                    # [houth, f"HOU {houerr:.3f}", "white"],
+
+                    [lblth, "Ground-truth", "white"],
+                    [nnth,  f"Tactile-only ", "red"],
+                    [pcath, f"PCA ", "#04D9FF"],
+                    [houth, f"Hough ", "#41F94A"],
                 ]
             else:
                 lines = [
-                    [nnth,  f"NN ", "red"],
-                    [pcath, f"PCA", "blue"],
-                    [houth, f"HOU", "white"],
+                    [nnth,  f"Tactile-only ", "red"],
+                    [pcath, f"PCA ", "#04D9FF"],
+                    [houth, f"Hough ", "#41F94A"],
                 ]
 
             models_theta_plot(
@@ -128,7 +135,7 @@ class RunEstimators:
                 lines=lines
             )
 
-            ax.set_title(f"Estimation Results [{datetime.now().strftime('%H:%M:%S')}]")
+            # ax.set_title(f"Estimation Results [{datetime.now().strftime('%H:%M:%S')}]")
             fig.tight_layout()
             fig.canvas.draw()
 
