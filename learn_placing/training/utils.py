@@ -8,9 +8,9 @@ import torch.nn.functional as F
 
 from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
+from learn_placing import dataset_path
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.myrmex_processing import random_shift_seq
-from learn_placing.common.tools import line_angle_from_rotation
 from learn_placing.common.transformations import quaternion_matrix
 
 class AttrDict(dict):
@@ -19,89 +19,17 @@ class AttrDict(dict):
         self.__dict__ = self
 
 class DatasetName(str, Enum):
-    object_var2="ObjectVar2"
-    gripper_var2="GripperVar2"
-    combined_var2="CombinedVar2"
-    opti_gripper_test = "OptiGripperTest"
-    test="test"
-    test_obj="test_obj"
-    cuboid_large="Cuboid500"
-    cylinder_large="Cylinder500"
-    combined_large="Combined1000"
-    cuboid_extreme="CuboidExtreme400"
-    cylinder_extreme="CylidnerExtreme400"
-    vinegar="Vinegar400"
-    salt="Salt400"
-    combined_all="CombinedAll"
-    combined_3d="Combined3D"
-
-    upc1="UPC_v1"
-    upc_cyl1 = "UPC Cyliner 1"
-    upc_cub1 = "UPC Cuboid 1"
-    upc_cyl2 = "UPC Cyliner 2"
-    upc_cub2 = "UPC Cuboid 2"
-    upc_extreme = "UPC Extreme"
+    cyl23 = "Cyliner"
+    cub23 = "Cuboid"
+    combined23v1 ="23v1"
 
 
 ds2name = {
-    DatasetName.object_var2: "six",
-    DatasetName.gripper_var2: "seven",
-    DatasetName.opti_gripper_test: "opti_test",
-    DatasetName.test: "test",
-    DatasetName.test_obj: "test_obj",
-    DatasetName.cuboid_large: "cuboid_large",
-    DatasetName.cylinder_large: "cylinder_large",
-    DatasetName.combined_large: "combined_large",
-    DatasetName.cuboid_extreme: "cuboid_extreme",
-    DatasetName.cylinder_extreme: "cylinder_extreme",
-    DatasetName.vinegar: "vinegar",
-    DatasetName.salt: "salt",
-    DatasetName.combined_all: "combined_all",
-
-    DatasetName.upc_cyl1: "upc_cylinder",
-    DatasetName.upc_cub1: "upc_cuboid",
-    DatasetName.upc_cyl2: "upc_cylinder2",
-    DatasetName.upc_cub2: "upc_cuboid2",
-    DatasetName.upc_extreme: "upc_extreme",
+    DatasetName.cyl23: "23_cyl",
+    DatasetName.cub23: "23_cub",
+    DatasetName.combined23v1: "combined23v1",
 }
 
-
-# we switched to longer record times around the detected touch, so different datasets have different timestamps
-dsLookback = {
-    DatasetName.object_var2: [[-80,-30], [-130,-80]],
-    DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
-    DatasetName.combined_var2: [[-80,-30], [-130,-80]],
-    DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
-    DatasetName.test: [[-80,-40], [-120,-80]],
-    DatasetName.test_obj: [[-80,-40], [-120,-80]],
-    DatasetName.cuboid_large: [[-80,-40], [-120,-80]],
-    DatasetName.cylinder_large: [[-80,-40], [-120,-80]],
-    DatasetName.combined_large: [[-80,-40], [-120,-80]],
-    DatasetName.cuboid_extreme: [[-80,-40], [-120,-80]],
-    DatasetName.cylinder_extreme: [[-80,-40], [-120,-80]],
-    DatasetName.vinegar: [[-80,-40], [-120,-80]],
-    DatasetName.salt: [[-80,-40], [-120,-80]],
-    DatasetName.combined_all: [[-80,-40], [-120,-80]],
-    DatasetName.combined_3d: [[-80,-40], [-120,-80]],
-}
-
-ftLookback = {
-    DatasetName.object_var2: [[-20,-5], [-35,-20]],
-    DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
-    DatasetName.combined_var2: [[-20,-5], [-35,-20]],
-    DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
-    DatasetName.test: [[-20,-5], [-35,-20]],
-    DatasetName.test_obj: [[-20,-5], [-35,-20]],
-    DatasetName.cuboid_large: [[-20,-5], [-35,-20]],
-    DatasetName.cylinder_large: [[-20,-5], [-35,-20]],
-    DatasetName.combined_large: [[-20,-5], [-35,-20]],
-    DatasetName.cuboid_extreme: [[-20,-5], [-35,-20]],
-    DatasetName.cylinder_extreme: [[-20,-5], [-35,-20]],
-    DatasetName.vinegar: [[-20,-5], [-35,-20]],
-    DatasetName.salt: [[-20,-5], [-35,-20]],
-    DatasetName.combined_all: [[-20,-5], [-35,-20]],
-    DatasetName.combined_3d: [[-20,-5], [-35,-20]],
-}
 
 class RotRepr(str, Enum):
     ortho6d="ortho6d"
@@ -153,44 +81,14 @@ def get_dataset(dsname, a, target_type, out_repr, seed=None, train_ratio=0.8):
     if "augment" not in a:
         a.update({"augment": None, "aug_n": 0})
 
-    if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all, DatasetName.upc1]:
-        if dsname == DatasetName.combined_var2:
+    if dsname in [DatasetName.combined23v1]:
+        if dsname == DatasetName.combined23v1:
             dss = [
-                ds2name[DatasetName.object_var2], 
-                ds2name[DatasetName.gripper_var2]
-            ]
-        elif dsname == DatasetName.combined_large:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large]
-            ]
-        elif dsname == DatasetName.combined_3d:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large],
-                ds2name[DatasetName.cuboid_extreme], 
-                ds2name[DatasetName.cylinder_extreme],
-            ]
-        elif dsname == DatasetName.combined_all:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large],
-                ds2name[DatasetName.cuboid_extreme], 
-                ds2name[DatasetName.cylinder_extreme],
-                ds2name[DatasetName.vinegar], 
-                ds2name[DatasetName.salt]
-            ]
-        elif dsname == DatasetName.upc1:
-            dss = [
-                ds2name[DatasetName.upc_cyl1], 
-                ds2name[DatasetName.upc_cub1],
-                ds2name[DatasetName.upc_cyl2], 
-                ds2name[DatasetName.upc_cub2],
-                ds2name[DatasetName.upc_extreme],
+                ds2name[DatasetName.cyl23], 
+                ds2name[DatasetName.cub23],
             ]
 
         trainds, testds = load_concatds(dss, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
-        
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
         trainds, testds = load_tensords(dname, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
@@ -218,7 +116,7 @@ def load_concatds(dsnames, seed, target_type, out_repr, train_ratio=0.8, augment
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
 
 def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=None, aug_n=None):
-    dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
+    dataset_file_path = f"{dataset_path}/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
     ds_sorted = {}

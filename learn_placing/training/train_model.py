@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from typing import List
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
-from tactile_insertion_rl import TactilePlacingNet, ConvProc
+from tactile_placing_net import TactilePlacingNet, ConvProc
 
 from learn_placing import now, training_path
 from learn_placing.training.utils import get_loss_fn
@@ -81,8 +81,7 @@ def train(
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
-        preproc_type = ConvProc.ONEFRAMESINGLETRL, ### NOTE set 3DConv here
-        ## TODO add bool here for post-network trafo multiplication
+        preproc_type = ConvProc.ONEFRAMESINGLETRL, 
         output_type = a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
@@ -99,25 +98,6 @@ def train(
         fc_neurons = [64, 32],
     ))
 
-    # a.__setattr__("netp", AttrDict(
-    #     preproc_type = ConvProc.TDCONV, ### NOTE set 3DConv here
-    #     ## TODO add bool here for post-network trafo multiplication
-    #     output_type = a.out_repr,
-    #     with_tactile = a.with_tactile,
-    #     with_gripper = a.with_gripper,
-    #     with_ft = a.with_ft,
-    #     input_dim=[40, 16, 16],
-    #     kernel_sizes = [(10,3,3), (4,3,3)],
-    #     cnn_out_channels = [16, 32],
-    #     conv_stride = (4,2,2),
-    #     conv_padding = (0,0,0),
-    #     conv_output = 1, # NOTE: the final output is this * cnn_out_channels
-    #     rnn_neurons = 128,
-    #     rnn_layers = 1,
-    #     ft_rnn_neurons = 16,
-    #     ft_rnn_layers = 1,
-    #     fc_neurons = [64, 32],
-    # ))
     a.__setattr__("adamp", AttrDict(
         lr=1e-3,
         betas=(0.9, 0.999), 
@@ -223,17 +203,11 @@ def train(
     return trial_name
 
 if __name__ == "__main__":
-    t_path = f"{training_path}/../batch_trainings"
+    t_path = f"{training_path}/"
     base_path = f"{t_path}/{now()}"
 
     Neps=40
-    datasets = [DatasetName.upc1]#, DatasetName.combined_3d]
-    # datasets = [DatasetName.combined_large]
-    target_type = InRot.g2o
-    aug_n = 1
-
-    # full training
-    input_types = [InData.static]
+    datasets = [DatasetName.combined23v1]
 
     # tactile, gripper, FT
     input_modalities = [
@@ -245,12 +219,6 @@ if __name__ == "__main__":
         # [False, True , True],
         # [True , True , True],
     ]
-    # augment = [
-    #     [True, True],
-    #     [True, False],
-    #     [False, True]
-    # ]
-
     augment = [[False, False]]
 
     trial_times = []
@@ -259,34 +227,32 @@ if __name__ == "__main__":
         os.makedirs(dspath, exist_ok=True)
 
         nrows=len(input_modalities)
-        ncols=len(augment)
+        ncols=1
         fig, axs = plt.subplots(nrows,ncols,figsize=(4.3*ncols, 3.3*nrows))
 
         trials = {}
         train_start = datetime.now()
-        for i, au in enumerate(augment):
-            for j, input_mod in enumerate(input_modalities):
-                oax = axs[j,i] if ncols>1 else axs[j]
+        for j, input_mod in enumerate(input_modalities):
+            oax = axs[j] if ncols>1 else axs[j]
 
-                trial_start = datetime.now()
-                trialname = train(
-                    dataset=dataset,
-                    input_type=input_types[0],
-                    input_modalities=input_mod,
-                    target_type=target_type,
-                    trial_path=dspath,
-                    ## TODO add parameters for 3dconv preproc & trafo multiplication
-                    augment=au,
-                    aug_n = aug_n,
-                    Neps=Neps,
-                    other_ax=oax
-                )
-                trial_times.append(datetime.now() - trial_start)
-                print(f"trial took {trial_times[-1]}")
+            trial_start = datetime.now()
+            trialname = train(
+                dataset=dataset,
+                input_type=InData.static,
+                input_modalities=input_mod,
+                target_type=InRot.g2o,
+                trial_path=dspath,
+                augment=[False, False],
+                aug_n = 1,
+                Neps=Neps,
+                other_ax=oax
+            )
+            trial_times.append(datetime.now() - trial_start)
+            print(f"trial took {trial_times[-1]}")
 
-        fig.suptitle(f"Dataset '{dataset}' - [{target_type}]")
+        fig.suptitle(f"Dataset '{dataset}' - [{InRot.g2o}]")
         fig.tight_layout()
-        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{target_type}.png")
+        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{InRot.g2o}.png")
         
     print(f"trial times")
     for trt in trial_times: print(trt)

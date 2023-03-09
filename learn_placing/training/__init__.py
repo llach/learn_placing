@@ -1,1 +1,1 @@
-from .tactile_insertion_rl import TactilePlacingNet
+from .tactile_placing_net import TactilePlacingNet

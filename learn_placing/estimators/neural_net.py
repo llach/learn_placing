@@ -3,7 +3,7 @@ import numpy as np
 
 from learn_placing.common import tft
 from learn_placing.training.utils import load_train_params, get_loss_fn
-from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
+from learn_placing.training.tactile_placing_net import TactilePlacingNet
 from learn_placing.common.tools import line_angle_from_rotation, line_similarity, to_tensors
 
 from .tf_estimator import TFEstimator
