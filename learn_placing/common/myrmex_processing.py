@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn.functional as F
 
 from numpy.random import randint, choice
+from learn_placing.common.tools import marginal_mean
 
 def remove_outer(data, B=0):
     """
@@ -86,3 +87,19 @@ def random_shift_seq(seq, augment):
     else:
         cpad, csli = [0,0], slice(-100000, 100000)
     return shift_columns(seq, rpad=rpad, rsli=rsli, cpad=cpad, csli=csli)
+
+def merge_mm_samples(mm, noise_tresh=0.0):
+    """ 
+    merge two myrmex samples by flipping the right sensor image, adding force intensities and normalizing. optionally filter noise.
+    we rotate the image such that the z-axis points upwards and the x-axis to the right
+    """
+    merged = np.rot90((mm[0]+np.flip(mm[1], 1))/2, axes=(1,0))
+    if noise_tresh > 0.0: merged = np.where(merged>noise_tresh, merged, 0)
+    return merged+10**-16 # array might be zero and models complain, thus add small constant
+
+def get_mean_force_xy(mm):
+    return np.array([
+        marginal_mean(mm, axis=0),
+        marginal_mean(mm, axis=1) 
+    ])
+    

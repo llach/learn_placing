@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from typing import List
 from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
-from tactile_insertion_rl import TactilePlacingNet, ConvProc
+from tactile_placing_net import TactilePlacingNet, ConvProc
 
 from learn_placing import now, training_path
-from learn_placing.training.utils import rep2loss
+from learn_placing.training.utils import get_loss_fn
 
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     xs = np.arange(len(test_loss)).astype(int)+1
@@ -81,8 +81,7 @@ def train(
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
-        preproc_type = ConvProc.ONEFRAMESINGLETRL, ### NOTE set 3DConv here
-        ## TODO add bool here for post-network trafo multiplication
+        preproc_type = ConvProc.ONEFRAMESINGLETRL, 
         output_type = a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
@@ -99,25 +98,6 @@ def train(
         fc_neurons = [64, 32],
     ))
 
-    # a.__setattr__("netp", AttrDict(
-    #     preproc_type = ConvProc.TDCONV, ### NOTE set 3DConv here
-    #     ## TODO add bool here for post-network trafo multiplication
-    #     output_type = a.out_repr,
-    #     with_tactile = a.with_tactile,
-    #     with_gripper = a.with_gripper,
-    #     with_ft = a.with_ft,
-    #     input_dim=[40, 16, 16],
-    #     kernel_sizes = [(10,3,3), (4,3,3)],
-    #     cnn_out_channels = [16, 32],
-    #     conv_stride = (4,2,2),
-    #     conv_padding = (0,0,0),
-    #     conv_output = 1, # NOTE: the final output is this * cnn_out_channels
-    #     rnn_neurons = 128,
-    #     rnn_layers = 1,
-    #     ft_rnn_neurons = 16,
-    #     ft_rnn_layers = 1,
-    #     fc_neurons = [64, 32],
-    # ))
     a.__setattr__("adamp", AttrDict(
         lr=1e-3,
         betas=(0.9, 0.999), 
@@ -134,13 +114,13 @@ def train(
 
     trial_path = f"{trial_path}/{trial_name}/"
 
-    train_l, test_l, seed = get_dataset(a.dsname, a)
+    train_l, test_l, seed = get_dataset(a.dsname, a, target_type=a.target_type, out_repr=a.out_repr)
     a.__setattr__("dataset_seed", seed)
 
     model = TactilePlacingNet(**a.netp)
     optimizer = optim.Adam(model.parameters(), **a.adamp)
 
-    criterion = rep2loss(a.loss_type)
+    criterion = get_loss_fn(a.loss_type)
 
     train_losses = []
     test_losses = []
@@ -223,41 +203,23 @@ def train(
     return trial_name
 
 if __name__ == "__main__":
-    t_path = f"{training_path}/../batch_trainings"
+    t_path = f"{training_path}/"
     base_path = f"{t_path}/{now()}"
 
     Neps=40
-    datasets = [DatasetName.combined_all, DatasetName.combined_3d]
-    # datasets = [DatasetName.combined_large]
-    target_type = InRot.g2o
-    aug_n = 1
+    datasets = [DatasetName.combined23v1]
 
-    # full training
-    # input_types = [InData.static, InData.with_tap]
-    input_types = [InData.static]
-    # input_types = [InData.with_tap]
+    # tactile, gripper, FT
     input_modalities = [
         [True , False, False],
         # [False, True , False],
-        # [False, False, True],
-        [True , True , False],
-        [True , False, True],
+        [False, False, True],
+        # [True , True , False],
+        # [True , False, True],
         # [False, True , True],
-        [True , True , True],
+        # [True , True , True],
     ]
-    augment = [
-        [True, True],
-        [True, False],
-        [False, True]
-    ]
-    # quick testing config
-    # input_types = [InData.static]
-    # input_modalities = [
-    #     [True , False, False],
-    #     [False, True , False],  
-    #     [False, False, True],
-    #     [True , True , True],
-    # ]
+    augment = [[False, False]]
 
     trial_times = []
     for dataset in datasets:
@@ -265,34 +227,32 @@ if __name__ == "__main__":
         os.makedirs(dspath, exist_ok=True)
 
         nrows=len(input_modalities)
-        ncols=len(augment)
+        ncols=1
         fig, axs = plt.subplots(nrows,ncols,figsize=(4.3*ncols, 3.3*nrows))
 
         trials = {}
         train_start = datetime.now()
-        for i, au in enumerate(augment):
-            for j, input_mod in enumerate(input_modalities):
-                oax = axs[j,i] if ncols>1 else axs[j]
+        for j, input_mod in enumerate(input_modalities):
+            oax = axs[j] if ncols>1 else axs[j]
 
-                trial_start = datetime.now()
-                trialname = train(
-                    dataset=dataset,
-                    input_type=input_types[0],
-                    input_modalities=input_mod,
-                    target_type=target_type,
-                    trial_path=dspath,
-                    ## TODO add parameters for 3dconv preproc & trafo multiplication
-                    augment=au,
-                    aug_n = aug_n,
-                    Neps=Neps,
-                    other_ax=oax
-                )
-                trial_times.append(datetime.now() - trial_start)
-                print(f"trial took {trial_times[-1]}")
+            trial_start = datetime.now()
+            trialname = train(
+                dataset=dataset,
+                input_type=InData.static,
+                input_modalities=input_mod,
+                target_type=InRot.g2o,
+                trial_path=dspath,
+                augment=[False, False],
+                aug_n = 1,
+                Neps=Neps,
+                other_ax=oax
+            )
+            trial_times.append(datetime.now() - trial_start)
+            print(f"trial took {trial_times[-1]}")
 
-        fig.suptitle(f"Dataset '{dataset}' - [{target_type}]")
+        fig.suptitle(f"Dataset '{dataset}' - [{InRot.g2o}]")
         fig.tight_layout()
-        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{target_type}.png")
+        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{InRot.g2o}.png")
         
     print(f"trial times")
     for trt in trial_times: print(trt)

@@ -8,6 +8,7 @@ import torch.nn.functional as F
 
 from enum import Enum
 from torch.utils.data import TensorDataset, DataLoader, ConcatDataset
+from learn_placing import dataset_path
 from learn_placing.common.data import load_dataset_file
 from learn_placing.common.myrmex_processing import random_shift_seq
 from learn_placing.common.transformations import quaternion_matrix
@@ -18,81 +19,23 @@ class AttrDict(dict):
         self.__dict__ = self
 
 class DatasetName(str, Enum):
-    object_var2="ObjectVar2"
-    gripper_var2="GripperVar2"
-    combined_var2="CombinedVar2"
-    opti_gripper_test = "OptiGripperTest"
-    test="test"
-    test_obj="test_obj"
-    cuboid_large="Cuboid500"
-    cylinder_large="Cylinder500"
-    combined_large="Combined1000"
-    cuboid_extreme="CuboidExtreme400"
-    cylinder_extreme="CylidnerExtreme400"
-    vinegar="Vinegar400"
-    salt="Salt400"
-    combined_all="CombinedAll"
-    combined_3d="Combined3D"
+    cyl23 = "Cyliner"
+    cub23 = "Cuboid"
+    combined23v1 ="23v1"
+
 
 ds2name = {
-    DatasetName.object_var2: "six",
-    DatasetName.gripper_var2: "seven",
-    DatasetName.opti_gripper_test: "opti_test",
-    DatasetName.test: "test",
-    DatasetName.test_obj: "test_obj",
-    DatasetName.cuboid_large: "cuboid_large",
-    DatasetName.cylinder_large: "cylinder_large",
-    DatasetName.combined_large: "combined_large",
-    DatasetName.cuboid_extreme: "cuboid_extreme",
-    DatasetName.cylinder_extreme: "cylinder_extreme",
-    DatasetName.vinegar: "vinegar",
-    DatasetName.salt: "salt",
-    DatasetName.combined_all: "combined_all",
-    DatasetName.combined_3d: "combined_3d",
+    DatasetName.cyl23: "23_cyl",
+    DatasetName.cub23: "23_cub",
+    DatasetName.combined23v1: "combined23v1",
 }
 
-
-# we switched to longer record times around the detected touch, so different datasets have different timestamps
-dsLookback = {
-    DatasetName.object_var2: [[-80,-30], [-130,-80]],
-    DatasetName.gripper_var2: [[-80,-30], [-130,-80]],
-    DatasetName.combined_var2: [[-80,-30], [-130,-80]],
-    DatasetName.opti_gripper_test: [[-80,-20], [-120,-80]],
-    DatasetName.test: [[-80,-40], [-120,-80]],
-    DatasetName.test_obj: [[-80,-40], [-120,-80]],
-    DatasetName.cuboid_large: [[-80,-40], [-120,-80]],
-    DatasetName.cylinder_large: [[-80,-40], [-120,-80]],
-    DatasetName.combined_large: [[-80,-40], [-120,-80]],
-    DatasetName.cuboid_extreme: [[-80,-40], [-120,-80]],
-    DatasetName.cylinder_extreme: [[-80,-40], [-120,-80]],
-    DatasetName.vinegar: [[-80,-40], [-120,-80]],
-    DatasetName.salt: [[-80,-40], [-120,-80]],
-    DatasetName.combined_all: [[-80,-40], [-120,-80]],
-    DatasetName.combined_3d: [[-80,-40], [-120,-80]],
-}
-
-ftLookback = {
-    DatasetName.object_var2: [[-20,-5], [-35,-20]],
-    DatasetName.gripper_var2: [[-20,-5], [-35,-20]],
-    DatasetName.combined_var2: [[-20,-5], [-35,-20]],
-    DatasetName.opti_gripper_test: [[-20,-5], [-35,-20]],
-    DatasetName.test: [[-20,-5], [-35,-20]],
-    DatasetName.test_obj: [[-20,-5], [-35,-20]],
-    DatasetName.cuboid_large: [[-20,-5], [-35,-20]],
-    DatasetName.cylinder_large: [[-20,-5], [-35,-20]],
-    DatasetName.combined_large: [[-20,-5], [-35,-20]],
-    DatasetName.cuboid_extreme: [[-20,-5], [-35,-20]],
-    DatasetName.cylinder_extreme: [[-20,-5], [-35,-20]],
-    DatasetName.vinegar: [[-20,-5], [-35,-20]],
-    DatasetName.salt: [[-20,-5], [-35,-20]],
-    DatasetName.combined_all: [[-20,-5], [-35,-20]],
-    DatasetName.combined_3d: [[-20,-5], [-35,-20]],
-}
 
 class RotRepr(str, Enum):
     ortho6d="ortho6d"
     quat="quat"
     sincos="sincos"
+    angle="angle"
 
 class InRot(str, Enum):
     w2o = "world2object"
@@ -105,11 +48,9 @@ class InRot(str, Enum):
     local_dotp = "local_dotproduct"
 
 class InData(str, Enum):
-    with_tap = "with_tap"
     static = "static"
 
 indata2key = {
-    InData.with_tap: "inputs",
     InData.static: "static_inputs"
 }
 
@@ -119,6 +60,7 @@ class LossType(str, Enum):
     msesum = "msesum"
     pointcos = "pointcos"
     pointarccos = "pointarccos"
+    line_sim = "line_similarity"
 
 def load_train_params(trial_path):
     with open(f"{trial_path}/parameters.json", "r") as f:
@@ -133,42 +75,23 @@ def load_train_params(trial_path):
         params.__setattr__("val_indices", [])
     return params
 
-def get_dataset(dsname, a, seed=None, train_ratio=0.8):
+def get_dataset(dsname, a, target_type, out_repr, seed=None, train_ratio=0.8):
     if seed is None: seed = np.random.randint(np.iinfo(np.int64).max)
 
-    if dsname in [DatasetName.combined_var2, DatasetName.combined_large, DatasetName.combined_3d, DatasetName.combined_all]:
-        if dsname == DatasetName.combined_var2:
+    if "augment" not in a:
+        a.update({"augment": None, "aug_n": 0})
+
+    if dsname in [DatasetName.combined23v1]:
+        if dsname == DatasetName.combined23v1:
             dss = [
-                ds2name[DatasetName.object_var2], 
-                ds2name[DatasetName.gripper_var2]
-            ]
-        elif dsname == DatasetName.combined_large:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large]
-            ]
-        elif dsname == DatasetName.combined_3d:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large],
-                ds2name[DatasetName.cuboid_extreme], 
-                ds2name[DatasetName.cylinder_extreme],
-            ]
-        elif dsname == DatasetName.combined_all:
-            dss = [
-                ds2name[DatasetName.cuboid_large], 
-                ds2name[DatasetName.cylinder_large],
-                ds2name[DatasetName.cuboid_extreme], 
-                ds2name[DatasetName.cylinder_extreme],
-                ds2name[DatasetName.vinegar], 
-                ds2name[DatasetName.salt]
+                ds2name[DatasetName.cyl23], 
+                ds2name[DatasetName.cub23],
             ]
 
-        trainds, testds = load_concatds(dss, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
-        
+        trainds, testds = load_concatds(dss, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
     else:
         dname = dsname if dsname not in ds2name else ds2name[dsname]
-        trainds, testds = load_tensords(dname, seed=seed, target_type=a.target_type, out_repr=a.out_repr, train_ratio=train_ratio, input_data=a.input_data, augment=a.augment, aug_n=a.aug_n)
+        trainds, testds = load_tensords(dname, seed=seed, target_type=target_type, out_repr=out_repr, train_ratio=train_ratio, augment=a.augment, aug_n=a.aug_n)
 
     train_l = DataLoader(trainds, shuffle=True, batch_size=a.batch_size)
     test_l = DataLoader(testds, shuffle=False, batch_size=a.batch_size) if testds is not None else None
@@ -186,27 +109,25 @@ def split_tds(tds, seed, train_ratio):
         )
     return tds, None
 
-def load_concatds(dsnames, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
+def load_concatds(dsnames, seed, target_type, out_repr, train_ratio=0.8, augment=None, aug_n=None):
     tdss = []
     for ds in dsnames:
-        tdss.append(load_tensords(ds, seed, target_type=target_type, input_data=input_data, out_repr=out_repr, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
+        tdss.append(load_tensords(ds, seed, target_type, out_repr, train_ratio=0.0, augment=augment, aug_n=aug_n)[0])
     return split_tds(ConcatDataset(tdss), seed=seed, train_ratio=train_ratio)
- 
-def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap, out_repr=RotRepr.quat, train_ratio=0.8, augment=None, aug_n=None):
-    dataset_file_path = f"{os.environ['HOME']}/tud_datasets/{name}.pkl"
+
+def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=None, aug_n=None):
+    dataset_file_path = f"{dataset_path}/{name}.pkl"
     ds = load_dataset_file(dataset_file_path)
 
     ds_sorted = {}
     for mod, dat in ds.items():
         ds_sorted.update({mod: dict([(sk, dat[sk]) for sk in sorted(dat)])})
     ds = ds_sorted
-
-    ft_type = "ft" if input_data==InData.with_tap else "static_ft"
     
-    X =  [v for _, v in ds[indata2key[input_data]].items()]
+    X =  [v for v in ds[indata2key[InData.static]].values()]
     Y =  [d[target_type] for d in list(ds["labels"].values())]
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
-    FT = [f for _, f in ds[ft_type].items()]
+    FT = [[f] for f in ds["static_ft"].values()]
 
     if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
     if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
@@ -215,8 +136,8 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
     Y =  torch.Tensor(np.array(Y))
     GR = torch.Tensor(np.array(GR))
     FT = torch.Tensor(np.array(FT))
-
-    if augment is not None and aug_n > 0:
+    
+    if augment is not None and aug_n > 0 and np.any(augment):
         print(f"augmenting dataset: {aug_n} times, rows and cloumns: {augment}")
         XSshape = np.array(X.shape)
         XSshape[0] *= aug_n
@@ -233,19 +154,6 @@ def load_tensords(name, seed, target_type=InRot.w2o, input_data=InData.with_tap,
 
     tds = TensorDataset(X, GR, FT, Y)
     return split_tds(tds, seed=seed, train_ratio=train_ratio)
-
-def rep2loss(loss_type):
-    if loss_type == LossType.quaternion:
-        # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
-        return qloss
-    elif loss_type == LossType.geodesic:
-        return compute_geodesic_distance_from_two_matrices
-    elif loss_type == LossType.msesum:
-        return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
-    elif loss_type == LossType.pointarccos:
-        return lambda x, y: point_loss(x, y)
-    elif loss_type == LossType.pointcos:
-        return lambda x, y: 1-torch.cos(point_loss(x, y))
 
 
 def test_net(model, crit, dataset):
@@ -267,6 +175,21 @@ def test_net(model, crit, dataset):
             grip_rots.append(grip.numpy())
     model.train()
     return np.concatenate(outputs, axis=0), np.concatenate(labels, axis=0), np.concatenate(losses, axis=0), np.concatenate(grip_rots, axis=0)
+
+def get_loss_fn(loss_type):
+    if loss_type == LossType.quaternion:
+        # criterion = lambda a, b: torch.sqrt(qloss(a,b)) 
+        return qloss
+    elif loss_type == LossType.geodesic:
+        return compute_geodesic_distance_from_two_matrices
+    elif loss_type == LossType.msesum:
+        return lambda x, y: torch.sum(F.mse_loss(x, y, reduction='none'), axis=1)
+    elif loss_type == LossType.pointarccos:
+        return lambda x, y: point_loss(x, y)
+    elif loss_type == LossType.pointcos:
+        return lambda x, y: 1-torch.cos(point_loss(x, y))
+    elif loss_type == LossType.line_sim:
+        return line_similarity_th
 
 def bdot(v1, v2):
     batch = v1.shape[0]
@@ -294,6 +217,11 @@ def qloss(out, lbl):
 
 def qloss_sqrt(out, lbl):
     return torch.sqrt(qloss(out, lbl))
+
+def line_similarity_th(th, lblth): 
+    ang_diff = torch.abs(th-lblth)
+    ang_diff = torch.where(torch.le(ang_diff, torch.pi/2), ang_diff, torch.pi-ang_diff)
+    return ang_diff
 
 """
 matrices batch*3*3

@@ -31,7 +31,7 @@ PlacingManager::PlacingManager(float initialTorsoQ, float tableHeight) :
     bufferJs(n_,            "joint_states", "/joint_states"),
     bufferMyLeft(n_,        "tactile_left", "/tactile_left"),
     bufferMyRight(n_,       "tactile_right", "/tactile_right"),
-    bufferFt(n_,            "ft", "/wrist_left_ft"),
+    bufferFt(n_,            "ft", "/wrist_ft"),
     bufferTf(n_,            "tf", "/tf"),
     bufferContact(n_,       "contact", "/table_contact/in_contact"),
     bufferObjectState(n_,   "opti_state", "/opti_state"),
