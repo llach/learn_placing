@@ -29,7 +29,7 @@ def models_theta_plot(mm_imgs, noise_thresh, lines, ax, fig, scale=1, lloc="uppe
     # plot lines at means. NOTE means are estimates, lines will be slightly off!
     for (th, label, color) in lines: plot_line(ax, th, point=means, label=label, c=color, lw=9)
     
-    ax.legend(loc=lloc)
+    if len(lines) >0: ax.legend(loc="lower left")
 
     divider = make_axes_locatable(ax)
     ax.set_xticks([])
