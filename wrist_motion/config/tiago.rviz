@@ -6,9 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /RobotModel1
         - /TF1/Frames1
       Splitter Ratio: 0.566107988357544
-    Tree Height: 752
+    Tree Height: 1910
   - Class: rviz/Help
     Name: Help
   - Class: rviz/Views
@@ -43,7 +44,7 @@ Visualization Manager:
       Plane Cell Count: 10
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 0.8999999761581421
+    - Alpha: 0.20000000298023224
       Class: rviz/RobotModel
       Collision Enabled: false
       Enabled: true
@@ -384,8 +385,6 @@ Visualization Manager:
           Value: false
         caster_front_right_2_link:
           Value: false
-        grasped_object:
-          Value: true
         gripper_grasping_frame:
           Value: true
         gripper_left_finger_link:
@@ -400,13 +399,17 @@ Visualization Manager:
           Value: false
         head_2_link:
           Value: false
-        head_camera:
-          Value: true
         map:
           Value: true
         object:
           Value: true
+        object_nn:
+          Value: true
         odom:
+          Value: true
+        optitrack:
+          Value: true
+        pot:
           Value: true
         rgbd_laser_link:
           Value: false
@@ -414,9 +417,7 @@ Visualization Manager:
           Value: false
         suspension_right_link:
           Value: false
-        tag_1:
-          Value: true
-        tag_2:
+        tiago_opti:
           Value: true
         torso_fixed_column_link:
           Value: false
@@ -428,6 +429,8 @@ Visualization Manager:
           Value: false
         wheel_right_link:
           Value: false
+        wood_02_opti:
+          Value: true
         wrist_ft_link:
           Value: true
         wrist_ft_tool_link:
@@ -493,8 +496,6 @@ Visualization Manager:
                 caster_front_right_1_link:
                   caster_front_right_2_link:
                     {}
-                object:
-                  {}
                 suspension_left_link:
                   wheel_left_link:
                     {}
@@ -517,7 +518,7 @@ Visualization Manager:
                                       wrist_ft_tool_link:
                                         gripper_link:
                                           gripper_grasping_frame:
-                                            grasped_object:
+                                            object:
                                               {}
                                           gripper_left_finger_link:
                                             {}
@@ -537,6 +538,13 @@ Visualization Manager:
                                   {}
                               xtion_rgb_optical_frame:
                                 {}
+                    tiago_opti:
+                      optitrack:
+                        wood_02_opti:
+                          pot:
+                            {}
+              object_nn:
+                {}
               rgbd_laser_link:
                 {}
       Update Interval: 0
@@ -821,7 +829,6 @@ Visualization Manager:
       State Display Time: 3x
       Trail Step Size: 1
       Trajectory Topic: /reorient_trajectory
-      Use Sim Time: false
       Value: true
   Enabled: true
   Global Options:
@@ -840,7 +847,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 2.8644161224365234
+      Distance: 1.7177770137786865
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -856,25 +863,25 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.37979626655578613
+      Pitch: 0.48979616165161133
       Target Frame: base_link
-      Yaw: 0.5204069018363953
+      Yaw: 5.5035881996154785
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 919
+  Height: 2176
   Help:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000100000000000001ae00000340fc020000000afb000000100044006900730070006c006100790073010000002c000003400000011000fffffffb0000000800480065006c00700000000342000000bb0000008e00fffffffb0000000a005600690065007700730000000321000000b0000000de00fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000257000001790000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670000000206000001cb0000000000000000fb0000001200530065006c0065006300740069006f006e0000000264000000810000007c00fffffffb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c005400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000005400ffffff0000051f0000034000000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000100000000000001f7000007e4fc020000000afb000000100044006900730070006c006100790073010000006e000007e40000018200fffffffb0000000800480065006c00700000000342000000bb000000d400fffffffb0000000a005600690065007700730000000321000000b00000013200fffffffb0000000c00430061006d00650072006100000002ff000001610000000000000000fb0000001e004d006f00740069006f006e00200050006c0061006e006e0069006e00670100000257000001790000000000000000fb00000044004d006f00740069006f006e0050006c0061006e006e0069006e00670020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000001c004d006f00740069006f006e0050006c0061006e006e0069006e00670000000206000001cb0000000000000000fb0000001200530065006c0065006300740069006f006e000000026400000081000000b000fffffffb000000280020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff0000000000000000fb0000003c005400720061006a006500630074006f007200790020002d0020005400720061006a006500630074006f0072007900200053006c00690064006500720000000000ffffffff000000260000002600000d6d000007e400000001000000020000000100000002fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Trajectory - Trajectory Slider:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1745
-  X: 0
-  Y: 389
+  Width: 3952
+  X: 144
+  Y: 54

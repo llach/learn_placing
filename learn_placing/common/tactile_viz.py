@@ -12,7 +12,7 @@ def pub_tactile_img(msg, pub):
     mm = preprocess_myrmex(msg.sensors[0].values)
     mm = upscale_repeat(mm, factor=35)
     img = mm2img(mm)[0]
-    imgmsg = bridge.cv2_to_imgmsg(img, encoding="rgb8")
+    imgmsg = bridge.cv2_to_imgmsg(img, encoding="mono8")
     pub.publish(imgmsg)
 
 rospy.init_node("tactile_img_publisher")

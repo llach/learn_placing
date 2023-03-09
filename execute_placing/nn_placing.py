@@ -12,14 +12,14 @@ from placing_manager.srv import ExecutePlacing, ExecutePlacingResponse
 from execute_placing.placing_planner import PlacingPlanner, Tf2T
 from learn_placing import now
 from learn_placing.analysis.myrmex_gifs import store_mm_sample_gif
-from learn_placing.training.utils import InRot, load_train_params, InData, rep2loss
+from learn_placing.training.utils import InRot, load_train_params, InData, get_loss_fn
 from learn_placing.common.transformations import quaternion_from_matrix, quaternion_matrix
 from learn_placing.training.tactile_insertion_rl import TactilePlacingNet
 from learn_placing.processing.bag2pickle import msg2matrix, msg2ft
 from learn_placing.processing.preprocess_dataset import myrmex_transform, ft_transform
 
 class NNPlacing:
-    grasping_frame = "gripper_left_grasping_frame"
+    grasping_frame = "gripper_grasping_frame"
     world_frame = "base_footprint"
 
     def __init__(self, trial_path, weights_name, store_samples = True) -> None:
@@ -35,7 +35,7 @@ class NNPlacing:
 
         self.params = load_train_params(trial_path)
         self.model = TactilePlacingNet(**self.params.netp)
-        self.criterion = rep2loss(self.params.loss_type)
+        self.criterion = get_loss_fn(self.params.loss_type)
 
         self.olock = Lock()
         self.object_tf = None
@@ -246,6 +246,7 @@ if __name__ == "__main__":
     rospy.init_node("nn_placing")
 
     netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_2022.09.13_10-41-43"
+    netname = f"{os.environ['HOME']}/tud_datasets/batch_trainings/2023.02.13_18-45-21/CombinedAll/CombinedAll_Neps40_static_tactile_2023.02.13_18-45-21"
     # netname = "/home/llach/tud_datasets/batch_trainings/ias_training_new_ds/Combined3D/Combined3D_Neps40_static_tactile_ft_2022.09.13_10-42-33"
 
     weights = "best"

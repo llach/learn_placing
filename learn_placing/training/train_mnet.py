@@ -9,48 +9,44 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime
 from typing import List
-from utils import LossType, get_dataset, InData, RotRepr, InRot, DatasetName, test_net, AttrDict
-from tactile_insertion_rl import TactilePlacingNet, ConvProc
+from learn_placing.training.utils import InRot, RotRepr, get_loss_fn, LossType
+from utils import get_dataset, DatasetName, test_net, AttrDict
+from mnet import MyrmexNet
 
 from learn_placing import now, training_path
-from learn_placing.training.utils import get_loss_fn
 
 def plot_learning_curve(train_loss, test_loss, a, ax, min_test=None, min_test_i=0, small_title=False):
     xs = np.arange(len(test_loss)).astype(int)+1
 
-    tl_mean = np.mean(test_loss, axis=1)
-    tl_upper = np.percentile(test_loss, 0.95, axis=1)
-    tl_lower = np.percentile(test_loss, 0.05, axis=1)
+    tl_mean = np.squeeze(np.mean(test_loss, axis=1))
+    tl_upper = np.squeeze(np.percentile(test_loss, 0.95, axis=1))
+    tl_lower = np.squeeze(np.percentile(test_loss, 0.05, axis=1))
 
     ax.plot(xs, train_loss, label=f"training loss | {train_loss[min_test_i]:.5f}")
     ax.plot(xs, tl_mean, label=f"test loss | {tl_mean[min_test_i]:.5f}")
 
     ax.fill_between(xs, tl_mean+tl_upper, tl_mean-tl_lower, color="#A9A9A9", alpha=0.3, label="test loss 95%ile")
 
-    if a.loss_type == LossType.pointarccos or a.loss_type == LossType.geodesic:
-        ax.set_ylim([0.0,np.pi])
-        ax.set_ylabel("loss [radian]")
-    elif a.loss_type == LossType.msesum or a.loss_type == LossType.quaternion or a.loss_type == LossType.pointcos:
-        ax.set_ylim([-0.05,1.0])
-        ax.set_ylabel("loss")
+    ax.set_ylim([0.0,np.pi/2])
+    ax.set_ylabel("loss [radian]")
 
     ax.scatter(min_test_i, min_test, c="green", marker="X", linewidths=0.7, label="best avg. test loss")
     ax.set_xlabel("#batches")
 
     if not small_title:
-        ax.set_title(f"dsname={a.dsname} input={a.input_data} tactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft}")
+        ax.set_title(f"dsname={a.dsname}\ntactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft}")
     else:
-        ax.set_title(f"input={a.input_data};\ntactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft};")
+        ax.set_title(f"tactile={a.with_tactile} gripper={a.with_gripper} ft={a.with_ft}")
 
     ax.legend()
 
 def train(
     dataset: DatasetName,
-    input_type: InData,
     input_modalities: List[bool],
-    target_type: InRot,
     trial_path: str,
-    ## TODO add parameters as input parameters
+    out_repr: RotRepr,
+    loss_type: LossType,
+    target_type: RotRepr = InRot.g2o,
     augment: list = None,
     aug_n: int = 1,
     Neps: int = 10,
@@ -63,27 +59,25 @@ def train(
     a = AttrDict(
         N_episodes = Neps,
         dsname = dataset,
-        input_data = input_type,
+
         with_tactile = with_tactile,
         with_gripper = with_gripper,
         with_ft = with_ft,
 
+        loss_type = loss_type,
+        out_repr = out_repr,
+        target_type = target_type,
+
         augment = augment,
         aug_n = aug_n,
         batch_size = 48,
-        loss_type = LossType.pointarccos,
-        out_repr = RotRepr.ortho6d,
-        target_type = target_type,
         validate = False,
         store_training = True,
-        gripper_repr = RotRepr.quat,
         start_time = now(),
         save_freq = 0.1
     )
     a.__setattr__("netp", AttrDict(
-        preproc_type = ConvProc.ONEFRAMESINGLETRL, ### NOTE set 3DConv here
-        ## TODO add bool here for post-network trafo multiplication
-        output_type = a.out_repr,
+        output_type=a.out_repr,
         with_tactile = a.with_tactile,
         with_gripper = a.with_gripper,
         with_ft = a.with_ft,
@@ -92,32 +86,7 @@ def train(
         conv_stride = (2,2),
         conv_padding = (0,0),
         conv_output = 128,
-        rnn_neurons = 128,
-        rnn_layers = 1,
-        ft_rnn_neurons = 16,
-        ft_rnn_layers = 1,
-        fc_neurons = [64, 32],
     ))
-
-    # a.__setattr__("netp", AttrDict(
-    #     preproc_type = ConvProc.TDCONV, ### NOTE set 3DConv here
-    #     ## TODO add bool here for post-network trafo multiplication
-    #     output_type = a.out_repr,
-    #     with_tactile = a.with_tactile,
-    #     with_gripper = a.with_gripper,
-    #     with_ft = a.with_ft,
-    #     input_dim=[40, 16, 16],
-    #     kernel_sizes = [(10,3,3), (4,3,3)],
-    #     cnn_out_channels = [16, 32],
-    #     conv_stride = (4,2,2),
-    #     conv_padding = (0,0,0),
-    #     conv_output = 1, # NOTE: the final output is this * cnn_out_channels
-    #     rnn_neurons = 128,
-    #     rnn_layers = 1,
-    #     ft_rnn_neurons = 16,
-    #     ft_rnn_layers = 1,
-    #     fc_neurons = [64, 32],
-    # ))
     a.__setattr__("adamp", AttrDict(
         lr=1e-3,
         betas=(0.9, 0.999), 
@@ -126,7 +95,7 @@ def train(
         amsgrad=False
     ))
 
-    trial_name = f"{a.dsname}_Neps{a.N_episodes}_{a.input_data}"
+    trial_name = f"{a.dsname}_Neps{a.N_episodes}"
     if a.with_tactile: trial_name += "_tactile"
     if a.with_gripper: trial_name += "_gripper"
     if a.with_ft: trial_name += "_ft"
@@ -137,9 +106,8 @@ def train(
     train_l, test_l, seed = get_dataset(a.dsname, a, target_type=a.target_type, out_repr=a.out_repr)
     a.__setattr__("dataset_seed", seed)
 
-    model = TactilePlacingNet(**a.netp)
+    model = MyrmexNet(**a.netp)
     optimizer = optim.Adam(model.parameters(), **a.adamp)
-
     criterion = get_loss_fn(a.loss_type)
 
     train_losses = []
@@ -223,34 +191,26 @@ def train(
     return trial_name
 
 if __name__ == "__main__":
-    t_path = f"{training_path}/../batch_trainings"
+    t_path = f"{training_path}/../mnet"
     base_path = f"{t_path}/{now()}"
 
-    Neps=40
-    datasets = [DatasetName.upc1]#, DatasetName.combined_3d]
-    # datasets = [DatasetName.combined_large]
+    Neps=100
+    datasets = [DatasetName.combined_3d]
+
+    loss_type = LossType.pointarccos
+    out_repr = RotRepr.ortho6d
     target_type = InRot.g2o
-    aug_n = 1
 
     # full training
-    input_types = [InData.static]
-
-    # tactile, gripper, FT
     input_modalities = [
         [True , False, False],
         # [False, True , False],
-        [False, False, True],
+        # [False, False, True],
         # [True , True , False],
         # [True , False, True],
         # [False, True , True],
-        # [True , True , True],
+        [True , True , True],
     ]
-    # augment = [
-    #     [True, True],
-    #     [True, False],
-    #     [False, True]
-    # ]
-
     augment = [[False, False]]
 
     trial_times = []
@@ -271,22 +231,22 @@ if __name__ == "__main__":
                 trial_start = datetime.now()
                 trialname = train(
                     dataset=dataset,
-                    input_type=input_types[0],
                     input_modalities=input_mod,
                     target_type=target_type,
+                    loss_type=loss_type,
+                    out_repr=out_repr,
                     trial_path=dspath,
-                    ## TODO add parameters for 3dconv preproc & trafo multiplication
                     augment=au,
-                    aug_n = aug_n,
+                    aug_n=0,
                     Neps=Neps,
                     other_ax=oax
                 )
                 trial_times.append(datetime.now() - trial_start)
                 print(f"trial took {trial_times[-1]}")
 
-        fig.suptitle(f"Dataset '{dataset}' - [{target_type}]")
+        fig.suptitle(f"Dataset '{dataset}'")
         fig.tight_layout()
-        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}_{target_type}.png")
+        fig.savefig(f"{dspath}/trainings_{dataset.lower()}_{Neps}.png")
         
     print(f"trial times")
     for trt in trial_times: print(trt)

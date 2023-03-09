@@ -93,7 +93,7 @@ class TactilePlacingNet(nn.Module):
             self.output_size = 2
 
         self.gripper_input_size = 4 if self.with_gripper else 0
-        self.ft_input_size = self.ft_rnn_neurons if self.with_ft else 0
+        self.ft_input_size = 6 if self.with_ft else 0
         self.tactile_input_size = 0
     
         if self.with_tactile:
@@ -179,10 +179,7 @@ class TactilePlacingNet(nn.Module):
             mlp_inputs.append(gr)
 
         if self.with_ft:
-            # LSTM input shape: (batch, seq, M)
-            # !! LSTM needs to have `batch_first` set to `True` during instanciation !!
-            ftrnnout, (_,_) = self.ftrnn(ft, None)
-            mlp_inputs.append(ftrnnout[:,-1,:])
+            mlp_inputs.append(ft[:,-1,:])
 
         if len(mlp_inputs)>1:
             mlpin = torch.cat(mlp_inputs, axis=1)
