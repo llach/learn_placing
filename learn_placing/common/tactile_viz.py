@@ -1,27 +1,63 @@
 import rospy
+import numpy as np
+import matplotlib.pyplot as plt
 
 from cv_bridge import CvBridge
-from tactile_msgs.msg import TactileState
 from sensor_msgs.msg import Image
+from tactile_msgs.msg import TactileState
+from learn_placing.common import preprocess_myrmex, merge_mm_samples, upscale_repeat
 
-from learn_placing.common import preprocess_myrmex, mm2img, upscale_repeat
 
-def pub_tactile_img(msg, pub):
-    global bridge
+class TactileHeatmapPublisher:
+    mm_left, mm_right = None, None
 
-    mm = preprocess_myrmex(msg.sensors[0].values)
-    mm = upscale_repeat(mm, factor=35)
-    img = mm2img(mm)[0]
-    imgmsg = bridge.cv2_to_imgmsg(img, encoding="mono8")
-    pub.publish(imgmsg)
+    def __init__(self):
+        self.tlsub = rospy.Subscriber("/tactile_left",  TactileState, callback=self.tl_cb)
+        self.trsub = rospy.Subscriber("/tactile_right", TactileState, callback=self.tr_cb)
 
-rospy.init_node("tactile_img_publisher")
-bridge = CvBridge()
+        self.bridge = CvBridge()
+        self.imgpub = rospy.Publisher("/tactile_heatmap", Image, queue_size=1)
 
-left_img_pub = rospy.Publisher("/tactile_left_image", Image, queue_size=1)
-rospy.Subscriber("/tactile_left", TactileState, lambda x: pub_tactile_img(x, left_img_pub), queue_size=1)
+    def tl_cb(self, m): self.mm_left  = preprocess_myrmex(m.sensors[0].values)
+    def tr_cb(self, m): self.mm_right = preprocess_myrmex(m.sensors[0].values)
+    def reset_data(self): self.mm_left, self.mm_right = None, None
 
-right_img_pub = rospy.Publisher("/tactile_right_image", Image, queue_size=1)
-rospy.Subscriber("/tactile_right", TactileState, lambda x: pub_tactile_img(x, right_img_pub), queue_size=1)
+    def publish(self):
+        while np.any(np.any([m == None for m in [self.mm_left, self.mm_right]])):
+            print("waiting for data ...")
+            rospy.Rate(1).sleep()
 
-while not rospy.is_shutdown(): rospy.spin()
+        # preprocess data
+        mm = np.squeeze(np.stack([self.mm_left, self.mm_right]))
+
+        fig, ax = plt.subplots(ncols=1, figsize=1.8*np.array([10,9]))
+
+        fig = plt.figure(frameon=False)
+        fig.set_size_inches(5,5)
+
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+
+        mmm = merge_mm_samples(mm, noise_tresh=0.0)
+        mmimg = upscale_repeat(mmm, factor=100)
+
+        ax.imshow(mmimg, aspect='auto', cmap="magma")
+        fig.canvas.draw()
+
+        # Now we can save it to a numpy array.
+        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        imgmsg = self.bridge.cv2_to_imgmsg(data, encoding="rgb8")
+        self.imgpub.publish(imgmsg)
+        plt.close("all")
+
+if __name__ == "__main__":
+    rospy.init_node("tactile_heatmap_viz")
+
+    r = rospy.Rate(50)
+    thp = TactileHeatmapPublisher()
+    while not rospy.is_shutdown(): 
+        thp.publish()
+        r.sleep()
