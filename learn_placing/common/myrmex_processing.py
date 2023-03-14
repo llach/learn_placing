@@ -33,14 +33,6 @@ def preprocess_myrmex(data):
     # data = remove_outer(data, B=1)
     return normalize_mm(reshape_mm_vector(data))
 
-def sync_mm_sample(m1, m2):
-    """ TODO here we sync samples: right now it's some dummy function
-    """
-    return np.array([
-        m1[:40],
-        m2[:40]
-    ])
-
 def mm2img(data, cidx=2):
     if type(data) == list: data = np.array(data)
     if len(data.shape)==2: data = np.expand_dims(data, axis=0)
