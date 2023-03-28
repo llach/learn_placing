@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, JointState
 from tactile_msgs.msg import TactileState
 from geometry_msgs.msg import WrenchStamped
 
@@ -20,13 +20,16 @@ from learn_placing.common import v2l, line_angle_from_rotation, models_theta_plo
 class DataCollector:
     world_frame = "base_footprint"
     grasping_frame = "gripper_grasping_frame"
+    left_finger_name = "gripper_left_finger_joint"
+    right_finger_name = "gripper_right_finger_joint"
     object_frame = "object"
-    mm_left, mm_right, ft = None, None, None
+    mm_left, mm_right, ft, js = None, None, None, None # message data variables
+    gr_idx, gl_idx = None, None # JointState indices for left and right finger joint values
 
     def __init__(self, save_path):
-        self.count = 0
+        self.count = 1
         self.save_path = save_path
-        self.pics_path = f"{self.save_path}pics/"
+        self.pics_path = f"{self.save_path}/pics/"
 
         os.makedirs(self.save_path, exist_ok=True)
         os.makedirs(self.pics_path, exist_ok=True)
@@ -34,6 +37,7 @@ class DataCollector:
         self.ftsub = rospy.Subscriber("/wrist_ft", WrenchStamped, callback=self.ft_cb)
         self.tlsub = rospy.Subscriber("/tactile_left",  TactileState, callback=self.tl_cb)
         self.trsub = rospy.Subscriber("/tactile_right", TactileState, callback=self.tr_cb)
+        self.jssub = rospy.Subscriber("/joint_states", JointState, callback=self.js_cb)
 
         self.bridge = CvBridge()
         self.imgpub = rospy.Publisher("/collector_image", Image, queue_size=1)
@@ -44,13 +48,15 @@ class DataCollector:
     def tl_cb(self, m): self.mm_left  = preprocess_myrmex(m.sensors[0].values)
     def tr_cb(self, m): self.mm_right = preprocess_myrmex(m.sensors[0].values)
     def ft_cb(self, m): self.ft = np.concatenate([v2l(m.wrench.force), v2l(m.wrench.torque)])
+    def js_cb(self, m): self.js = {self.right_finger_name: m.position[m.name.index(self.right_finger_name)], self.left_finger_name: m.position[m.name.index(self.left_finger_name)]}
+
 
     def reset_data(self):
-        self.mm_left, self.mm_right, self.ft = None, None, None
+        self.mm_left, self.mm_right, self.ft, self.js = None, None, None, None
 
     def collect(self):
         print(f"collecting sample {self.count}")
-        while np.any(self.mm_left == None) or np.any(self.mm_right == None) or np.any(self.ft == None):
+        while np.any(self.mm_left == None) or np.any(self.mm_right == None) or np.any(self.ft == None) or self.js is None:
             print("waiting for data ...")
             rospy.Rate(2).sleep()
 
@@ -61,34 +67,36 @@ class DataCollector:
             (_, Qwo) = self.li.lookupTransform(self.world_frame, self.object_frame,      rospy.Time())
             (_, Qgo) = self.li.lookupTransform(self.grasping_frame, self.object_frame,   rospy.Time())
         except Exception as e:
-            print(f"ERROR couldn't get transform. ¿is the object being detected?\n{e}")
-            return False
+            pass
+            # print(f"ERROR couldn't get transform. ¿is the object being detected?\n{e}")
+            # return False
 
         now = datetime.now().strftime(datefmt)
 
         Qwg = np.array(Qwg)
-        Qgo = np.array(Qgo)
-        Qwo = np.array(Qwo)
+        # Qgo = np.array(Qgo)
+        # Qwo = np.array(Qwo)
 
         # preprocess data
         mm = np.squeeze(np.stack([self.mm_left.copy(), self.mm_right.copy()]))
-        lblth = line_angle_from_rotation(Qgo)
+        # lblth = line_angle_from_rotation(Qgo)
 
         sname = f"{self.count}_{now}"
-        with open(f"{self.save_path}{sname}.pkl", "wb") as f:
+        with open(f"{self.save_path}/{sname}.pkl", "wb") as f:
             pickle.dump({
                 "mm": mm,
+                "joints": self.js,
                 "ft": self.ft,
                 "Qwg": Qwg,
-                "Qgo": Qgo,
-                "Qwo": Qwo
+                # "Qgo": Qgo,
+                # "Qwo": Qwo
             }, f)
-
+        
         scale=100
         fig, ax = plt.subplots(ncols=1, figsize=0.8*np.array([10,9]))
 
         lines = [
-            [lblth, f"OptiTrack (lblth)", "green"],
+            # [lblth, f"OptiTrack (lblth)", "green"],
         ]
         models_theta_plot(
             mm_imgs=mm,
@@ -121,13 +129,13 @@ class DataCollector:
 if __name__ == "__main__":
 
     rospy.init_node("colelct_data")
-    save_path = f"{dataset_path}paper_samples/"
+    save_path = f"{dataset_path}cloth2/fold"
     dc = DataCollector(save_path)
 
     print(f"saving data in {save_path}")
     while not rospy.is_shutdown():
         a = input()
         if a.lower() == "q": break
-        for _ in range(5):
-            dc.collect()
-            time.sleep(0.3)
+        # for _ in range(5):
+        dc.collect()
+        time.sleep(0.3)
