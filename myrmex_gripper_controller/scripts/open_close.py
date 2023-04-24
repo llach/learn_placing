@@ -17,10 +17,10 @@ tpos = None
 rpos, lpos = None, None
 rname, lname = 'gripper_right_finger_joint', 'gripper_left_finger_joint'
 
-N_SECS = 1.2
+N_SECS = 0.5
 N_POINTS = 5
-JT_MIN = 0.0
-JT_MAX = 0.045
+JT_MIN = 0.003
+JT_MAX = 0.025
 JOINT_NAMES = [rname, lname]
 
 def activate_torso():
@@ -51,12 +51,12 @@ def js_cb(msg):
     rpos, lpos = msg.position[ridx], msg.position[lidx]
     tpos = msg.position[tidx]
 
-def send_trajectory(to):
+def send_trajectory(to, tfs=1.5):
     global mmAC
 
     jt = JointTrajectory()
     jt.joint_names = JOINT_NAMES
-    jt.points.append(JointTrajectoryPoint(positions=[to, to], time_from_start=rospy.Time(1.5)))
+    jt.points.append(JointTrajectoryPoint(positions=[to, to], time_from_start=rospy.Time(tfs)))
 
     res = cpub.send_goal(FollowJointTrajectoryGoal(trajectory=jt))
     print(f"result {res}")
@@ -94,7 +94,7 @@ gravityAC.wait_for_server()
 
 try:
     while True:
-        inp = input("o = open; c = close; k = kill myrmex; cal = calibrate; u = torso up; d = torso down\n")
+        inp = input("o = open; c = close; k = kill myrmex; cal = calibrate; u = torso up; d = torso down, gt = go to\n")
         if inp == "q":
             break
         elif inp == "o":
@@ -117,6 +117,19 @@ try:
             ftCalib()
             set_torso(0.0)
             set_torso(wait=False)
+
+        elif inp[:2]=="gt":
+            goal = inp[2:]
+            if len(goal)!=3:
+                print("too few numbers")
+                continue
+            try:
+                goal = int(goal)/10000
+                print(f"gripper goal: {goal}")
+            except:
+                print(f"can't convert {goal} to a number")
+                continue
+            send_trajectory(goal, 0.5)
 
         elif inp=="g":
             arm_goal = EmptyActionGoal()

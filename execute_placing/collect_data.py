@@ -128,8 +128,8 @@ class DataCollector:
 
 if __name__ == "__main__":
 
-    rospy.init_node("colelct_data")
-    save_path = f"{dataset_path}cloth2/fold"
+    rospy.init_node("collect_data")
+    save_path = f"{dataset_path}cloth2/no_cloth"
     dc = DataCollector(save_path)
 
     print(f"saving data in {save_path}")
