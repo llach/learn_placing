@@ -129,7 +129,7 @@ def load_tensords(name, seed, target_type, out_repr, train_ratio=0.8, augment=No
     GR = [d[InRot.w2g] for d in list(ds["labels"].values())]
     FT = [[f] for f in ds["static_ft"].values()]
 
-    if out_repr==RotRepr.sincos: Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
+    if out_repr==RotRepr.sincos:  Y = np.stack([np.sin(Y), np.cos(Y)], axis=1)
     if out_repr==RotRepr.ortho6d: Y = [quaternion_matrix(y)[:3,:3] for y in Y]
 
     X =  torch.Tensor(np.array(X))

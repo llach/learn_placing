@@ -62,13 +62,14 @@ class HoughEstimator(TFEstimator):
         houth = ensure_positive_angle(np.pi/2-theta) # convert angle of line normal to angle between line and x axis
 
         # calculate line error
+        lbl = tft.ensure_rotmat(lbl)
         lblth = line_angle_from_rotation(lbl)
         houerr = line_similarity(houth, lblth)
 
         if show_image: self.show_line_image(mmm, rho, theta)
 
         R_hou = np.expand_dims(rotation_from_line_angle(houth)[:3,:3], 0)
-        R_lbl = np.expand_dims(tft.quaternion_matrix(lbl)[:3,:3], 0)
+        R_lbl = np.expand_dims(lbl, 0)
         errR = float(self.crit(*to_tensors(R_hou, R_lbl)).numpy())
         return (rotation_from_line_angle(houth), houth), (errR, houerr)
 

@@ -75,11 +75,12 @@ class PCABaseline(TFEstimator):
         means, evl, evec, evth = self.calculate_PCA(mm_imgs)
         pcath = evth[0]
 
+        lbl = tft.ensure_rotmat(lbl)
         lblth = line_angle_from_rotation(lbl)
 
         R_pca = np.expand_dims(rotation_from_line_angle(pcath)[:3,:3], 0)
 
-        R_lbl = np.expand_dims(tft.quaternion_matrix(lbl)[:3,:3], 0)
+        R_lbl = np.expand_dims(lbl, 0)
         errR = float(self.crit(*to_tensors(R_pca, R_lbl)).numpy())
 
         return (np.squeeze(R_pca), pcath), (errR, line_similarity(pcath, lblth))
